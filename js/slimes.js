@@ -3,7 +3,7 @@
  */
 
 import { activeEnemies, triggerLootDrop, activeGroundLoots } from './enemies.js';
-import { gameState, SLIME_TYPES, addScraps } from './state.js';
+import { gameState, SLIME_TYPES, addScraps, updateBestRoster, saveStateToLocal } from './state.js';
 import { updateUI } from './ui.js';
 
 /**
@@ -25,6 +25,60 @@ export function showFloatingStatusText(enemy, text, extraClass = '') {
     setTimeout(() => {
         floatEl.remove();
     }, 800);
+}
+
+/**
+ * Show floating pixel art damage numbers (white for enemies, red for slimes)
+ */
+export function showFloatingDamageNumber(x, y, damageVal, type = 'enemy-dmg') {
+    const overlay = document.querySelector('.battlefield-overlay');
+    if (!overlay) return;
+
+    const floatEl = document.createElement('div');
+    floatEl.className = `floating-damage-num ${type}`;
+    const jitterX = (Math.random() * 8 - 4);
+    floatEl.style.left = `${x + jitterX}px`;
+    floatEl.style.top = `${y}px`;
+
+    if (type === 'burn-dmg') {
+        floatEl.textContent = `🔥 ${damageVal}`;
+    } else if (type === 'poison-dmg') {
+        floatEl.textContent = `🧪 ${damageVal}`;
+    } else if (type === 'crit-dmg') {
+        floatEl.textContent = `💥 ${damageVal}`;
+    } else {
+        floatEl.textContent = `-${damageVal}`;
+    }
+
+    overlay.appendChild(floatEl);
+
+    const durationMs = (type === 'burn-dmg' || type === 'poison-dmg' || type === 'crit-dmg') ? 800 : 600;
+    setTimeout(() => {
+        if (floatEl && floatEl.parentNode) floatEl.remove();
+    }, durationMs);
+}
+
+/**
+ * Display a centered battlefield banner message (e.g. "🎉 WAVE 10 CLEARED!")
+ */
+export function showBattlefieldWaveBanner(text) {
+    const overlay = document.getElementById('battlefieldOverlay') || document.getElementById('gameScreen');
+    if (!overlay) return;
+
+    const bannerEl = document.createElement('div');
+    bannerEl.className = 'battlefield-congratulations-banner';
+    bannerEl.innerHTML = text;
+
+    overlay.appendChild(bannerEl);
+
+    setTimeout(() => {
+        if (bannerEl && bannerEl.parentNode) {
+            bannerEl.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            bannerEl.style.opacity = '0';
+            bannerEl.style.transform = 'translate(-50%, -50%) scale(0.8)';
+            setTimeout(() => bannerEl.remove(), 300);
+        }
+    }, 1800);
 }
 
 /**
@@ -55,19 +109,19 @@ export function triggerRandomSlimeAttack(overrideTypeId = null) {
     if (availableSlimes.length === 0) return;
 
     const randomSlimeEl = availableSlimes[Math.floor(Math.random() * availableSlimes.length)];
-    
+
     // Read exact slime object from gameState.slimes array using slimeId dataset
-    const slimeId = parseInt(randomSlimeEl.dataset.slimeId);
-    const slimeObj = gameState.slimes ? gameState.slimes.find(s => s.id === slimeId) : null;
+    const rawSlimeId = randomSlimeEl.dataset.slimeId;
+    const slimeObj = gameState.slimes ? gameState.slimes.find(s => s.id === rawSlimeId || String(s.id) === String(rawSlimeId) || s.name === rawSlimeId) : null;
     const chosenType = overrideTypeId || (slimeObj ? slimeObj.type : null) || randomSlimeEl.dataset.slimeType || 'base';
 
-    executeSlimeJumpAttack(randomSlimeEl, chosenType);
+    executeSlimeJumpAttack(randomSlimeEl, chosenType, slimeObj);
 }
 
 /**
  * Executes a 60 FPS parabolic jump attack animation dynamically targeting the closest enemy
  */
-function executeSlimeJumpAttack(unitEl, typeId) {
+function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
     const slimeConfig = SLIME_TYPES[typeId] || SLIME_TYPES.base;
     const imgEl = unitEl.querySelector('.slime-img');
     const shadowEl = unitEl.querySelector('.slime-shadow-sm');
@@ -79,19 +133,34 @@ function executeSlimeJumpAttack(unitEl, typeId) {
     imgEl.style.transition = 'none';
     if (shadowEl) shadowEl.style.transition = 'none';
 
-    // Dynamic Enemy Target Tracking
-    let targetEnemy = null;
-    let targetImpactX = 220;
+    // Find frontmost candidate enemy in range (lowest X <= 450)
+    let candidateEnemies = activeEnemies
+        .filter(e => e.hp > 0 && e.x <= 450)
+        .sort((a, b) => a.x - b.x);
 
-    if (activeEnemies && activeEnemies.length > 0) {
-        const aliveEnemies = activeEnemies.filter(e => e.hp > 0).sort((a, b) => a.x - b.x);
-        if (aliveEnemies.length > 0) {
-            targetEnemy = aliveEnemies[0];
-            targetImpactX = targetEnemy.x - 4;
-        }
+    let targetEnemy = candidateEnemies[0] || null;
+
+    let startX = 20;
+    const parentPos = unitEl.parentElement ? unitEl.parentElement.getBoundingClientRect() : null;
+    const unitPos = unitEl.getBoundingClientRect();
+    if (parentPos && unitPos) {
+        startX = unitPos.left - parentPos.left;
     }
 
-    const startX = parseFloat(unitEl.style.left) || 95;
+    let targetImpactX = startX + 160;
+    if (targetEnemy) {
+        const estDurationSec = 0.5;
+        const enemySpeed = targetEnemy.speed || 40;
+        let predictedX = targetEnemy.x - enemySpeed * estDurationSec;
+
+        if (targetEnemy.x > (targetEnemy.targetX || 100)) {
+            const enemyTravel = enemySpeed * estDurationSec;
+            predictedX = Math.max(targetEnemy.targetX || 100, targetEnemy.x - enemyTravel);
+        }
+
+        targetImpactX = Math.min(450, Math.max(startX + 20, predictedX - 4));
+    }
+
     const maxDx = Math.max(35, targetImpactX - startX);
     const maxAltitude = Math.min(65, Math.max(35, 25 + maxDx * 0.16));
     const jumpDuration = Math.min(750, Math.max(480, 450 + maxDx * 0.75));
@@ -128,11 +197,20 @@ function executeSlimeJumpAttack(unitEl, typeId) {
 
         if (progress >= 0.90 && !hasDealtDamage) {
             hasDealtDamage = true;
-            if (targetEnemy && targetEnemy.hp > 0) {
-                dealTargetEnemyDamage(targetEnemy, slimeConfig.attackDamage, slimeConfig);
-            } else {
-                dealImpactDamage(dx, slimeConfig.attackDamage, slimeConfig);
+            let currentDamage = slimeObj ? (slimeObj.damage || (gameState.slimeDamage || 1)) : (gameState.slimeDamage || 1);
+            let isCrit = false;
+
+            const critChance = slimeObj ? (slimeObj.critChance || 0) : 0;
+            if (critChance > 0) {
+                const roll = Math.random() * 100;
+                if (roll < critChance) {
+                    isCrit = true;
+                    currentDamage = currentDamage * 2;
+                }
             }
+
+            dealTargetEnemyDamage(targetEnemy, currentDamage, slimeConfig, isCrit, slimeObj);
+            // If no target enemies are in range (x <= 450), slime performs jump animation without dealing damage
         }
 
         if (progress < 1.0) {
@@ -148,45 +226,118 @@ function executeSlimeJumpAttack(unitEl, typeId) {
 }
 
 /**
- * Deal damage & apply elemental status effects (Fire Burn / Frost Freeze) to target enemy
+ * Deal damage & apply elemental status effects (Fire Burn / Frost Freeze) to target enemy.
  */
-function dealTargetEnemyDamage(targetEnemy, damageAmount, slimeConfig) {
-    if (!targetEnemy || targetEnemy.hp <= 0) return;
+function dealTargetEnemyDamage(targetEnemy, damageAmount, slimeConfig, isCrit = false, slimeObj = null) {
+    // If the jump attack was launched without a target in range, deal no damage
+    if (!targetEnemy) return;
 
-    // 1. Direct Impact Damage
-    targetEnemy.hp -= damageAmount;
+    // Get sorted list of alive enemies currently in range (closest to slimes first: lowest X <= 450)
+    let candidateEnemies = activeEnemies
+        .filter(e => e.hp > 0 && e.x <= 450)
+        .sort((a, b) => a.x - b.x);
 
-    // 2. Elemental Status Effects Application
-    if (!targetEnemy.effects) {
-        targetEnemy.effects = { burnTimer: 0, burnTickTimer: 0, freezeTimer: 0 };
+    // If initial target is still alive and in range (x <= 450), start with it;
+    // Otherwise (if initial target died mid-air before landing - i.e. slime hit nothing), pick frontmost candidate in range
+    let currentTarget = (targetEnemy.hp > 0 && targetEnemy.x <= 450)
+        ? targetEnemy
+        : (candidateEnemies[0] || null);
+
+    if (!currentTarget || currentTarget.hp <= 0 || currentTarget.x > 450) return;
+
+    // Apply damage to currentTarget (excess damage beyond currentTarget.hp is lost!)
+    const damageToApply = Math.min(currentTarget.hp, damageAmount);
+
+    currentTarget.hp -= damageToApply;
+
+    // Pop floating pixel art damage number on currentTarget (golden glowing crit-dmg for critical hits)
+    if (isCrit) {
+        showFloatingDamageNumber(currentTarget.x + 8, currentTarget.y - 14, damageToApply, 'crit-dmg');
+    } else {
+        showFloatingDamageNumber(currentTarget.x + 8, currentTarget.y - 12, damageToApply, 'enemy-dmg');
+    }
+
+    // Apply elemental status effects (Innate Slime Effect)
+    if (!currentTarget.effects) {
+        currentTarget.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, freezeTimer: 0, stunTimer: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0 };
     }
 
     if (slimeConfig && slimeConfig.effect === 'burn') {
-        targetEnemy.effects.burnTimer = slimeConfig.burnDuration || 3.0;
-        targetEnemy.effects.burnTickTimer = 0;
-        showFloatingStatusText(targetEnemy, '🔥 BURN!', 'burn-text');
+        if (currentTarget.effects.burnTimer > 0) {
+            currentTarget.effects.burnStacks = (currentTarget.effects.burnStacks || 1) + 1;
+        } else {
+            currentTarget.effects.burnStacks = 1;
+        }
+        currentTarget.effects.burnTimer = slimeConfig.burnDuration || 3.0;
+    } else if (slimeConfig && slimeConfig.effect === 'poison') {
+        if (currentTarget.effects.poisonTimer > 0) {
+            currentTarget.effects.poisonStacks = (currentTarget.effects.poisonStacks || 1) + 1;
+        } else {
+            currentTarget.effects.poisonStacks = 1;
+        }
+        currentTarget.effects.poisonTimer = slimeConfig.poisonDuration || 3.0;
     } else if (slimeConfig && slimeConfig.effect === 'freeze') {
-        targetEnemy.effects.freezeTimer = slimeConfig.freezeDuration || 1.0;
-        showFloatingStatusText(targetEnemy, '❄️ FROZEN!', 'freeze-text');
+        currentTarget.effects.freezeTimer = slimeConfig.freezeDuration || 1.0;
+        showFloatingStatusText(currentTarget, '❄️', 'freeze-text');
+    } else if (slimeConfig && slimeConfig.effect === 'stun') {
+        currentTarget.effects.stunTimer = slimeConfig.stunDuration || 0.8;
+        showFloatingStatusText(currentTarget, '💫', 'stun-text');
     }
 
-    // Visual WHITE hit flash on enemy sprite
-    if (targetEnemy.el) {
-        const sprite = targetEnemy.el.querySelector('.enemy-sprite');
+    // Apply Equipment Status Effects (Burn, Poison, Freeze, Stun from equipment!)
+    if (slimeObj && slimeObj.equipment && slimeObj.equipment.length > 0) {
+        slimeObj.equipment.forEach(eq => {
+            const effectsToProcess = eq.effects || [eq];
+            effectsToProcess.forEach(eff => {
+                if (eff.stat === 'effect' || eff.effectType) {
+                    const type = eff.effectType;
+                    const val = eff.value || 1;
+
+                    if (type === 'burn') {
+                        if (currentTarget.effects.burnTimer > 0) {
+                            currentTarget.effects.burnStacks = (currentTarget.effects.burnStacks || 1) + val;
+                        } else {
+                            currentTarget.effects.burnStacks = val;
+                        }
+                        currentTarget.effects.burnTimer = 3.0;
+                    } else if (type === 'poison') {
+                        if (currentTarget.effects.poisonTimer > 0) {
+                            currentTarget.effects.poisonStacks = (currentTarget.effects.poisonStacks || 1) + val;
+                        } else {
+                            currentTarget.effects.poisonStacks = val;
+                        }
+                        currentTarget.effects.poisonTimer = 3.0;
+                    } else if (type === 'freeze') {
+                        currentTarget.effects.freezeTimer = Math.max(currentTarget.effects.freezeTimer || 0, 1.0);
+                        showFloatingStatusText(currentTarget, '❄️', 'freeze-text');
+                    } else if (type === 'stun') {
+                        currentTarget.effects.stunTimer = Math.max(currentTarget.effects.stunTimer || 0, 0.8);
+                        showFloatingStatusText(currentTarget, '💫', 'stun-text');
+                    }
+                }
+            });
+        });
+    }
+
+    // Visual WHITE hit flash on currentTarget sprite
+    if (currentTarget.el) {
+        const sprite = currentTarget.el.querySelector('.enemy-sprite');
         if (sprite) {
             sprite.classList.add('hit-flash-white');
+            const spriteEl = sprite;
             setTimeout(() => {
-                sprite.classList.remove('hit-flash-white');
+                if (spriteEl) spriteEl.classList.remove('hit-flash-white');
             }, 180);
         }
 
-        if (targetEnemy.hp <= 0) {
-            triggerLootDrop(targetEnemy);
+        if (currentTarget.hp <= 0) {
+            triggerLootDrop(currentTarget);
             const ejectClass = Math.random() > 0.5 ? 'cartoon-ko-eject' : 'cartoon-ko-eject-left';
-            targetEnemy.el.classList.add(ejectClass);
-            showFloatingStatusText(targetEnemy, '💥 KO!', 'burn-text');
+            currentTarget.el.classList.add(ejectClass);
             setTimeout(() => {
-                if (targetEnemy.el) targetEnemy.el.remove();
+                if (currentTarget.el) currentTarget.el.remove();
+                const idx = activeEnemies.indexOf(currentTarget);
+                if (idx !== -1) activeEnemies.splice(idx, 1);
             }, 800);
         }
     }
@@ -212,11 +363,11 @@ function startSmoothReturnWalk(unitEl, imgEl, shadowEl, slimeConfig, maxDx = 100
     setTimeout(() => {
         imgEl.style.transition = '';
         if (shadowEl) shadowEl.style.transition = '';
-        
+
         const originalZ = unitEl.dataset.originalZ || '1';
         unitEl.style.zIndex = originalZ;
         unitEl.dataset.isAttacking = 'false';
-        
+
         imgEl.style.animation = '';
     }, returnDuration);
 }
@@ -253,9 +404,9 @@ export function showFloatingStatusTextAt(x, y, text, extraClass = '') {
 }
 
 /**
- * Triggers a random slime to slide across the battlefield to eat the nearest available ground loot
+ * Helper function to dispatch a single slime to eat ground loot
  */
-export function triggerSlimeEatLoot() {
+function dispatchSingleSlimeToEat() {
     const availableLoots = activeGroundLoots.filter(l => !l.beingEaten && l.el && l.el.parentNode);
     if (availableLoots.length === 0) return;
 
@@ -273,7 +424,6 @@ export function triggerSlimeEatLoot() {
     const imgEl = unitEl.querySelector('.slime-img');
     const shadowEl = unitEl.querySelector('.slime-shadow-sm');
 
-    // Use getBoundingClientRect for 100% viewport accuracy in straight-line calculations
     const slimeRect = imgEl.getBoundingClientRect();
 
     let targetLoot = availableLoots[0];
@@ -298,16 +448,19 @@ export function triggerSlimeEatLoot() {
     const dy = lootRect.top - slimeRect.top;
     const distance = Math.sqrt(dx * dx + dy * dy);
 
-    // Disable CSS transition & CSS idle bounce animation during 60 FPS manual slide
     imgEl.style.transition = 'none';
-    if (shadowEl) shadowEl.style.transition = 'none';
+    if (shadowEl) {
+        shadowEl.style.transition = 'none';
+        shadowEl.style.opacity = '0';
+    }
     imgEl.style.animation = 'none';
 
     const originalZ = unitEl.style.zIndex || '1';
-    unitEl.dataset.originalZ = originalZ;
     unitEl.style.zIndex = '500';
 
-    const slimeType = unitEl.dataset.slimeType || 'base';
+    const rawSlimeId = unitEl.dataset.slimeId;
+    const slimeObj = gameState.slimes ? gameState.slimes.find(s => s.id === rawSlimeId || String(s.id) === String(rawSlimeId) || s.name === rawSlimeId) : null;
+    const slimeType = slimeObj ? slimeObj.type : 'base';
     const slimeConfig = SLIME_TYPES[slimeType] || SLIME_TYPES.base;
 
     // Use sprite 2 of the corresponding slime during the loot animation
@@ -328,8 +481,7 @@ export function triggerSlimeEatLoot() {
 
         imgEl.style.transform = `translate(${curX}px, ${curY}px)`;
         if (shadowEl) {
-            shadowEl.style.transform = `translate(${curX}px, 0px) scale(${1.0 - 0.15 * easeProgress})`;
-            shadowEl.style.opacity = `${1.0 - 0.15 * easeProgress}`;
+            shadowEl.style.opacity = '0';
         }
 
         if (progress < 1.0) {
@@ -358,7 +510,75 @@ export function triggerSlimeEatLoot() {
         addScraps(targetLoot.value);
         updateUI();
 
-        showFloatingStatusTextAt(targetLoot.x, targetLoot.y, `+${targetLoot.value} Scraps!`, 'loot-text');
+        // 1. Immediately pop +N 🍖 food scrap floating text (floats straight up)
+        showFloatingStatusTextAt(targetLoot.x, targetLoot.y, `+${targetLoot.value} 🍖`, 'loot-text');
+
+        // 2. Character Sheet & Equipment Unique Effect Logic
+        if (slimeObj) {
+            if (!slimeObj.equipment) slimeObj.equipment = [];
+
+            const lootKey = targetLoot.key || 'beggar';
+            const alreadyHasLoot = slimeObj.equipment.some(eq => eq.id === lootKey);
+
+            if (!alreadyHasLoot) {
+                const rawLootEffect = targetLoot.effect || { stat: 'hp', value: 1, text: '+1 Max HP' };
+                const effectsList = Array.isArray(rawLootEffect)
+                    ? rawLootEffect
+                    : (rawLootEffect.effects ? rawLootEffect.effects : [rawLootEffect]);
+
+                const textParts = [];
+
+                effectsList.forEach(eff => {
+                    const effectStat = eff.stat || 'hp';
+                    const effectValue = eff.value || 1;
+                    const effectType = eff.effectType || null;
+                    let singleText = eff.text || '';
+
+                    if (effectStat === 'hp') {
+                        slimeObj.maxHp = Math.max(1, (slimeObj.maxHp || 10) + effectValue);
+                        slimeObj.hp = Math.max(1, Math.min(slimeObj.hp !== undefined ? slimeObj.hp : 10, slimeObj.maxHp));
+                        if (!singleText) singleText = `${effectValue >= 0 ? '+' : ''}${effectValue} Max HP`;
+                    } else if (effectStat === 'damage') {
+                        slimeObj.damage = Math.max(1, (slimeObj.damage || 1) + effectValue);
+                        if (!singleText) singleText = `${effectValue >= 0 ? '+' : ''}${effectValue} Damage`;
+                    } else if (effectStat === 'regen') {
+                        slimeObj.regen = Math.max(0, (slimeObj.regen || 0) + effectValue);
+                        if (!singleText) singleText = `${effectValue >= 0 ? '+' : ''}${effectValue} HP Regen`;
+                    } else if (effectStat === 'crit') {
+                        slimeObj.critChance = Math.max(0, (slimeObj.critChance || 0) + effectValue);
+                        if (!singleText) singleText = `${effectValue >= 0 ? '+' : ''}${effectValue}% Crit`;
+                    } else if (effectStat === 'effect') {
+                        if (!singleText) {
+                            if (effectType === 'burn') singleText = effectValue > 1 ? `🔥 Burn x${effectValue}` : '🔥 Burn';
+                            else if (effectType === 'poison') singleText = effectValue > 1 ? `🧪 Poison x${effectValue}` : '🧪 Poison';
+                            else if (effectType === 'freeze') singleText = '❄️ Freeze';
+                            else if (effectType === 'stun') singleText = '💫 Stun';
+                        }
+                    }
+                    if (singleText) textParts.push(singleText);
+                });
+
+                const combinedText = textParts.join(', ');
+
+                slimeObj.equipment.push({
+                    id: lootKey,
+                    name: targetLoot.name || lootKey,
+                    sprite: targetLoot.sprite || `images/loots/${lootKey}.png`,
+                    effectText: combinedText,
+                    effects: effectsList
+                });
+
+                updateBestRoster();
+                saveStateToLocal();
+
+                const lootDisplayName = targetLoot.name || lootKey;
+
+                // Staggered 300ms delay & leftward arc curve so equipment popup floats AFTER food popup without overlapping!
+                setTimeout(() => {
+                    showFloatingStatusTextAt(targetLoot.x - 10, targetLoot.y - 12, `🎒 ${lootDisplayName} (${combinedText})!`, 'equipment-loot-text');
+                }, 300);
+            }
+        }
 
         // Short 200ms eating pose pause before returning
         setTimeout(() => {
@@ -379,8 +599,7 @@ export function triggerSlimeEatLoot() {
 
                 imgEl.style.transform = `translate(${curX}px, ${curY}px)`;
                 if (shadowEl) {
-                    shadowEl.style.transform = `translate(${curX}px, 0px) scale(${0.85 + 0.15 * easeProgress})`;
-                    shadowEl.style.opacity = `${0.85 + 0.15 * easeProgress}`;
+                    shadowEl.style.opacity = '0';
                 }
 
                 if (progress < 1.0) {
@@ -408,4 +627,98 @@ export function triggerSlimeEatLoot() {
     }
 
     requestAnimationFrame(animateForwardSlide);
+}
+
+/**
+ * Triggers slimes to slide across the battlefield to eat available ground loots.
+ * Digestion upgrade determines how many slimes go to eat in quick succession!
+ */
+export function triggerSlimeEatLoot() {
+    const countToDispatch = 1 + (gameState.digestionLevel || 0);
+
+    for (let i = 0; i < countToDispatch; i++) {
+        if (i === 0) {
+            dispatchSingleSlimeToEat();
+        } else {
+            setTimeout(() => {
+                dispatchSingleSlimeToEat();
+            }, i * 140);
+        }
+    }
+}
+
+const ascendedTimeouts = new Map();
+
+/**
+ * Clear all active ascended auto-attack timers (e.g. on rewind or full reset)
+ */
+export function clearAscendedAutoAttacks() {
+    ascendedTimeouts.forEach(timerId => clearTimeout(timerId));
+    ascendedTimeouts.clear();
+}
+
+/**
+ * Initialize individual randomized (0.9s - 1.1s) auto-attack loops for ascended slimes
+ */
+export function initAscendedAutoAttacks() {
+    clearAscendedAutoAttacks();
+
+    // Check periodically for newly ascended slimes and maintain their attack loops
+    setInterval(() => {
+        updateAscendedSlimeTimers();
+    }, 200);
+}
+
+function updateAscendedSlimeTimers() {
+    if (!gameState.slimes || gameState.slimes.length === 0) {
+        clearAscendedAutoAttacks();
+        return;
+    }
+
+    // Clean up stale timers for dead or non-existent slimes
+    for (const [id, timerId] of ascendedTimeouts.entries()) {
+        const livingAscendedSlime = gameState.slimes.find(s => s.id === id && (s.hp === undefined || s.hp > 0) && s.ascended);
+        if (!livingAscendedSlime) {
+            clearTimeout(timerId);
+            ascendedTimeouts.delete(id);
+        }
+    }
+
+    // Schedule auto-attack timers for living ascended slimes that don't have an active timer
+    gameState.slimes.forEach(slimeObj => {
+        if (slimeObj.ascended && (slimeObj.hp === undefined || slimeObj.hp > 0) && !ascendedTimeouts.has(slimeObj.id)) {
+            scheduleSingleAscendedAttack(slimeObj);
+        }
+    });
+}
+
+function scheduleSingleAscendedAttack(slimeObj) {
+    // Randomized interval between 0.9s (900ms) and 1.1s (1100ms)
+    const randomDelay = Math.round(900 + Math.random() * 200);
+
+    const timerId = setTimeout(() => {
+        attemptAscendedSlimeAttack(slimeObj);
+        // Reschedule next attack with a fresh random 0.9s - 1.1s delay
+        scheduleSingleAscendedAttack(slimeObj);
+    }, randomDelay);
+
+    ascendedTimeouts.set(slimeObj.id, timerId);
+}
+
+function attemptAscendedSlimeAttack(slimeObj) {
+    if (!slimeObj.ascended || (slimeObj.hp !== undefined && slimeObj.hp <= 0)) return;
+    if (!activeEnemies || activeEnemies.length === 0) return;
+
+    // Only attack enemies within visible screen bounds (x <= 450)
+    const hitableEnemies = activeEnemies.filter(e => e.hp > 0 && e.x <= 450);
+    if (hitableEnemies.length === 0) return;
+
+    const armyContainer = document.getElementById('armyContainer');
+    if (!armyContainer) return;
+
+    const unitEl = armyContainer.querySelector(`.slime-unit[data-slime-id="${slimeObj.id}"]`);
+    if (unitEl && unitEl.dataset.isAttacking !== 'true' && unitEl.dataset.isEating !== 'true') {
+        const slimeType = slimeObj.type || unitEl.dataset.slimeType || 'base';
+        executeSlimeJumpAttack(unitEl, slimeType, slimeObj);
+    }
 }

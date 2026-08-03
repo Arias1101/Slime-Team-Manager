@@ -5,25 +5,42 @@
 import { loadStateFromLocal } from './state.js';
 import { initAuth, loginWithGoogle, logoutUser } from './auth.js';
 import { startEngine } from './engine.js';
-import { updateUI, setAuthScreenState, showFirebaseNotice } from './ui.js';
-import { initEnemiesModule, startNextWave, setAutoPlay, resetWaveAndScraps } from './enemies.js';
-import { triggerRandomSlimeAttack, triggerSlimeEatLoot } from './slimes.js';
+import { updateUI, setAuthScreenState, showFirebaseNotice, playSlimeRainRespawnAnimation, initSlimeModalListeners } from './ui.js';
+import { initEnemiesModule, startNextWave, setAutoPlay, resetGameFull, rewindWaveState } from './enemies.js';
+import { triggerRandomSlimeAttack, triggerSlimeEatLoot, initAscendedAutoAttacks } from './slimes.js';
+import { initUpgradesModule } from './upgrades.js';
+import { initShopModule } from './shop.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Load Local State
     loadStateFromLocal();
 
-    // 2. Initialize Enemies Module
+    // 2. Initialize Enemies, Upgrades, Shop, Ascended Auto-Attacks & Modal Listeners
     initEnemiesModule();
+    initUpgradesModule();
+    initShopModule();
+    initAscendedAutoAttacks();
+    initSlimeModalListeners();
+
+    let hasStartedGameAnimation = false;
+
+    function startGameWithSkyDrop() {
+        if (hasStartedGameAnimation) return;
+        hasStartedGameAnimation = true;
+
+        updateUI();
+        playSlimeRainRespawnAnimation(() => {
+            startNextWave();
+        });
+    }
 
     // 3. Bind Auth & Battle Control Buttons
     const gateBtnLogin = document.getElementById('gateBtnLogin');
     const btnLogout = document.getElementById('btnLogout');
     const btnDemoMode = document.getElementById('btnDemoMode');
 
-    const btnPlay = document.getElementById('btnPlay');
-    const btnPause = document.getElementById('btnPause');
     const btnEat = document.getElementById('btnEat');
+    const btnRewindWave = document.getElementById('btnRewindWave');
     const btnNextWave = document.getElementById('btnNextWave');
     const battlefieldCard = document.querySelector('.battlefield-card');
 
@@ -40,20 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnDemoMode) {
         btnDemoMode.addEventListener('click', () => {
             setAuthScreenState(true, { displayName: 'Demo Player', photoURL: null });
-            updateUI();
-        });
-    }
-
-    // Play & Pause Control Button Listeners
-    if (btnPlay) {
-        btnPlay.addEventListener('click', () => {
-            setAutoPlay(true);
-        });
-    }
-
-    if (btnPause) {
-        btnPause.addEventListener('click', () => {
-            setAutoPlay(false);
+            startGameWithSkyDrop();
         });
     }
 
@@ -64,10 +68,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Reset Button Listener: Wipes scraps to 0 & decrements wave (min 1)
+    // Rewind Wave Button Listener: Restores previous wave snapshot
+    if (btnRewindWave) {
+        btnRewindWave.addEventListener('click', () => {
+            rewindWaveState();
+        });
+    }
+
+    // Reset Button Listener: Wipes scraps to 0, wave to 1, army to 1 base slime (no upgrades)
     if (btnNextWave) {
         btnNextWave.addEventListener('click', () => {
-            resetWaveAndScraps();
+            resetGameFull();
         });
     }
 
@@ -85,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
         (isAuthenticated, user) => {
             setAuthScreenState(isAuthenticated, user);
             if (isAuthenticated) {
-                updateUI();
+                startGameWithSkyDrop();
             }
         },
         () => {
