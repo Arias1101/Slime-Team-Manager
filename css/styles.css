@@ -191,26 +191,28 @@ body.modal-open {
     background: var(--bg-card);
     backdrop-filter: blur(16px);
     border-bottom: 1px solid var(--border-color);
-    border-radius: 0 0 16px 16px;
-    padding: 12px 32px;
-    gap: 16px;
-    z-index: 100;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    border-radius: 0 0 12px 12px;
+    padding: 6px 16px;
+    gap: 12px;
+    z-index: 1000;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+    height: 48px;
+    box-sizing: border-box;
 }
 
 .logo-container {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
 }
 
 .logo-icon {
-    font-size: 1.8rem;
+    font-size: 1.3rem;
 }
 
 .logo-title {
     font-family: var(--font-heading);
-    font-size: 1.5rem;
+    font-size: 1.05rem;
     background: linear-gradient(135deg, #34d399, #a7f3d0);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -220,21 +222,23 @@ body.modal-open {
 .stats-header-bar {
     display: flex;
     align-items: center;
-    gap: 24px;
-    background: rgba(18, 19, 22, 0.7);
-    padding: 8px 20px;
-    border-radius: var(--radius-md);
+    gap: 14px;
+    background: rgba(18, 19, 22, 0.6);
+    padding: 4px 12px;
+    border-radius: 20px;
     border: 1px solid var(--border-color);
+    height: 32px;
+    box-sizing: border-box;
 }
 
 .header-stat {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 4px;
 }
 
 .stat-icon {
-    font-size: 1.5rem;
+    font-size: 1.05rem;
 }
 
 .stat-info {
@@ -243,16 +247,12 @@ body.modal-open {
 }
 
 .stat-label {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    color: var(--color-muted);
-    font-weight: 600;
-    letter-spacing: 0.5px;
+    display: none;
 }
 
 .stat-value {
     font-family: var(--font-heading);
-    font-size: 1.4rem;
+    font-size: 0.95rem;
     color: #34d399;
     font-weight: bold;
 }
@@ -292,14 +292,14 @@ body.modal-open {
 .user-profile {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
 }
 
 .user-avatar {
-    width: 34px;
-    height: 34px;
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
-    border: 2px solid var(--color-primary);
+    border: 1.5px solid var(--color-primary);
 }
 
 .user-info {
@@ -309,11 +309,11 @@ body.modal-open {
 
 .user-name {
     font-weight: 700;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
 }
 
 .save-status {
-    font-size: 0.7rem;
+    font-size: 0.62rem;
     color: #34d399;
 }
 
@@ -321,7 +321,8 @@ body.modal-open {
     background: transparent;
     border: 1px solid var(--border-color);
     color: var(--color-muted);
-    font-size: 0.8rem;
+    font-size: 0.7rem;
+    padding: 2px 6px;
 }
 
 .btn-outline:hover {
@@ -963,8 +964,8 @@ body.modal-open {
 
 /* Army Image Icon Styles */
 .logo-icon-img {
-    width: 28px;
-    height: 28px;
+    width: 20px;
+    height: 20px;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
     object-fit: contain;
@@ -2905,7 +2906,7 @@ body.modal-open {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    max-height: calc(100vh - (205px + var(--roster-height, 70px)));
+    max-height: calc(100vh - (145px + var(--roster-height, 70px)));
     overflow-y: auto !important;
     padding-right: 4px;
 }
@@ -2914,23 +2915,23 @@ body.modal-open {
 .app-container {
     width: 100%;
     max-width: 532px;
-    height: calc(100vh - 92px);
-    max-height: calc(100vh - 92px);
+    height: calc(100vh - 60px);
+    max-height: calc(100vh - 60px);
     display: flex;
     flex-direction: column;
     padding: 8px 16px 12px 16px;
     gap: 8px;
     position: relative;
-    margin-top: 90px;
+    margin-top: 58px;
     box-sizing: border-box;
     overflow: hidden;
 }
 
 @media (max-width: 600px) {
     .app-container {
-        margin-top: 108px;
-        height: calc(100vh - 110px);
-        max-height: calc(100vh - 110px);
+        margin-top: 76px;
+        height: calc(100vh - 78px);
+        max-height: calc(100vh - 78px);
         padding: 6px 10px 10px 10px;
     }
 }
@@ -2947,9 +2948,9 @@ body.modal-open {
 @media (min-width: 901px) {
     .app-container {
         max-width: 960px;
-        margin-top: 80px;
-        height: calc(100vh - 82px);
-        max-height: calc(100vh - 82px);
+        margin-top: 56px;
+        height: calc(100vh - 58px);
+        max-height: calc(100vh - 58px);
         transition: max-width 0.3s ease;
     }
 
@@ -2993,7 +2994,7 @@ body.modal-open {
     }
 
     .upgrades-container {
-        max-height: calc(100vh - 180px);
+        max-height: calc(100vh - 140px);
     }
 }
 
