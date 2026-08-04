@@ -163,6 +163,15 @@ function updateSlimeRoster() {
             rosterListEl.appendChild(emptyItem);
         }
     }
+
+    // Update --roster-height CSS variable dynamically so upgrades container fits viewport perfectly
+    const rosterPanelEl = document.querySelector('.slime-status-panel');
+    if (rosterPanelEl) {
+        requestAnimationFrame(() => {
+            const height = rosterPanelEl.offsetHeight || 60;
+            document.documentElement.style.setProperty('--roster-height', `${height}px`);
+        });
+    }
 }
 
 /**

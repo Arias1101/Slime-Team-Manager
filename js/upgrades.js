@@ -287,26 +287,39 @@ export function updateUpgradesUI() {
     const upgradeDigestionCostEl = document.getElementById('upgradeDigestionCost');
     const btnUpgradeDigestionEl = document.getElementById('btnUpgradeDigestion');
 
+    // Upgrade 5: Digestion
     if (upgradeDigestionValueEl && upgradeDigestionCostEl && btnUpgradeDigestionEl) {
         const digestionLvl = getDigestionLevel();
         const slimesCount = 1 + digestionLvl;
         const bestRosterCount = (gameState.bestRoster && gameState.bestRoster.length) ? gameState.bestRoster.length : (gameState.slimes ? gameState.slimes.length : 1);
-        const costDigestion = getDigestionUpgradeCost();
 
         upgradeDigestionValueEl.textContent = slimesCount;
-        upgradeDigestionCostEl.textContent = `${costDigestion} 🍖`;
 
-        const canUpgradeDigestion = slimesCount < bestRosterCount;
-        const canAffordDigestion = (gameState.scraps || 0) >= costDigestion && canUpgradeDigestion;
-
-        if (canAffordDigestion) {
-            btnUpgradeDigestionEl.removeAttribute('disabled');
-            btnUpgradeDigestionEl.classList.remove('disabled');
-            btnUpgradeDigestionEl.classList.add('affordable');
-        } else {
+        if (slimesCount >= 60) {
+            upgradeDigestionCostEl.textContent = 'MAX';
             btnUpgradeDigestionEl.setAttribute('disabled', 'disabled');
             btnUpgradeDigestionEl.classList.add('disabled');
             btnUpgradeDigestionEl.classList.remove('affordable');
+        } else if (slimesCount >= bestRosterCount) {
+            const costDigestion = getDigestionUpgradeCost();
+            upgradeDigestionCostEl.textContent = `${costDigestion} 🍖`;
+            btnUpgradeDigestionEl.setAttribute('disabled', 'disabled');
+            btnUpgradeDigestionEl.classList.add('disabled');
+            btnUpgradeDigestionEl.classList.remove('affordable');
+        } else {
+            const costDigestion = getDigestionUpgradeCost();
+            upgradeDigestionCostEl.textContent = `${costDigestion} 🍖`;
+
+            const canAffordDigestion = (gameState.scraps || 0) >= costDigestion;
+            if (canAffordDigestion) {
+                btnUpgradeDigestionEl.removeAttribute('disabled');
+                btnUpgradeDigestionEl.classList.remove('disabled');
+                btnUpgradeDigestionEl.classList.add('affordable');
+            } else {
+                btnUpgradeDigestionEl.setAttribute('disabled', 'disabled');
+                btnUpgradeDigestionEl.classList.add('disabled');
+                btnUpgradeDigestionEl.classList.remove('affordable');
+            }
         }
     }
 
@@ -342,7 +355,7 @@ export function updateUpgradesUI() {
     if (upgradeSelectionCostEl && btnUpgradeSelectionEl) {
         const isBought = gameState.unlockedUpgrades && gameState.unlockedUpgrades.selection;
         if (isBought) {
-            upgradeSelectionCostEl.textContent = 'UNLOCKED';
+            upgradeSelectionCostEl.textContent = 'MAX';
             btnUpgradeSelectionEl.setAttribute('disabled', 'disabled');
             btnUpgradeSelectionEl.classList.add('disabled');
             btnUpgradeSelectionEl.classList.remove('affordable');

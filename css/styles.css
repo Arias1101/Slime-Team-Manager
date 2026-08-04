@@ -341,12 +341,16 @@ body.modal-open {
 .app-container {
     width: 100%;
     max-width: 532px;
+    height: calc(100vh - 72px);
+    max-height: calc(100vh - 72px);
     display: flex;
     flex-direction: column;
-    padding: 10px 16px;
+    padding: 8px 16px 12px 16px;
     gap: 8px;
     position: relative;
-    margin-top: 70px;
+    margin-top: 68px;
+    box-sizing: border-box;
+    overflow: hidden;
 }
 
 /* Slime Status Roster Panel (Always-Visible Top Horizontal Rows: 15 items per line) */
@@ -2810,12 +2814,24 @@ body.modal-open {
     width: 100%;
 }
 
+#tabContentUpgrades.main-tab-content {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
 .main-tab-content.hidden {
     display: none !important;
 }
 
 /* Upgrades Section Card in Tab 2 */
 .upgrades-section {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
     width: 500px;
     max-width: 100%;
     margin: 0 auto;
@@ -2823,14 +2839,16 @@ body.modal-open {
     backdrop-filter: blur(12px);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-lg);
-    padding: 14px;
+    padding: 12px 14px;
     box-shadow: var(--shadow-glow);
     box-sizing: border-box;
+    overflow: hidden;
 }
 
 .upgrades-header {
-    margin-bottom: 12px;
-    padding-bottom: 8px;
+    flex: 0 0 auto;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -2845,8 +2863,8 @@ body.modal-open {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    max-height: calc(100vh - 340px);
-    overflow-y: auto;
+    max-height: calc(100vh - (205px + var(--roster-height, 70px)));
+    overflow-y: auto !important;
     padding-right: 4px;
 }
 
