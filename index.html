@@ -265,6 +265,23 @@
                         </div>
                     </div>
 
+                    <!-- Upgrade: Incubation -->
+                    <div class="upgrade-card" id="upgradeIncubationCard">
+                        <div class="upgrade-info">
+                            <img src="images/upgrades/incubation.png" alt="Incubation" class="upgrade-icon-img"
+                                onerror="this.onerror=null; this.src='images/upgrades/digestion.png';">
+                            <div class="upgrade-details">
+                                <h4 class="upgrade-card-title">Incubation</h4>
+                                <span class="upgrade-text">Generates <strong id="upgradeIncubationValue"
+                                        class="upgrade-value">0</strong> passive Scraps at the end of each wave.</span>
+                            </div>
+                        </div>
+                        <div class="upgrade-action">
+                            <span class="upgrade-cost" id="upgradeIncubationCost">5 🍖</span>
+                            <button id="btnUpgradeIncubation" class="btn-plus" disabled>+</button>
+                        </div>
+                    </div>
+
                     <!-- Upgrade: Ignition -->
                     <div class="upgrade-card" id="upgradeIgnitionCard">
                         <div class="upgrade-info">
@@ -332,6 +349,38 @@
                             <button id="btnUpgradeIntoxication" class="btn-plus" disabled>+</button>
                         </div>
                     </div>
+
+                    <!-- Upgrade: Evolution -->
+                    <div class="upgrade-card" id="upgradeEvolutionCard">
+                        <div class="upgrade-info">
+                            <img src="images/upgrades/evolution.png" alt="Evolution" class="upgrade-icon-img"
+                                onerror="this.onerror=null; this.src='images/upgrades/division.png';">
+                            <div class="upgrade-details">
+                                <h4 class="upgrade-card-title">Evolution</h4>
+                                <span class="upgrade-text">Unlock the ability to reroll a Slime's type.</span>
+                            </div>
+                        </div>
+                        <div class="upgrade-action">
+                            <span class="upgrade-cost" id="upgradeEvolutionCost">10 🍖</span>
+                            <button id="btnUpgradeEvolution" class="btn-plus" disabled>+</button>
+                        </div>
+                    </div>
+
+                    <!-- Upgrade: Exaltation -->
+                    <div class="upgrade-card" id="upgradeExaltationCard">
+                        <div class="upgrade-info">
+                            <img src="images/upgrades/exaltation.png" alt="Exaltation" class="upgrade-icon-img"
+                                onerror="this.onerror=null; this.src='images/upgrades/ascention.png';">
+                            <div class="upgrade-details">
+                                <h4 class="upgrade-card-title">Exaltation</h4>
+                                <span class="upgrade-text">All newly created Slimes are born Ascended.</span>
+                            </div>
+                        </div>
+                        <div class="upgrade-action">
+                            <span class="upgrade-cost" id="upgradeExaltationCost">100 🍖</span>
+                            <button id="btnUpgradeExaltation" class="btn-plus" disabled>+</button>
+                        </div>
+                    </div>
                 </div>
             </section>
         </div>
@@ -342,6 +391,8 @@
     <div id="slimeModalBackdrop" class="modal-backdrop hidden">
         <div id="slimeModal" class="slime-inspector-modal">
             <div class="modal-header-actions">
+                <button id="slimeModalRerollType" class="modal-reroll-btn" title="Reroll Slime Type for 50 Scraps"
+                    style="display: none;">🎲 50 🍖</button>
                 <button id="slimeModalKill" class="modal-kill-btn" title="Sacrifice / Kill Slime">💀</button>
                 <button id="slimeModalClose" class="modal-close-btn" aria-label="Close">&times;</button>
             </div>

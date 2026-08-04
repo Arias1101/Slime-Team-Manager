@@ -279,7 +279,7 @@ export const ENEMY_TYPES = {
     },
 
     // Tests ------------------------------------
-    testtank: {
+    /*testtank: {
         id: 'tank',
         type: 'tank',         // Tank defender
         hp: 99999,
@@ -317,7 +317,7 @@ export const ENEMY_TYPES = {
         loot_value: 1,
         loot_name: 'Test Range Shield',
         loot_effect: { stat: 'hp', value: 1, text: '+1 Max HP' }
-    },
+    },*/
 };
 
 export const PROJECTILE_TYPES = {
@@ -520,6 +520,7 @@ export function startNextWave() {
     activeProjectiles = [];
 
     isWaveActive = true;
+    showBattlefieldWaveBanner(`⚔️ WAVE ${gameState.currentWave}`);
     const waveData = generateWaveComposition(gameState.currentWave);
 
     let spawnIntervalSec = 1.2;
@@ -565,11 +566,13 @@ export function resetGameFull() {
     gameState.maxWaveCleared = 0;
     gameState.armySize = 1;
     gameState.maxSlimesReached = 1;
+    gameState.maxAscendedSlimesReached = 0;
     gameState.slimeDamage = 1;
     gameState.slimeRegen = 0;
     gameState.hasSlimeDied = false;
     gameState.hasUsedDivision = false;
     gameState.digestionLevel = 0;
+    gameState.incubationLevel = 0;
     gameState.ignitionLevel = 0;
     gameState.glaciationLevel = 0;
     gameState.petrificationLevel = 0;
@@ -580,8 +583,13 @@ export function resetGameFull() {
         augmentation: false,
         regen: false,
         digestion: false,
+        incubation: false,
         selectionCard: false,
         selection: false,
+        evolutionCard: false,
+        evolution: false,
+        exaltationCard: false,
+        exaltation: false,
         ignition: false,
         glaciation: false,
         petrification: false,
@@ -667,6 +675,13 @@ function checkWaveCompletion() {
             });
         }
 
+        // Apply Incubation passive bonus scraps & score per wave cleared (+5 per level)
+        if ((gameState.incubationLevel || 0) > 0) {
+            const bonusScraps = (gameState.incubationLevel || 0) * 5;
+            addScraps(bonusScraps);
+            console.log(`[INCUBATION] Granted +${bonusScraps} passive Scraps & Score for clearing wave!`);
+        }
+
         // Sum total scrap value of uncollected ground loots on battlefield
         const uncollectedLootValue = (activeGroundLoots || []).reduce((sum, loot) => sum + (loot.value || 1), 0);
 
@@ -707,13 +722,13 @@ function checkWaveCompletion() {
                 }
             }, 150);
         } else if (isAutoPlay) {
-            console.log('[AUTO PLAY] Waiting 4 seconds before starting next wave...');
+            console.log('[AUTO PLAY] Waiting 10 seconds before starting next wave...');
             if (autoWaveTimeoutId) clearTimeout(autoWaveTimeoutId);
             autoWaveTimeoutId = setTimeout(() => {
                 if (isAutoPlay) {
                     startNextWave();
                 }
-            }, 4000); // 4-second delay before auto-spawning next wave
+            }, 10000); // 10-second delay before auto-spawning next wave
         }
     }
 }

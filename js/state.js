@@ -114,12 +114,14 @@ export const defaultState = {
     currentWave: 1,       // Current wave of adventurer enemies
     maxWaveCleared: 0,    // Highest wave cleared in current run (for unlocking upgrades)
     armySize: 1,          // 1 Base Slime
-    maxSlimesReached: 1,  // Highest count of slimes reached in army
-    slimeDamage: 1,       // Damage dealt by slimes (default 1)
-    slimeRegen: 0,        // HP regenerated per wave (default 0)
+    maxSlimesReached: 1,  // Highest slime count achieved in army
+    maxAscendedSlimesReached: 0, // Highest count of ascended slimes reached at once
+    slimeDamage: 1,       // Bonus attack damage per slime
+    slimeRegen: 0,        // Health regained per wave for all slimes
     hasSlimeDied: false,  // Unlocks Regeneration upgrade when true
     hasUsedDivision: false, // Unlocks Selection upgrade when true
     digestionLevel: 0,    // Level of Digestion upgrade (extra slimes going to eat)
+    incubationLevel: 0,   // Level of Incubation upgrade (passive scraps & score per wave)
     ignitionLevel: 0,     // Level of Ignition upgrade (0-10, 2% Fire Slime spawn chance per level)
     glaciationLevel: 0,   // Level of Glaciation upgrade (0-10, 2% Ice Slime spawn chance per level)
     petrificationLevel: 0,// Level of Petrification upgrade (0-10, 2% Stone Slime spawn chance per level)
@@ -130,8 +132,13 @@ export const defaultState = {
         augmentation: false,
         regen: false,
         digestion: false,
+        incubation: false,
         selectionCard: false,
         selection: false,
+        evolutionCard: false,
+        evolution: false,
+        exaltationCard: false,
+        exaltation: false,
         ignition: false,
         glaciation: false,
         petrification: false,
@@ -215,6 +222,28 @@ export function getNextAvailableSlotIndex() {
 }
 
 /**
+ * Helper to calculate random Slime Type based on elemental upgrade levels
+ */
+export function getRandomSlimeType() {
+    const ignitionChance = (gameState.ignitionLevel || 0) * 0.02;
+    const glaciationChance = (gameState.glaciationLevel || 0) * 0.02;
+    const petrificationChance = (gameState.petrificationLevel || 0) * 0.02;
+    const intoxicationChance = (gameState.intoxicationLevel || 0) * 0.02;
+    const roll = Math.random();
+
+    if (roll < ignitionChance) {
+        return 'fire';
+    } else if (roll < (ignitionChance + glaciationChance)) {
+        return 'ice';
+    } else if (roll < (ignitionChance + glaciationChance + petrificationChance)) {
+        return 'stone';
+    } else if (roll < (ignitionChance + glaciationChance + petrificationChance + intoxicationChance)) {
+        return 'toxic';
+    }
+    return 'base';
+}
+
+/**
  * Purchase Army Size Upgrade: deducts scraps & adds 1 Slime into the lowest vacant slot
  */
 export function buyArmySizeUpgrade() {
@@ -227,24 +256,8 @@ export function buyArmySizeUpgrade() {
     gameState.scraps -= cost;
     if (!gameState.slimes) gameState.slimes = [];
 
-    // Check Ignition (Fire), Glaciation (Ice), Petrification (Stone), and Intoxication (Toxic) spawn chances
-    const ignitionChance = (gameState.ignitionLevel || 0) * 0.02;
-    const glaciationChance = (gameState.glaciationLevel || 0) * 0.02;
-    const petrificationChance = (gameState.petrificationLevel || 0) * 0.02;
-    const intoxicationChance = (gameState.intoxicationLevel || 0) * 0.02;
-    const roll = Math.random();
-
-    let newSlimeType = 'base';
-
-    if (roll < ignitionChance) {
-        newSlimeType = 'fire';
-    } else if (roll < (ignitionChance + glaciationChance)) {
-        newSlimeType = 'ice';
-    } else if (roll < (ignitionChance + glaciationChance + petrificationChance)) {
-        newSlimeType = 'stone';
-    } else if (roll < (ignitionChance + glaciationChance + petrificationChance + intoxicationChance)) {
-        newSlimeType = 'toxic';
-    }
+    const newSlimeType = getRandomSlimeType();
+    const isExalted = gameState.unlockedUpgrades && gameState.unlockedUpgrades.exaltation === true;
 
     const uniqueName = generateUniqueSlimeName();
     const slimeConfig = SLIME_TYPES[newSlimeType] || SLIME_TYPES.base;
@@ -260,7 +273,7 @@ export function buyArmySizeUpgrade() {
         damage: baseDamage,
         critChance: 0,
         regen: 0,
-        ascended: false,
+        ascended: isExalted,
         slotIndex: slotIndex,
         equipment: []
     };
@@ -313,6 +326,9 @@ export function buyAscensionUpgrade() {
         const match = gameState.bestRoster.find(b => (b.name || b.id) === targetKey);
         if (match) match.ascended = true;
     }
+
+    const currentAscended = getAscendedSlimeCount();
+    gameState.maxAscendedSlimesReached = Math.max(gameState.maxAscendedSlimesReached || 0, currentAscended);
 
     saveStateToLocal();
     return true;
@@ -403,6 +419,35 @@ export function buySelectionUpgrade() {
     gameState.scraps -= cost;
     if (!gameState.unlockedUpgrades) gameState.unlockedUpgrades = {};
     gameState.unlockedUpgrades.selection = true;
+
+    saveStateToLocal();
+    return true;
+}
+
+/**
+ * Get current Incubation upgrade level (default 0)
+ */
+export function getIncubationLevel() {
+    return gameState.incubationLevel || 0;
+}
+
+/**
+ * Get current cost for Incubation Upgrade (Exponential: 5 * 1.50^level)
+ */
+export function getIncubationUpgradeCost() {
+    const level = Math.max(0, getIncubationLevel());
+    return Math.floor(5 * Math.pow(1.50, level));
+}
+
+/**
+ * Purchase Incubation Upgrade: deducts scraps & increases passive scraps per wave by 5
+ */
+export function buyIncubationUpgrade() {
+    const cost = getIncubationUpgradeCost();
+    if ((gameState.scraps || 0) < cost) return false;
+
+    gameState.scraps -= cost;
+    gameState.incubationLevel = (gameState.incubationLevel || 0) + 1;
 
     saveStateToLocal();
     return true;
@@ -690,6 +735,81 @@ export function restoreBestRoster() {
 
     gameState.armySize = gameState.slimes.length;
     saveStateToLocal();
+}
+
+/**
+ * Get cost for Exaltation Upgrade (100 Scraps)
+ */
+export function getExaltationUpgradeCost() {
+    return 100;
+}
+
+/**
+ * Purchase Exaltation Upgrade: deducts 100 scraps & makes all newly created slimes ascended
+ */
+export function buyExaltationUpgrade() {
+    const cost = getExaltationUpgradeCost();
+    if ((gameState.scraps || 0) < cost) return false;
+
+    gameState.scraps -= cost;
+    if (!gameState.unlockedUpgrades) gameState.unlockedUpgrades = {};
+    gameState.unlockedUpgrades.exaltation = true;
+
+    saveStateToLocal();
+    return true;
+}
+
+/**
+ * Get cost for Evolution Upgrade (10 Scraps)
+ */
+export function getEvolutionUpgradeCost() {
+    return 10;
+}
+
+/**
+ * Purchase Evolution Upgrade: deducts 10 scraps & unlocks Slime Type Reroll on character sheets
+ */
+export function buyEvolutionUpgrade() {
+    const cost = getEvolutionUpgradeCost();
+    if ((gameState.scraps || 0) < cost) return false;
+
+    gameState.scraps -= cost;
+    if (!gameState.unlockedUpgrades) gameState.unlockedUpgrades = {};
+    gameState.unlockedUpgrades.evolution = true;
+
+    saveStateToLocal();
+    return true;
+}
+
+/**
+ * Reroll type of a specific slime for 50 scraps using elemental spawn probabilities
+ */
+export function rerollSlimeType(targetId) {
+    if (!targetId || (gameState.scraps || 0) < 50) return false;
+    if (!gameState.slimes) return false;
+
+    const slime = gameState.slimes.find(s => (s.id === targetId || s.name === targetId));
+    if (!slime) return false;
+
+    gameState.scraps -= 50;
+
+    const newType = getRandomSlimeType();
+    slime.type = newType;
+
+    const slimeConfig = SLIME_TYPES[newType] || SLIME_TYPES.base;
+    const damageBonus = (gameState.slimeDamage || 1) - 1;
+    slime.damage = (slimeConfig.attackDamage || 1) + damageBonus;
+
+    if (gameState.bestRoster) {
+        const match = gameState.bestRoster.find(b => (b.id === targetId || b.name === targetId));
+        if (match) {
+            match.type = newType;
+            match.damage = slime.damage;
+        }
+    }
+
+    saveStateToLocal();
+    return true;
 }
 
 /**

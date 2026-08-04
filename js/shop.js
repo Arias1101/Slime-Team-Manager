@@ -7,6 +7,7 @@ import { ENEMY_TYPES } from './enemies.js';
 import { SLIME_TYPES } from './state.js';
 import { updateUI } from './ui.js';
 import { startNextWave } from './enemies.js';
+import { setGamePaused } from './engine.js';
 
 let selectedShopSlimeId = null;
 let shopInventory = []; // Array of 3 items: [{ id, enemyKey, name, sprite, effectText, effectsList, price, lootValue, bought }]
@@ -102,6 +103,7 @@ export function openShopModal(currentWaveNum) {
     if (backdropEl) {
         backdropEl.classList.remove('hidden');
         document.body.classList.add('modal-open');
+        setGamePaused(true);
     }
 }
 
@@ -114,6 +116,7 @@ export function closeShopModal() {
         backdropEl.classList.add('hidden');
     }
     document.body.classList.remove('modal-open');
+    setGamePaused(false);
 
     startNextWave();
 }

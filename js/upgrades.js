@@ -18,6 +18,9 @@ import {
     getDigestionLevel,
     getDigestionUpgradeCost,
     buyDigestionUpgrade,
+    getIncubationLevel,
+    getIncubationUpgradeCost,
+    buyIncubationUpgrade,
     getSelectionUpgradeCost,
     buySelectionUpgrade,
     getIgnitionLevel,
@@ -31,7 +34,11 @@ import {
     buyPetrificationUpgrade,
     getIntoxicationLevel,
     getIntoxicationUpgradeCost,
-    buyIntoxicationUpgrade
+    buyIntoxicationUpgrade,
+    getEvolutionUpgradeCost,
+    buyEvolutionUpgrade,
+    getExaltationUpgradeCost,
+    buyExaltationUpgrade
 } from './state.js';
 import { updateUI } from './ui.js';
 
@@ -73,12 +80,22 @@ export function updateUpgradesUI() {
 
     if (totalScore >= 10) gameState.unlockedUpgrades.augmentation = true;
     if (gameState.hasSlimeDied === true) gameState.unlockedUpgrades.regen = true;
-    if ((gameState.maxWaveCleared || 0) >= 7) gameState.unlockedUpgrades.digestion = true;
+    if ((gameState.maxWaveCleared || 0) >= 7) {
+        gameState.unlockedUpgrades.digestion = true;
+        gameState.unlockedUpgrades.incubation = true;
+    }
     if (gameState.hasUsedDivision === true || (gameState.maxSlimesReached || 1) >= 2) gameState.unlockedUpgrades.selectionCard = true;
 
     if ((gameState.maxWaveCleared || 0) >= 10) {
         gameState.unlockedUpgrades.ignition = true;
         gameState.unlockedUpgrades.glaciation = true;
+        gameState.unlockedUpgrades.evolutionCard = true;
+    }
+
+    const currentAscendedCount = getAscendedSlimeCount();
+    gameState.maxAscendedSlimesReached = Math.max(gameState.maxAscendedSlimesReached || 0, currentAscendedCount);
+    if ((gameState.maxAscendedSlimesReached || 0) >= 60) {
+        gameState.unlockedUpgrades.exaltationCard = true;
     }
 
     if ((gameState.maxWaveCleared || 0) >= 20) {
@@ -111,10 +128,28 @@ export function updateUpgradesUI() {
         else upgradeDigestionCardEl.classList.add('hidden');
     }
 
+    const upgradeIncubationCardEl = document.getElementById('upgradeIncubationCard');
+    if (upgradeIncubationCardEl) {
+        if (gameState.unlockedUpgrades.incubation) upgradeIncubationCardEl.classList.remove('hidden');
+        else upgradeIncubationCardEl.classList.add('hidden');
+    }
+
     const upgradeSelectionCardEl = document.getElementById('upgradeSelectionCard');
     if (upgradeSelectionCardEl) {
         if (gameState.unlockedUpgrades.selectionCard) upgradeSelectionCardEl.classList.remove('hidden');
         else upgradeSelectionCardEl.classList.add('hidden');
+    }
+
+    const upgradeEvolutionCardEl = document.getElementById('upgradeEvolutionCard');
+    if (upgradeEvolutionCardEl) {
+        if (gameState.unlockedUpgrades.evolutionCard) upgradeEvolutionCardEl.classList.remove('hidden');
+        else upgradeEvolutionCardEl.classList.add('hidden');
+    }
+
+    const upgradeExaltationCardEl = document.getElementById('upgradeExaltationCard');
+    if (upgradeExaltationCardEl) {
+        if (gameState.unlockedUpgrades.exaltationCard) upgradeExaltationCardEl.classList.remove('hidden');
+        else upgradeExaltationCardEl.classList.add('hidden');
     }
 
     if (upgradeIgnitionCardEl) {
@@ -275,6 +310,31 @@ export function updateUpgradesUI() {
         }
     }
 
+    // Upgrade: Incubation
+    const upgradeIncubationValueEl = document.getElementById('upgradeIncubationValue');
+    const upgradeIncubationCostEl = document.getElementById('upgradeIncubationCost');
+    const btnUpgradeIncubationEl = document.getElementById('btnUpgradeIncubation');
+
+    if (upgradeIncubationValueEl && upgradeIncubationCostEl && btnUpgradeIncubationEl) {
+        const incubationLvl = getIncubationLevel();
+        const passiveIncome = incubationLvl * 5;
+        upgradeIncubationValueEl.textContent = `${passiveIncome}`;
+
+        const costIncub = getIncubationUpgradeCost();
+        upgradeIncubationCostEl.textContent = `${costIncub} 🍖`;
+
+        const canAffordIncub = (gameState.scraps || 0) >= costIncub;
+        if (canAffordIncub) {
+            btnUpgradeIncubationEl.removeAttribute('disabled');
+            btnUpgradeIncubationEl.classList.remove('disabled');
+            btnUpgradeIncubationEl.classList.add('affordable');
+        } else {
+            btnUpgradeIncubationEl.setAttribute('disabled', 'disabled');
+            btnUpgradeIncubationEl.classList.add('disabled');
+            btnUpgradeIncubationEl.classList.remove('affordable');
+        }
+    }
+
     // Upgrade 6: Selection
     const upgradeSelectionCostEl = document.getElementById('upgradeSelectionCost');
     const btnUpgradeSelectionEl = document.getElementById('btnUpgradeSelection');
@@ -299,6 +359,62 @@ export function updateUpgradesUI() {
                 btnUpgradeSelectionEl.setAttribute('disabled', 'disabled');
                 btnUpgradeSelectionEl.classList.add('disabled');
                 btnUpgradeSelectionEl.classList.remove('affordable');
+            }
+        }
+    }
+
+    // Upgrade: Evolution
+    const upgradeEvolutionCostEl = document.getElementById('upgradeEvolutionCost');
+    const btnUpgradeEvolutionEl = document.getElementById('btnUpgradeEvolution');
+
+    if (upgradeEvolutionCostEl && btnUpgradeEvolutionEl) {
+        const isBoughtEvo = gameState.unlockedUpgrades && gameState.unlockedUpgrades.evolution;
+        if (isBoughtEvo) {
+            upgradeEvolutionCostEl.textContent = 'UNLOCKED';
+            btnUpgradeEvolutionEl.setAttribute('disabled', 'disabled');
+            btnUpgradeEvolutionEl.classList.add('disabled');
+            btnUpgradeEvolutionEl.classList.remove('affordable');
+        } else {
+            const costEvo = getEvolutionUpgradeCost();
+            upgradeEvolutionCostEl.textContent = `${costEvo} 🍖`;
+
+            const canAffordEvo = (gameState.scraps || 0) >= costEvo;
+            if (canAffordEvo) {
+                btnUpgradeEvolutionEl.removeAttribute('disabled');
+                btnUpgradeEvolutionEl.classList.remove('disabled');
+                btnUpgradeEvolutionEl.classList.add('affordable');
+            } else {
+                btnUpgradeEvolutionEl.setAttribute('disabled', 'disabled');
+                btnUpgradeEvolutionEl.classList.add('disabled');
+                btnUpgradeEvolutionEl.classList.remove('affordable');
+            }
+        }
+    }
+
+    // Upgrade: Exaltation
+    const upgradeExaltationCostEl = document.getElementById('upgradeExaltationCost');
+    const btnUpgradeExaltationEl = document.getElementById('btnUpgradeExaltation');
+
+    if (upgradeExaltationCostEl && btnUpgradeExaltationEl) {
+        const isBoughtExalt = gameState.unlockedUpgrades && gameState.unlockedUpgrades.exaltation;
+        if (isBoughtExalt) {
+            upgradeExaltationCostEl.textContent = 'UNLOCKED';
+            btnUpgradeExaltationEl.setAttribute('disabled', 'disabled');
+            btnUpgradeExaltationEl.classList.add('disabled');
+            btnUpgradeExaltationEl.classList.remove('affordable');
+        } else {
+            const costExalt = getExaltationUpgradeCost();
+            upgradeExaltationCostEl.textContent = `${costExalt} 🍖`;
+
+            const canAffordExalt = (gameState.scraps || 0) >= costExalt;
+            if (canAffordExalt) {
+                btnUpgradeExaltationEl.removeAttribute('disabled');
+                btnUpgradeExaltationEl.classList.remove('disabled');
+                btnUpgradeExaltationEl.classList.add('affordable');
+            } else {
+                btnUpgradeExaltationEl.setAttribute('disabled', 'disabled');
+                btnUpgradeExaltationEl.classList.add('disabled');
+                btnUpgradeExaltationEl.classList.remove('affordable');
             }
         }
     }
@@ -458,10 +574,40 @@ export function initUpgradesModule() {
         });
     }
 
+    const btnUpgradeIncubationEl = document.getElementById('btnUpgradeIncubation');
+    if (btnUpgradeIncubationEl) {
+        btnUpgradeIncubationEl.addEventListener('click', () => {
+            const success = buyIncubationUpgrade();
+            if (success) {
+                updateUI();
+            }
+        });
+    }
+
     const btnUpgradeSelectionEl = document.getElementById('btnUpgradeSelection');
     if (btnUpgradeSelectionEl) {
         btnUpgradeSelectionEl.addEventListener('click', () => {
             const success = buySelectionUpgrade();
+            if (success) {
+                updateUI();
+            }
+        });
+    }
+
+    const btnUpgradeEvolutionEl = document.getElementById('btnUpgradeEvolution');
+    if (btnUpgradeEvolutionEl) {
+        btnUpgradeEvolutionEl.addEventListener('click', () => {
+            const success = buyEvolutionUpgrade();
+            if (success) {
+                updateUI();
+            }
+        });
+    }
+
+    const btnUpgradeExaltationEl = document.getElementById('btnUpgradeExaltation');
+    if (btnUpgradeExaltationEl) {
+        btnUpgradeExaltationEl.addEventListener('click', () => {
+            const success = buyExaltationUpgrade();
             if (success) {
                 updateUI();
             }

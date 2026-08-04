@@ -62,21 +62,25 @@ export function showFloatingDamageNumber(x, y, damageVal, type = 'enemy-dmg') {
  * Display a centered battlefield banner message (e.g. "🎉 WAVE 10 CLEARED!")
  */
 export function showBattlefieldWaveBanner(text) {
-    const overlay = document.getElementById('battlefieldOverlay') || document.getElementById('gameScreen');
-    if (!overlay) return;
+    const cardEl = document.querySelector('.battlefield-card') || document.querySelector('.battlefield-overlay') || document.getElementById('gameScreen');
+    if (!cardEl) return;
+
+    // Remove any existing active banner to prevent overlap
+    const existing = cardEl.querySelector('.battlefield-congratulations-banner');
+    if (existing) existing.remove();
 
     const bannerEl = document.createElement('div');
     bannerEl.className = 'battlefield-congratulations-banner';
     bannerEl.innerHTML = text;
 
-    overlay.appendChild(bannerEl);
+    cardEl.appendChild(bannerEl);
 
     setTimeout(() => {
         if (bannerEl && bannerEl.parentNode) {
-            bannerEl.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            bannerEl.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
             bannerEl.style.opacity = '0';
-            bannerEl.style.transform = 'translate(-50%, -50%) scale(0.8)';
-            setTimeout(() => bannerEl.remove(), 300);
+            bannerEl.style.transform = 'translate(-50%, -50%) scale(0.85)';
+            setTimeout(() => bannerEl.remove(), 250);
         }
     }, 1800);
 }

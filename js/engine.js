@@ -7,6 +7,19 @@ import { saveCloudSave } from './auth.js';
 import { updateEnemies } from './enemies.js';
 
 let lastTickTime = Date.now();
+export let isGamePaused = false;
+
+export function setGamePaused(paused) {
+    isGamePaused = paused;
+    const battlefieldCard = document.querySelector('.battlefield-card');
+    if (battlefieldCard) {
+        if (paused) {
+            battlefieldCard.classList.add('game-paused');
+        } else {
+            battlefieldCard.classList.remove('game-paused');
+        }
+    }
+}
 
 export function startEngine(onTick) {
     lastTickTime = Date.now();
@@ -16,6 +29,10 @@ export function startEngine(onTick) {
         const now = Date.now();
         const deltaSeconds = (now - lastTickTime) / 1000;
         lastTickTime = now;
+
+        if (isGamePaused) {
+            return;
+        }
 
         // Update active enemy AI state machines, movement & attacks
         updateEnemies(deltaSeconds);

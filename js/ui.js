@@ -2,9 +2,10 @@
  * User Interface & Authentication Screen Renderer
  */
 
-import { gameState, SLIME_TYPES, killSlime, syncSlimesArray } from './state.js';
+import { gameState, SLIME_TYPES, killSlime, syncSlimesArray, rerollSlimeType } from './state.js';
 import { updateUpgradesUI } from './upgrades.js';
 import { activeGroundLoots } from './enemies.js';
+import { setGamePaused } from './engine.js';
 
 const scrapsCountEl = document.getElementById('scrapsCount');
 const scoreCountEl = document.getElementById('scoreCount');
@@ -665,6 +666,23 @@ export function openSlimeInspectorModal(slime) {
         }
     }
 
+    const rerollBtnEl = document.getElementById('slimeModalRerollType');
+    if (rerollBtnEl) {
+        if (gameState.unlockedUpgrades && gameState.unlockedUpgrades.evolution) {
+            rerollBtnEl.style.display = 'inline-flex';
+            const canAffordReroll = (gameState.scraps || 0) >= 50;
+            if (canAffordReroll) {
+                rerollBtnEl.removeAttribute('disabled');
+                rerollBtnEl.classList.remove('disabled');
+            } else {
+                rerollBtnEl.setAttribute('disabled', 'disabled');
+                rerollBtnEl.classList.add('disabled');
+            }
+        } else {
+            rerollBtnEl.style.display = 'none';
+        }
+    }
+
     if (killBtnEl) {
         if (gameState.unlockedUpgrades && gameState.unlockedUpgrades.selection) {
             killBtnEl.style.display = '';
@@ -675,12 +693,14 @@ export function openSlimeInspectorModal(slime) {
 
     backdropEl.classList.remove('hidden');
     document.body.classList.add('modal-open');
+    setGamePaused(true);
 }
 
 export function closeSlimeInspectorModal() {
     const backdropEl = document.getElementById('slimeModalBackdrop');
     if (backdropEl) backdropEl.classList.add('hidden');
     document.body.classList.remove('modal-open');
+    setGamePaused(false);
 }
 
 /**
@@ -689,6 +709,7 @@ export function closeSlimeInspectorModal() {
 export function initSlimeModalListeners() {
     const backdropEl = document.getElementById('slimeModalBackdrop');
     const closeBtnEl = document.getElementById('slimeModalClose');
+    const rerollBtnEl = document.getElementById('slimeModalRerollType');
     const killBtnEl = document.getElementById('slimeModalKill');
     const confirmBackdropEl = document.getElementById('slimeKillConfirmBackdrop');
     const confirmTextEl = document.getElementById('slimeKillConfirmText');
@@ -699,6 +720,51 @@ export function initSlimeModalListeners() {
         closeBtnEl.addEventListener('click', (e) => {
             e.stopPropagation();
             closeSlimeInspectorModal();
+        });
+    }
+
+    if (rerollBtnEl) {
+        rerollBtnEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!currentInspectedSlime) return;
+            const targetId = currentInspectedSlime.id || currentInspectedSlime.name;
+            if ((gameState.scraps || 0) < 50) return;
+
+            // 1. Highlight button yellow/orange & disable button during animation
+            rerollBtnEl.classList.add('is-active');
+            rerollBtnEl.setAttribute('disabled', 'disabled');
+
+            // 2. Play 1s vibrating dying1.png portrait animation
+            const portraitEl = document.getElementById('slimeModalPortrait');
+            const currentSlimeType = currentInspectedSlime.type || 'base';
+            const currentConfig = SLIME_TYPES[currentSlimeType] || SLIME_TYPES.base;
+
+            if (portraitEl) {
+                portraitEl.src = `${currentConfig.folder}/dying1.png`;
+                portraitEl.classList.add('slime-dying-vibrate');
+            }
+
+            // 3. After 1.0 second, execute reroll, update modal & UI, and restore portrait state
+            setTimeout(() => {
+                rerollBtnEl.classList.remove('is-active');
+
+                const success = rerollSlimeType(targetId);
+
+                if (portraitEl) {
+                    portraitEl.classList.remove('slime-dying-vibrate');
+                }
+
+                if (success) {
+                    const updatedSlime = gameState.slimes ? gameState.slimes.find(s => (s.id === targetId || s.name === targetId)) : currentInspectedSlime;
+                    openSlimeInspectorModal(updatedSlime || currentInspectedSlime);
+                    updateUI();
+                } else {
+                    if (portraitEl) {
+                        portraitEl.src = `${currentConfig.folder}/${currentConfig.prefix}1.png`;
+                    }
+                    openSlimeInspectorModal(currentInspectedSlime);
+                }
+            }, 1000);
         });
     }
 
