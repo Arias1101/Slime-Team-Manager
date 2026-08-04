@@ -71,7 +71,12 @@ const SLIME_NAME_POOL = [
     'The Rock', 'Ice Cube', 'Fire Man', 'The Dude',
     'Pelavius', 'Brutus Maximus', 'Kebab', 'Bruscetta', 'La Porta',
     'Small Brain', 'Big Brain', 'Knuckles the Guide',
-    'Michael', 'Obama', 'GooBall', 'Slay Queen', 'Jackson Five', 'Taxi Joe'
+    'Michael', 'Obama', 'GooBall', 'Slay Queen', 'Jackson Five', 'Taxi Joe',
+    'The Chosen One', 'Bozu', 'Sunny', 'Number Two', 'Big Mac', 'Chungus', 'Big Chungus',
+    'Snorlax the Brave', 'Jean-Michel Apathique', 'Jupiter', 'Méluche', 'Marine', 'Le Barde est là',
+    'Chéa Rome', 'They/Them', 'She/Her', 'He/Him', 'Your Phobia', 'He HIS the Danger', 'Chicken Nugget',
+    'Cheese Maki', 'Chef Sushi', 'KonNiChonHa', 'Baguette', 'Dragon Roll Guy',
+    'ARE YOU OK ?', 'Bello Bello', 'Bella Dimende', 'Poltrone Sofa', 'Boudha', 'Jesus II'
 ];
 
 /**
@@ -167,23 +172,23 @@ export function syncSlimesArray() {
         return;
     }
     const usedSlots = new Set();
-        gameState.slimes.forEach((s) => {
-            if (!s.name || s.name === 'Base Slime' || s.name === 'Fire Slime' || s.name === 'Ice Slime' || s.name === 'Stone Slime' || s.name === 'Toxic Slime') {
-                s.name = generateUniqueSlimeName();
-            }
-            if (!s.id) s.id = s.name;
-            const slimeConfig = SLIME_TYPES[s.type || 'base'] || SLIME_TYPES.base;
-            if (!s.damage) s.damage = (slimeConfig.attackDamage || 1) + ((gameState.slimeDamage || 1) - 1);
-            if (s.critChance === undefined) s.critChance = 0;
-            if (s.regen === undefined) s.regen = 0;
+    gameState.slimes.forEach((s) => {
+        if (!s.name || s.name === 'Base Slime' || s.name === 'Fire Slime' || s.name === 'Ice Slime' || s.name === 'Stone Slime' || s.name === 'Toxic Slime') {
+            s.name = generateUniqueSlimeName();
+        }
+        if (!s.id) s.id = s.name;
+        const slimeConfig = SLIME_TYPES[s.type || 'base'] || SLIME_TYPES.base;
+        if (!s.damage) s.damage = (slimeConfig.attackDamage || 1) + ((gameState.slimeDamage || 1) - 1);
+        if (s.critChance === undefined) s.critChance = 0;
+        if (s.regen === undefined) s.regen = 0;
 
-            if (s.slotIndex === undefined || s.slotIndex === null || usedSlots.has(s.slotIndex)) {
-                let nextSlot = 0;
-                while (usedSlots.has(nextSlot)) nextSlot++;
-                s.slotIndex = nextSlot;
-            }
-            usedSlots.add(s.slotIndex);
-        });
+        if (s.slotIndex === undefined || s.slotIndex === null || usedSlots.has(s.slotIndex)) {
+            let nextSlot = 0;
+            while (usedSlots.has(nextSlot)) nextSlot++;
+            s.slotIndex = nextSlot;
+        }
+        usedSlots.add(s.slotIndex);
+    });
     gameState.armySize = gameState.slimes.length;
 }
 
