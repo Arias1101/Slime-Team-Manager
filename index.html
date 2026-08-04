@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Slime Team Manager</title>
-    <meta name="description" content="Manage a slime army, fight waves of adventurers, and grow your horde!">
+    <meta name="description" content="Manage your own Slime Army and make them fight for their life !">
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -44,6 +44,10 @@
                                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
                         </svg>
                         <span>Sign in with Google to Play</span>
+                    </button>
+
+                    <button id="btnPlayAnonymous" class="auth-anonymous-btn">
+                        Or play anonymously (Local save only)
                     </button>
 
                     <div id="firebaseNotice" class="firebase-notice hidden">
@@ -312,8 +316,8 @@
                         </div>
                     </div>
 
-                    <!-- Upgrade: Intoxication (Hidden until further notice) -->
-                    <div class="upgrade-card" id="upgradeIntoxicationCard" style="display: none;">
+                    <!-- Upgrade: Intoxication -->
+                    <div class="upgrade-card" id="upgradeIntoxicationCard">
                         <div class="upgrade-info">
                             <img src="images/upgrades/Intoxication.png" alt="Intoxication" class="upgrade-icon-img"
                                 onerror="this.onerror=null; this.src='images/upgrades/division.png';">

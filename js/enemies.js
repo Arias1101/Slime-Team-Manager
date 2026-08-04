@@ -17,7 +17,7 @@ export const ENEMY_TYPES = {
         maxHp: 200,
         damage: 5,            // Damage per projectile
         attackSpeed: 1,     // attacks per second
-        moveSpeed: 1,
+        moveSpeed: 2,
         targetX: 380,         // 400=right border, 100 = Slime army
         loot_value: 100,
         loot_name: 'Staff of Frostfire',
@@ -42,11 +42,11 @@ export const ENEMY_TYPES = {
         id: 'alchemist',
         type: 'ranged',
         projectile: 'flask',
-        hp: 200,
-        maxHp: 200,
+        hp: 500,
+        maxHp: 500,
         damage: 2,
-        attackSpeed: 1,
-        moveSpeed: 1,
+        attackSpeed: 0.8,
+        moveSpeed: 4,
         targetX: 300,
         loot_value: 50,
         loot_name: 'Alchemical Flask',
@@ -600,7 +600,7 @@ export function resetGameFull() {
     // 2. Reset ascended auto-attack timers
     initAscendedAutoAttacks();
 
-    // 3. Clear ground loots, active enemies & projectiles
+    // 3. Clear ground loots, active enemies & projectiles from DOM & memory state
     activeGroundLoots.forEach(l => {
         if (l.el) l.el.remove();
     });
@@ -615,6 +615,15 @@ export function resetGameFull() {
         if (p.el) p.el.remove();
     });
     activeProjectiles = [];
+
+    const overlay = document.querySelector('.battlefield-overlay');
+    if (overlay) {
+        const leftoverLoots = overlay.querySelectorAll('.ground-loot-item');
+        leftoverLoots.forEach(el => el.remove());
+    }
+
+    const enemiesContainerEl = document.getElementById('enemiesContainer');
+    if (enemiesContainerEl) enemiesContainerEl.innerHTML = '';
 
     // 4. Force DOM army container to clear and re-render 1 Base Slime
     const armyContainerEl = document.getElementById('armyContainer');

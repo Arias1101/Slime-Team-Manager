@@ -125,6 +125,26 @@ body.modal-open {
     width: 100%;
 }
 
+.auth-anonymous-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    transition: all 0.2s ease;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    margin-top: -4px;
+}
+
+.auth-anonymous-btn:hover {
+    color: #e2e8f0;
+    text-decoration-color: #10b981;
+}
+
 .firebase-notice {
     background: rgba(245, 158, 11, 0.1);
     border: 1px solid rgba(245, 158, 11, 0.3);

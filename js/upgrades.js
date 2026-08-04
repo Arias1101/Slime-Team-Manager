@@ -81,6 +81,10 @@ export function updateUpgradesUI() {
         gameState.unlockedUpgrades.glaciation = true;
     }
 
+    if ((gameState.maxWaveCleared || 0) >= 20) {
+        gameState.unlockedUpgrades.intoxication = true;
+    }
+
     // Render upgrade card visibility based on permanent unlock flags
     if (upgradeArmySizeCardEl) {
         if (gameState.unlockedUpgrades.division) upgradeArmySizeCardEl.classList.remove('hidden');
@@ -121,6 +125,12 @@ export function updateUpgradesUI() {
     if (upgradeGlaciationCardEl) {
         if (gameState.unlockedUpgrades.glaciation) upgradeGlaciationCardEl.classList.remove('hidden');
         else upgradeGlaciationCardEl.classList.add('hidden');
+    }
+
+    const upgradeIntoxicationCardEl = document.getElementById('upgradeIntoxicationCard');
+    if (upgradeIntoxicationCardEl) {
+        if (gameState.unlockedUpgrades.intoxication) upgradeIntoxicationCardEl.classList.remove('hidden');
+        else upgradeIntoxicationCardEl.classList.add('hidden');
     }
 
     // Upgrades Section Visibility (Appears under main window if at least 1 upgrade is permanently unlocked)
@@ -361,9 +371,37 @@ export function updateUpgradesUI() {
     const upgradePetrificationCardEl = document.getElementById('upgradePetrificationCard');
     if (upgradePetrificationCardEl) upgradePetrificationCardEl.style.display = 'none';
 
-    // Upgrade 10: Intoxication (Hidden until further notice)
-    const upgradeIntoxicationCardEl = document.getElementById('upgradeIntoxicationCard');
-    if (upgradeIntoxicationCardEl) upgradeIntoxicationCardEl.style.display = 'none';
+    // Upgrade 10: Intoxication
+    const upgradeIntoxicationValueEl = document.getElementById('upgradeIntoxicationValue');
+    const upgradeIntoxicationCostEl = document.getElementById('upgradeIntoxicationCost');
+    const btnUpgradeIntoxicationEl = document.getElementById('btnUpgradeIntoxication');
+
+    if (upgradeIntoxicationValueEl && upgradeIntoxicationCostEl && btnUpgradeIntoxicationEl) {
+        const intoxicationLvl = getIntoxicationLevel();
+        const intoxicationChancePct = intoxicationLvl * 2;
+        upgradeIntoxicationValueEl.textContent = `${intoxicationChancePct}%`;
+
+        if (intoxicationLvl >= 10) {
+            upgradeIntoxicationCostEl.textContent = 'MAX';
+            btnUpgradeIntoxicationEl.setAttribute('disabled', 'disabled');
+            btnUpgradeIntoxicationEl.classList.add('disabled');
+            btnUpgradeIntoxicationEl.classList.remove('affordable');
+        } else {
+            const cost8 = getIntoxicationUpgradeCost();
+            upgradeIntoxicationCostEl.textContent = `${cost8} 🍖`;
+
+            const canAfford8 = (gameState.scraps || 0) >= cost8;
+            if (canAfford8) {
+                btnUpgradeIntoxicationEl.removeAttribute('disabled');
+                btnUpgradeIntoxicationEl.classList.remove('disabled');
+                btnUpgradeIntoxicationEl.classList.add('affordable');
+            } else {
+                btnUpgradeIntoxicationEl.setAttribute('disabled', 'disabled');
+                btnUpgradeIntoxicationEl.classList.add('disabled');
+                btnUpgradeIntoxicationEl.classList.remove('affordable');
+            }
+        }
+    }
 }
 
 /**

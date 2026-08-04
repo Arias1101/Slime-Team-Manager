@@ -44,6 +44,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnNextWave = document.getElementById('btnNextWave');
     const battlefieldCard = document.querySelector('.battlefield-card');
 
+    const btnPlayAnonymous = document.getElementById('btnPlayAnonymous');
+
     if (gateBtnLogin) {
         gateBtnLogin.addEventListener('click', async () => {
             const success = await loginWithGoogle();
@@ -53,6 +55,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     if (btnLogout) btnLogout.addEventListener('click', logoutUser);
+
+    if (btnPlayAnonymous) {
+        btnPlayAnonymous.addEventListener('click', () => {
+            setAuthScreenState(true, { displayName: 'Anonymous Player', photoURL: null });
+            startGameWithSkyDrop();
+        });
+    }
 
     if (btnDemoMode) {
         btnDemoMode.addEventListener('click', () => {
