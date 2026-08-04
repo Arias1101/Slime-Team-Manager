@@ -6,6 +6,7 @@ import { gameState, addScraps, saveStateToLocal, saveWaveSnapshot, restoreBestRo
 import { healAllSlimes, initAscendedAutoAttacks, clearAscendedAutoAttacks, showFloatingDamageNumber, showFloatingStatusTextAt, showBattlefieldWaveBanner } from './slimes.js';
 import { updateUI, playSlimeRainRespawnAnimation } from './ui.js';
 import { openShopModal } from './shop.js';
+import { isGamePaused } from './engine.js';
 
 export const ENEMY_TYPES = {
     // Tier X - Bosses ------------------------
@@ -725,8 +726,20 @@ function checkWaveCompletion() {
             console.log('[AUTO PLAY] Waiting 10 seconds before starting next wave...');
             if (autoWaveTimeoutId) clearTimeout(autoWaveTimeoutId);
             autoWaveTimeoutId = setTimeout(() => {
-                if (isAutoPlay) {
-                    startNextWave();
+                autoWaveTimeoutId = null;
+                if (isAutoPlay && !isWaveActive) {
+                    const isPaused = typeof isGamePaused !== 'undefined' ? isGamePaused : false;
+                    if (isPaused) {
+                        const checkUnpauseInterval = setInterval(() => {
+                            const stillPaused = typeof isGamePaused !== 'undefined' ? isGamePaused : false;
+                            if (!stillPaused && isAutoPlay && !isWaveActive) {
+                                clearInterval(checkUnpauseInterval);
+                                startNextWave();
+                            }
+                        }, 500);
+                    } else {
+                        startNextWave();
+                    }
                 }
             }, 10000); // 10-second delay before auto-spawning next wave
         }
@@ -814,6 +827,11 @@ export function spawnEnemy(typeId = 'beggar', hpMultiplier = 1.0) {
     const baseHp = def.hp || 2;
     const scaledHp = Math.max(1, Math.round(baseHp * hpMultiplier));
 
+    // Add random stop position offset between -25 and +25 to reduce overlapping
+    const baseTargetX = def.targetX !== undefined ? def.targetX : 300;
+    const randomOffset = (Math.random() * 50) - 25;
+    const finalTargetX = Math.round(baseTargetX + randomOffset);
+
     const enemyInstance = {
         id: `enemy_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
         typeId: enemyIdKey,
@@ -823,7 +841,7 @@ export function spawnEnemy(typeId = 'beggar', hpMultiplier = 1.0) {
         x: 520,
         y: 120 + (Math.random() * 30 - 15),
         speed: def.moveSpeed * 25,
-        targetX: def.targetX,
+        targetX: finalTargetX,
         hp: scaledHp,
         maxHp: scaledHp,
         damage: def.damage,
@@ -895,6 +913,20 @@ function renderNewEnemyDOM(enemy) {
  * Update Enemy Positions, Attacks & AI State Machine Loop
  */
 export function updateEnemies(deltaSeconds) {
+    // Safety auto-recovery: If wave is active with 0 enemies and no pending timeouts for over 3 seconds, recover flow!
+    if (isAutoPlay && isWaveActive && activeEnemies.length === 0 && !autoWaveTimeoutId && !isRewinding && !isGamePaused) {
+        if (!window._emptyWaveSafetyTicks) window._emptyWaveSafetyTicks = 0;
+        window._emptyWaveSafetyTicks++;
+        if (window._emptyWaveSafetyTicks > 90) { // ~3 seconds at 30 FPS
+            window._emptyWaveSafetyTicks = 0;
+            console.warn('[SAFETY RECOVERY] Active wave stuck with 0 enemies. Restarting next wave...');
+            isWaveActive = false;
+            startNextWave();
+        }
+    } else {
+        window._emptyWaveSafetyTicks = 0;
+    }
+
     for (let i = activeEnemies.length - 1; i >= 0; i--) {
         const enemy = activeEnemies[i];
 
@@ -1430,20 +1462,18 @@ export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg') 
                     }
                 });
 
-                if (remainingAlive.length > 0) {
-                    updateUI();
-                }
+                // Instantly refresh roster sidebar so dead slime slot displays 💀 RIP icon immediately
+                updateUI();
             }
         } else if (slime.hp <= 0) {
             gameState.slimes = gameState.slimes.filter(s => s.id !== slime.id);
             gameState.armySize = gameState.slimes.length;
             saveStateToLocal();
+            updateUI();
 
             const remainingAlive = gameState.slimes.filter(s => s.hp > 0);
             if (remainingAlive.length === 0) {
                 rewindWaveState();
-            } else {
-                updateUI();
             }
         }
     }

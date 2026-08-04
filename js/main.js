@@ -5,7 +5,7 @@
 import { loadStateFromLocal } from './state.js';
 import { initAuth, loginWithGoogle, logoutUser } from './auth.js';
 import { startEngine } from './engine.js';
-import { updateUI, setAuthScreenState, showFirebaseNotice, playSlimeRainRespawnAnimation, initSlimeModalListeners } from './ui.js';
+import { updateUI, setAuthScreenState, showFirebaseNotice, playSlimeRainRespawnAnimation, initSlimeModalListeners, initMainTabsListeners } from './ui.js';
 import { initEnemiesModule, startNextWave, setAutoPlay, resetGameFull, rewindWaveState } from './enemies.js';
 import { triggerRandomSlimeAttack, triggerSlimeEatLoot, initAscendedAutoAttacks } from './slimes.js';
 import { initUpgradesModule } from './upgrades.js';
@@ -15,12 +15,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. Load Local State
     loadStateFromLocal();
 
-    // 2. Initialize Enemies, Upgrades, Shop, Ascended Auto-Attacks & Modal Listeners
+    // 2. Initialize Enemies, Upgrades, Shop, Ascended Auto-Attacks, Main Tabs & Modal Listeners
     initEnemiesModule();
     initUpgradesModule();
     initShopModule();
     initAscendedAutoAttacks();
     initSlimeModalListeners();
+    initMainTabsListeners();
 
     let hasStartedGameAnimation = false;
 

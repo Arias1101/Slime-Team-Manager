@@ -518,6 +518,22 @@ export function updateUpgradesUI() {
             }
         }
     }
+
+    // Update Upgrades Tab button label with affordable count badge: "🧪 Upgrades (X)" or "🧪 Upgrades"
+    // Only count visible, unlocked upgrade cards!
+    const allAffordableButtons = document.querySelectorAll('#upgradesContainer .btn-plus.affordable');
+    let affordableCount = 0;
+    allAffordableButtons.forEach(btn => {
+        const card = btn.closest('.upgrade-card');
+        if (card && card.style.display !== 'none' && !card.classList.contains('hidden')) {
+            affordableCount++;
+        }
+    });
+
+    const tabBtnUpgradesEl = document.getElementById('tabBtnUpgrades');
+    if (tabBtnUpgradesEl) {
+        tabBtnUpgradesEl.textContent = affordableCount > 0 ? `🧪 Upgrades (${affordableCount})` : `🧪 Upgrades`;
+    }
 }
 
 /**

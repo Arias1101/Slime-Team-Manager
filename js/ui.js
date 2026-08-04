@@ -828,3 +828,41 @@ export function initSlimeModalListeners() {
         }
     });
 }
+
+/**
+ * Initialize Main Navigation Tab Listeners (Battlefield vs Upgrades)
+ */
+export function initMainTabsListeners() {
+    const btnBattlefield = document.getElementById('tabBtnBattlefield');
+    const btnUpgrades = document.getElementById('tabBtnUpgrades');
+    const contentBattlefield = document.getElementById('tabContentBattlefield');
+    const contentUpgrades = document.getElementById('tabContentUpgrades');
+
+    const switchTab = (activeTab) => {
+        if (activeTab === 'upgrades') {
+            if (btnUpgrades) btnUpgrades.classList.add('active');
+            if (btnBattlefield) btnBattlefield.classList.remove('active');
+            if (contentUpgrades) contentUpgrades.classList.remove('hidden');
+            if (contentBattlefield) contentBattlefield.classList.add('hidden');
+
+            // Pause game while on Upgrades tab (just like Slime Sheet!)
+            setGamePaused(true);
+            updateUpgradesUI();
+        } else {
+            if (btnBattlefield) btnBattlefield.classList.add('active');
+            if (btnUpgrades) btnUpgrades.classList.remove('active');
+            if (contentBattlefield) contentBattlefield.classList.remove('hidden');
+            if (contentUpgrades) contentUpgrades.classList.add('hidden');
+
+            // Unpause game when returning to Battlefield tab
+            setGamePaused(false);
+        }
+    };
+
+    if (btnBattlefield) {
+        btnBattlefield.addEventListener('click', () => switchTab('battlefield'));
+    }
+    if (btnUpgrades) {
+        btnUpgrades.addEventListener('click', () => switchTab('upgrades'));
+    }
+}

@@ -256,31 +256,64 @@ export function buyArmySizeUpgrade() {
     gameState.scraps -= cost;
     if (!gameState.slimes) gameState.slimes = [];
 
-    const newSlimeType = getRandomSlimeType();
-    const isExalted = gameState.unlockedUpgrades && gameState.unlockedUpgrades.exaltation === true;
+    // Check for fallen (dead) slimes in bestRoster that need revival
+    const activeIds = new Set(gameState.slimes.map(s => s.id || s.name));
+    const fallenSlimes = (gameState.bestRoster || [])
+        .filter(b => !activeIds.has(b.id || b.name))
+        .sort((a, b) => (a.slotIndex || 0) - (b.slotIndex || 0));
 
-    const uniqueName = generateUniqueSlimeName();
-    const slimeConfig = SLIME_TYPES[newSlimeType] || SLIME_TYPES.base;
-    const baseDamage = (slimeConfig.attackDamage || 1) + ((gameState.slimeDamage || 1) - 1);
-    const slotIndex = getNextAvailableSlotIndex();
+    if (fallenSlimes.length > 0) {
+        // REVIVAL: Revive the fallen slime, preserving all its stats, slotIndex & equipment!
+        const template = fallenSlimes[0];
+        const revivedSlime = {
+            id: template.id || template.name,
+            name: template.name || template.id,
+            type: template.type || 'base',
+            hp: template.maxHp || 10,
+            maxHp: template.maxHp || 10,
+            damage: template.damage || 1,
+            critChance: template.critChance || 0,
+            regen: template.regen || 0,
+            ascended: template.ascended || false,
+            slotIndex: template.slotIndex !== undefined ? template.slotIndex : getNextAvailableSlotIndex(),
+            equipment: Array.isArray(template.equipment) ? JSON.parse(JSON.stringify(template.equipment)) : []
+        };
 
-    const newSlime = {
-        id: uniqueName,
-        name: uniqueName,
-        type: newSlimeType,
-        hp: 10,
-        maxHp: 10,
-        damage: baseDamage,
-        critChance: 0,
-        regen: 0,
-        ascended: isExalted,
-        slotIndex: slotIndex,
-        equipment: []
-    };
+        // If Exaltation upgrade is unlocked, ensure revived slime becomes Ascended
+        if (gameState.unlockedUpgrades && gameState.unlockedUpgrades.exaltation === true) {
+            revivedSlime.ascended = true;
+        }
 
-    gameState.slimes.push(newSlime);
+        gameState.slimes.push(revivedSlime);
+        console.log(`[DIVISION REVIVAL] Revived fallen Slime "${revivedSlime.name}" with ${revivedSlime.equipment.length} equipment!`);
+    } else {
+        // NEW SLIME CREATION: No dead slimes to revive -> create a new Slime normally
+        const newSlimeType = getRandomSlimeType();
+        const isExalted = gameState.unlockedUpgrades && gameState.unlockedUpgrades.exaltation === true;
+
+        const uniqueName = generateUniqueSlimeName();
+        const slimeConfig = SLIME_TYPES[newSlimeType] || SLIME_TYPES.base;
+        const baseDamage = (slimeConfig.attackDamage || 1) + ((gameState.slimeDamage || 1) - 1);
+        const slotIndex = getNextAvailableSlotIndex();
+
+        const newSlime = {
+            id: uniqueName,
+            name: uniqueName,
+            type: newSlimeType,
+            hp: 10,
+            maxHp: 10,
+            damage: baseDamage,
+            critChance: 0,
+            regen: 0,
+            ascended: isExalted,
+            slotIndex: slotIndex,
+            equipment: []
+        };
+
+        gameState.slimes.push(newSlime);
+    }
+
     updateBestRoster();
-
     gameState.armySize = gameState.slimes.length;
     gameState.maxSlimesReached = Math.max(gameState.maxSlimesReached || 1, gameState.bestRoster.length);
     gameState.hasUsedDivision = true;
