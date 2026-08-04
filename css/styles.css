@@ -3017,7 +3017,7 @@ body.modal-open {
 
 @media (min-width: 901px) {
     .app-container {
-        max-width: 960px;
+        max-width: 1100px;
         margin-top: 56px;
         height: calc(100vh - 58px);
         max-height: calc(100vh - 58px);
@@ -3030,7 +3030,7 @@ body.modal-open {
 
     .responsive-layout-grid {
         display: grid;
-        grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr);
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
         gap: 16px;
         align-items: stretch;
     }
@@ -3066,7 +3066,11 @@ body.modal-open {
     }
 
     .upgrades-container {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
         max-height: calc(100vh - 140px);
+        overflow-x: hidden;
     }
 }
 
@@ -3095,7 +3099,7 @@ body.modal-open {
     background: rgba(18, 19, 22, 0.65);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: var(--radius-md);
-    padding: 10px 14px;
+    padding: 8px 10px;
     transition: all 0.15s ease;
 }
 
@@ -3107,8 +3111,9 @@ body.modal-open {
 .upgrade-info {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
     flex: 1;
+    min-width: 0;
 }
 
 .upgrade-icon-img {
@@ -3122,6 +3127,7 @@ body.modal-open {
     display: flex;
     flex-direction: column;
     gap: 2px;
+    min-width: 0;
 }
 
 .upgrade-card-title {
@@ -3139,7 +3145,8 @@ body.modal-open {
 .upgrade-action {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
+    flex-shrink: 0;
 }
 
 .upgrade-cost {

@@ -289,7 +289,7 @@ export const ENEMY_TYPES = {
         maxHp: 50,
         damage: 5,            // 4 Damage per attack
         attackSpeed: 1,     // 1 attack per second
-        moveSpeed: 5,       // Move speed
+        moveSpeed: 3.5,       // Move speed
         targetX: 130,         // Close melee range near the slimes
         loot_value: 30,
         loot_name: 'Greatsword',
@@ -320,7 +320,7 @@ export const ENEMY_TYPES = {
         maxHp: 500,
         damage: 0,
         attackSpeed: 0,     // Attacks per second
-        moveSpeed: 1.5,
+        moveSpeed: 5,
         targetX: 250,         // Center of battlefield
         loot_value: 20,
         loot_name: 'Knight Shield',
@@ -335,7 +335,7 @@ export const ENEMY_TYPES = {
         maxHp: 50,
         damage: 10,            // 4 Damage per attack
         attackSpeed: 1,     // 1 attack per second
-        moveSpeed: 5,       // Move speed
+        moveSpeed: 4,       // Move speed
         targetX: 130,         // Close melee range near the slimes
         loot_value: 30,
         loot_name: 'Halberd',
@@ -568,8 +568,8 @@ function generateWaveComposition(waveNum) {
     if (waveNum === 1) return [0, 'beggar:1'];
     if (waveNum === 2) return [0.5, 'beggar:2', 'farmer'];
     if (waveNum === 3) return [0.5, 'farmer:3', 'fisher:2'];
+    if (waveNum === 5) return [0.2, 'beggar:5', 'torchfarmer:1', 'farmer:1', 'fisher:1'];
     if (waveNum === 4) return [0.1, 'thief:1', 'guard:1'];
-    if (waveNum === 5) return [0.2, 'beggar:7', 'torchfarmer:1'];
     if (waveNum === 6) return [0.2, 'fisher:10', 'torchfarmer:5'];
     if (waveNum === 7) return [0.4, 'farmer:15', 'torchfarmer:2'];
     if (waveNum === 8) return [0.8, 'beggar:8', 'farmer:2', 'torchfarmer:2', 'fisher:2'];
@@ -581,7 +581,7 @@ function generateWaveComposition(waveNum) {
     if (waveNum === 12) return [0.1, 'adventurer:2', 'assassin:2', 'hunter:3'];
     if (waveNum === 13) return [0.1, 'assassin:4', 'lumberjack:2', 'hunter:3'];
     if (waveNum === 14) return [0.1, 'lumberjack:5', 'lancer:3', 'hunter:3'];
-    if (waveNum === 15) return [0.1, 'lancer:3', 'guard:5', 'hunter:5'];
+    if (waveNum === 15) return [0.1, 'lancer:3', 'guard:5', 'mage:1'];
     if (waveNum === 16) return [0.1, 'guard:10', 'hunter:6'];
     if (waveNum === 17) return [0.1, 'guard:6', 'lancer:5', 'adventurer:4', 'hunter:2'];
     if (waveNum === 18) return [0.1, 'guard:7', 'hunter:15'];
@@ -589,16 +589,16 @@ function generateWaveComposition(waveNum) {
     if (waveNum === 20) return [0, 'berserker:1', 'alchemist:1'];
 
     // 21-30 Soldiers TODO
-    if (waveNum === 21) return [0.1, 'soldier:1', 'tank:1'];
-    if (waveNum === 22) return [0.1, 'guard:10', 'lancer:10', 'archer:10'];
-    if (waveNum === 23) return [0.1, 'guard:10', 'lancer:10', 'assassin:10', 'archer:10'];
-    if (waveNum === 24) return [0.1, 'guard:10', 'lancer:10', 'assassin:10', 'archer:10', 'berserker:1'];
-    if (waveNum === 25) return [0.1, 'guard:10', 'lancer:10', 'assassin:10', 'archer:10', 'berserker:2'];
-    if (waveNum === 26) return [0.1, 'guard:10', 'lancer:10', 'assassin:10', 'archer:10', 'berserker:3'];
-    if (waveNum === 27) return [0.1, 'guard:10', 'lancer:10', 'assassin:10', 'archer:10', 'berserker:4'];
-    if (waveNum === 28) return [0.1, 'guard:10', 'lancer:10', 'assassin:10', 'archer:10', 'berserker:5'];
-    if (waveNum === 29) return [0.1, 'guard:10', 'lancer:10', 'assassin:10', 'archer:10', 'berserker:6'];
-    if (waveNum === 30) return [0, 'catapult:1', 'tank:6'];
+    if (waveNum === 21) return [0.1, 'soldier:1', 'tank:1', 'archer:1'];
+    if (waveNum === 22) return [0.1, 'tank:2', 'halberdier:3', 'soldier:2', 'archer:1'];
+    if (waveNum === 23) return [0.1, 'tank:2', 'halberdier:2', 'archer:5'];
+    if (waveNum === 24) return [0.1, 'tank:1', 'soldier2h:5', 'archer:2', , 'berserker:1'];
+    if (waveNum === 25) return [0.1, 'tank:3', 'alchemist:1', 'mage:2'];
+    if (waveNum === 26) return [0.1, 'soldier2h:15'];
+    if (waveNum === 27) return [0.1, 'guard:8', 'halberdier:4', 'archer:4'];
+    if (waveNum === 28) return [0.1, 'guard:10', 'halberdier:10'];
+    if (waveNum === 29) return [0.1, 'tank:5', 'archer:10'];
+    if (waveNum === 30) return [0, 'catapult:1', 'tank:6', 'berserker:1'];
 
     // Infinite mode: Soft HP % Multiplier scaling (+10% per wave beyond wave 11: +10% wave 12, +20% wave 13, +30% wave 14...)
     else {

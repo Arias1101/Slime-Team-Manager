@@ -1,1 +1,14 @@
-1) Make it so attackers vibrate only when they attack (not always), like range attacker - Done
+1) Add the wave counter to the top right small counter, when its counting down: "Wave X in 10s" and when its counting ennemy spawns: "Wave X: 7/12"
+2) Put the "variable" number from each upgrade text next to the title of the upgrade like so "(Current: X)" to prevent the intenpesting resizing of upgrade cards.
+3) Add a yellow / orange border for upgrades at lvl 0 (that have never been upgraded)
+4) Rework the Slime Character Slime layout. Add a disabled tab in the sheet with "Talent Tree" wich will be unlocked later. Reduce size of the stats of the slime to only one liners to make room for buttons. Move buttons next to the exit cross inside the sheet instead of above.
+5) Add a counter for each slime, counting how many wave it cleared since last time it died. When a slime dies, reset this counter. Add this counter as "XP points" on the slime character sheet.
+
+
+
+LATER, DO NOT DO NOW:
+4) NewGame+ when reaching wave 100
+5) Buildings when NG+ starts for permanent upgrades (building ideas: keep X% xp on death, +X base damage, +X base hp, +X base crit)
+6) Frontlane, Midlane, Backlane and assigned classes for Slimes to unlock (Tank / Damage / Support) with talent tree
+7) Handle combo beetween Slime Type and Slime Specialization (Stonetank Slime, Firetank Slime...)
+8) NG+ Bench to store Slimes for later runs.
