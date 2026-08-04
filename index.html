@@ -113,18 +113,7 @@
                 </div>
             </header>
 
-            <!-- Always-Visible Top Slime Status Roster Panel -->
-            <aside class="slime-status-panel">
-                <div class="panel-header">
-                    <h3><img src="images/slimes/army.png" class="badge-icon-img" alt="Army"> Slime Roster</h3>
-                    <span class="roster-count" id="rosterCount">2 Slimes</span>
-                </div>
-                <div class="slime-roster-list" id="slimeRosterList">
-                    <!-- Dynamic list of slimes with 10 HP health bars -->
-                </div>
-            </aside>
-
-            <!-- Main Tab Navigation Bar -->
+            <!-- Main Tab Navigation Bar (Mobile Only) -->
             <nav class="main-tabs-nav">
                 <button id="tabBtnBattlefield" class="main-tab-btn active" data-tab="battlefield">
                     ⚔️ Battlefield
@@ -134,42 +123,55 @@
                 </button>
             </nav>
 
-            <!-- Tab 1 Content: Battlefield + Eat Button -->
-            <div id="tabContentBattlefield" class="main-tab-content active">
-                <main class="game-dashboard">
-                    <!-- Battlefield Window & Controls -->
-                    <div class="battlefield-wrapper">
-                        <section class="battlefield-card">
-                            <div class="battlefield-overlay">
-                                <!-- Left Side: Slimes -->
-                                <div class="army-side left-side">
-                                    <span class="side-badge"><img src="images/slimes/army.png" alt="Army"
-                                            class="badge-icon-img"> Slimes</span>
-                                    <div class="army-container" id="armyContainer">
-                                        <!-- Slimes in the army rendered here -->
-                                    </div>
-                                </div>
-
-                                <!-- Right Side: Incoming Enemies -->
-                                <div class="enemy-side right-side">
-                                    <span class="side-badge enemy-badge" id="enemyBadge">⚔️ Villagers</span>
-                                    <div class="enemies-container" id="enemiesContainer">
-                                        <!-- Enemies arriving from right -->
-                                    </div>
-                                </div>
-                            </div>
-                        </section>
-
-                        <!-- Battle Wave Action Bar -->
-                        <div class="battle-controls-bar">
-                            <button id="btnEat" class="btn-eat-main">🍖 Eat (<span id="eatLootCount">0</span>)</button>
+            <!-- Responsive Layout Grid: Left Column 66% (Roster + Battlefield) | Right Column 33% (Upgrades) -->
+            <div class="responsive-layout-grid">
+                <!-- Left Column (66% on Desktop): Roster Top + Battlefield Bottom -->
+                <div id="tabContentBattlefield" class="main-tab-content active desktop-left-col">
+                    <!-- Slime Status Roster Panel -->
+                    <aside class="slime-status-panel">
+                        <div class="panel-header">
+                            <h3><img src="images/slimes/army.png" class="badge-icon-img" alt="Army"> Slime Roster</h3>
+                            <span class="roster-count" id="rosterCount">2 Slimes</span>
                         </div>
-                    </div>
-                </main>
-            </div>
+                        <div class="slime-roster-list" id="slimeRosterList">
+                            <!-- Dynamic list of slimes with 10 HP health bars -->
+                        </div>
+                    </aside>
 
-            <!-- Tab 2 Content: Upgrades Section -->
-            <div id="tabContentUpgrades" class="main-tab-content hidden">
+                    <main class="game-dashboard">
+                        <!-- Battlefield Window & Controls -->
+                        <div class="battlefield-wrapper">
+                            <section class="battlefield-card">
+                                <div class="battlefield-overlay">
+                                    <!-- Left Side: Slimes -->
+                                    <div class="army-side left-side">
+                                        <span class="side-badge"><img src="images/slimes/army.png" alt="Army"
+                                                class="badge-icon-img"> Slimes</span>
+                                        <div class="army-container" id="armyContainer">
+                                            <!-- Slimes in the army rendered here -->
+                                        </div>
+                                    </div>
+
+                                    <!-- Right Side: Incoming Enemies -->
+                                    <div class="enemy-side right-side">
+                                        <span class="side-badge enemy-badge" id="enemyBadge">⚔️ Villagers</span>
+                                        <div class="enemies-container" id="enemiesContainer">
+                                            <!-- Enemies arriving from right -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <!-- Battle Wave Action Bar -->
+                            <div class="battle-controls-bar">
+                                <button id="btnEat" class="btn-eat-main">🍖 Eat (<span id="eatLootCount">0</span>)</button>
+                            </div>
+                        </div>
+                    </main>
+                </div>
+
+                <!-- Right Column (33% on Desktop): Upgrades Section -->
+                <div id="tabContentUpgrades" class="main-tab-content hidden desktop-right-col">
                 <section class="upgrades-section" id="upgradesSection">
                     <div class="upgrades-header">
                         <h3 class="upgrades-title">⚡ Upgrades</h3>

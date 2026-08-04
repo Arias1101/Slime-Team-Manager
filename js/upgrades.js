@@ -383,7 +383,7 @@ export function updateUpgradesUI() {
     if (upgradeEvolutionCostEl && btnUpgradeEvolutionEl) {
         const isBoughtEvo = gameState.unlockedUpgrades && gameState.unlockedUpgrades.evolution;
         if (isBoughtEvo) {
-            upgradeEvolutionCostEl.textContent = 'UNLOCKED';
+            upgradeEvolutionCostEl.textContent = 'MAX';
             btnUpgradeEvolutionEl.setAttribute('disabled', 'disabled');
             btnUpgradeEvolutionEl.classList.add('disabled');
             btnUpgradeEvolutionEl.classList.remove('affordable');
@@ -411,7 +411,7 @@ export function updateUpgradesUI() {
     if (upgradeExaltationCostEl && btnUpgradeExaltationEl) {
         const isBoughtExalt = gameState.unlockedUpgrades && gameState.unlockedUpgrades.exaltation;
         if (isBoughtExalt) {
-            upgradeExaltationCostEl.textContent = 'UNLOCKED';
+            upgradeExaltationCostEl.textContent = 'MAX';
             btnUpgradeExaltationEl.setAttribute('disabled', 'disabled');
             btnUpgradeExaltationEl.classList.add('disabled');
             btnUpgradeExaltationEl.classList.remove('affordable');

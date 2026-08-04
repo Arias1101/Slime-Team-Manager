@@ -848,13 +848,14 @@ export function initMainTabsListeners() {
     const contentUpgrades = document.getElementById('tabContentUpgrades');
 
     const switchTab = (activeTab) => {
-        if (activeTab === 'upgrades') {
+        const isDesktop = window.innerWidth > 900;
+        if (activeTab === 'upgrades' && !isDesktop) {
             if (btnUpgrades) btnUpgrades.classList.add('active');
             if (btnBattlefield) btnBattlefield.classList.remove('active');
             if (contentUpgrades) contentUpgrades.classList.remove('hidden');
             if (contentBattlefield) contentBattlefield.classList.add('hidden');
 
-            // Pause game while on Upgrades tab (just like Slime Sheet!)
+            // Pause game while on Upgrades tab on mobile
             setGamePaused(true);
             updateUpgradesUI();
         } else {
@@ -863,7 +864,7 @@ export function initMainTabsListeners() {
             if (contentBattlefield) contentBattlefield.classList.remove('hidden');
             if (contentUpgrades) contentUpgrades.classList.add('hidden');
 
-            // Unpause game when returning to Battlefield tab
+            // Unpause game when on Battlefield tab or desktop view
             setGamePaused(false);
         }
     };
@@ -874,4 +875,11 @@ export function initMainTabsListeners() {
     if (btnUpgrades) {
         btnUpgrades.addEventListener('click', () => switchTab('upgrades'));
     }
+
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 900) {
+            setGamePaused(false);
+            updateUpgradesUI();
+        }
+    });
 }
