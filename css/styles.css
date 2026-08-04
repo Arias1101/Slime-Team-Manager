@@ -344,10 +344,11 @@ body.modal-open {
     margin-top: 80px;
 }
 
-/* Slime Status Roster Panel (Positioned Top Horizontal Rows: 30 items per line) */
+/* Slime Status Roster Panel (Always-Visible Top Horizontal Rows: 15 items per line) */
 .slime-status-panel {
     width: 500px;
     max-width: 100%;
+    margin: 0 auto 10px auto;
     background: var(--bg-card);
     backdrop-filter: blur(12px);
     border: 1px solid var(--border-color);
