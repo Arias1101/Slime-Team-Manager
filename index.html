@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Slime Lives Matter - Slime Army Idle</title>
+    <title>Slime Team Manager</title>
     <meta name="description" content="Manage a slime army, fight waves of adventurers, and grow your horde!">
 
     <!-- Google Fonts -->
@@ -26,7 +26,7 @@
             <div class="auth-card">
                 <div class="auth-header">
                     <img src="images/slimes/army.png" alt="Slime Army Logo" class="auth-logo-img">
-                    <h1 class="auth-title">Slime Lives Matter</h1>
+                    <h1 class="auth-title">Slime Team Manager</h1>
                     <p class="auth-subtitle">Command your Slime army to victory !
                     </p>
                 </div>
@@ -62,7 +62,7 @@
             <header class="top-bar">
                 <div class="logo-container">
                     <img src="images/slimes/army.png" alt="Slime Army Logo" class="logo-icon-img">
-                    <h1 class="logo-title">Slime Lives Matter</h1>
+                    <h1 class="logo-title">Slime Team Manager</h1>
                 </div>
 
                 <!-- Resource & Battle Stats Bar -->
@@ -245,6 +245,22 @@
                         </div>
                     </div>
 
+                    <!-- Upgrade: Selection -->
+                    <div class="upgrade-card" id="upgradeSelectionCard">
+                        <div class="upgrade-info">
+                            <img src="images/upgrades/selection.png" alt="Selection" class="upgrade-icon-img"
+                                onerror="this.onerror=null; this.src='images/upgrades/division.png';">
+                            <div class="upgrade-details">
+                                <h4 class="upgrade-card-title">Selection</h4>
+                                <span class="upgrade-text">Sometimes, a Slime has to go.</span>
+                            </div>
+                        </div>
+                        <div class="upgrade-action">
+                            <span class="upgrade-cost" id="upgradeSelectionCost">5 🍖</span>
+                            <button id="btnUpgradeSelection" class="btn-plus" disabled>+</button>
+                        </div>
+                    </div>
+
                     <!-- Upgrade: Ignition -->
                     <div class="upgrade-card" id="upgradeIgnitionCard">
                         <div class="upgrade-info">
@@ -404,12 +420,12 @@
             <div class="shop-body-split">
                 <!-- Left Column: Slime Roster & Selected Slime Management -->
                 <div class="shop-left-col">
-                    <div class="shop-section-title">1. Select Slime from Roster</div>
+                    <div class="shop-section-title">Roster</div>
                     <div id="shopSlimeRoster" class="shop-slime-roster-grid">
                         <!-- Rendered list of slimes -->
                     </div>
 
-                    <div class="shop-section-title">2. Selected Slime & Equipment</div>
+                    <div class="shop-section-title">Selected Slime</div>
                     <div id="shopSelectedSlimeCard" class="shop-selected-slime-card">
                         <!-- Rendered selected slime sheet + sell buttons -->
                     </div>
@@ -417,7 +433,7 @@
 
                 <!-- Right Column: 3 Random Items for Sale -->
                 <div class="shop-right-col">
-                    <div class="shop-section-title">3. Merchant Market (3 Items)</div>
+                    <div class="shop-section-title">Shop</div>
                     <div id="shopMarketList" class="shop-market-grid">
                         <!-- Rendered 3 random items -->
                     </div>
@@ -425,7 +441,7 @@
             </div>
 
             <div class="shop-footer">
-                <button id="btnLeaveShop" class="btn-continue-wave">Continue to Wave 11 ⚔️</button>
+                <button id="btnLeaveShop" class="btn-continue-wave">Continue ⚔️</button>
             </div>
         </div>
     </div>

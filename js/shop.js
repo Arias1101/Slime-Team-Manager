@@ -67,7 +67,7 @@ function generateShopStock() {
         shopInventory.push({
             shopItemId: `shop_item_${Date.now()}_${index}`,
             enemyKey: key,
-            name: def.name || key,
+            name: def.loot_name || key,
             sprite: `images/loots/${key}.png`,
             effectText: textParts.join(', ') || '+1 Max HP',
             effectsList: effectsList,
@@ -101,6 +101,7 @@ export function openShopModal(currentWaveNum) {
 
     if (backdropEl) {
         backdropEl.classList.remove('hidden');
+        document.body.classList.add('modal-open');
     }
 }
 
@@ -112,6 +113,7 @@ export function closeShopModal() {
     if (backdropEl) {
         backdropEl.classList.add('hidden');
     }
+    document.body.classList.remove('modal-open');
 
     startNextWave();
 }
@@ -308,7 +310,7 @@ function renderShopMarketItems() {
             <div class="shop-market-card-left">
                 <img src="${item.sprite}" class="shop-market-item-icon" alt="${item.name}">
                 <div class="shop-market-item-info">
-                    <div class="shop-market-item-name">${item.name} Equipment</div>
+                    <div class="shop-market-item-name">${item.name}</div>
                     <div class="shop-market-item-effect">${item.effectText}</div>
                 </div>
             </div>

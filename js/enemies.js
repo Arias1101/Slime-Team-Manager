@@ -2,7 +2,7 @@
  * Enemy Management & AI Behaviors
  */
 
-import { gameState, addScraps, saveStateToLocal, saveWaveSnapshot, restoreBestRoster } from './state.js';
+import { gameState, addScraps, saveStateToLocal, saveWaveSnapshot, restoreBestRoster, SLIME_TYPES } from './state.js';
 import { healAllSlimes, initAscendedAutoAttacks, clearAscendedAutoAttacks, showFloatingDamageNumber, showFloatingStatusTextAt, showBattlefieldWaveBanner } from './slimes.js';
 import { updateUI, playSlimeRainRespawnAnimation } from './ui.js';
 import { openShopModal } from './shop.js';
@@ -11,38 +11,65 @@ export const ENEMY_TYPES = {
     // Tier X - Bosses ------------------------
     mage: {
         id: 'mage',
-        name: 'Elemental Mage',
         type: 'ranged',
         projectile: 'fireball',
-        hp: 150,
-        maxHp: 150,
-        damage: 7,            // Damage per projectile
-        attackSpeed: 0.5,     // attacks per second
+        hp: 200,
+        maxHp: 200,
+        damage: 5,            // Damage per projectile
+        attackSpeed: 1,     // attacks per second
         moveSpeed: 1,
         targetX: 380,         // 400=right border, 100 = Slime army
         loot_value: 100,
+        loot_name: 'Staff of Frostfire',
         loot_effect: [{ stat: 'effect', effectType: 'freeze', text: '❄️ Freeze' },
         { stat: 'effect', effectType: 'burn', value: 1, text: '🔥 Burn' }]
     },
     berserker: {
         id: 'berserker',
-        name: 'Berserker',
         type: 'melee',
-        hp: 500,
-        maxHp: 500,
+        hp: 700,
+        maxHp: 700,
         damage: 15,            // Damages
         attackSpeed: 1,     // attacks per second
         moveSpeed: 5,
         targetX: 100,         // 400=right border, 100 = Slime army
         loot_value: 200,
+        loot_name: 'Berserker Greataxe',
         loot_effect: [{ stat: 'damage', value: 5, text: '+5 Damage' },
         { stat: 'hp', value: 5, text: '+5 Max HP' }]
+    },
+    alchemist: {
+        id: 'alchemist',
+        type: 'ranged',
+        projectile: 'flask',
+        hp: 200,
+        maxHp: 200,
+        damage: 2,
+        attackSpeed: 1,
+        moveSpeed: 1,
+        targetX: 300,
+        loot_value: 50,
+        loot_name: 'Alchemical Flask',
+        loot_effect: { stat: 'effect', effectType: 'poison', value: 5, text: '🧪 Poison 5' }
+    },
+    catapult: {
+        id: 'catapult',
+        type: 'ranged',
+        projectile: 'boulder',
+        hp: 2000,
+        maxHp: 2000,
+        damage: 15,
+        attackSpeed: 2,
+        moveSpeed: 0.4,
+        targetX: 400,
+        loot_value: 50,
+        loot_name: 'Catapult Boulder',
+        loot_effect: { stat: 'effect', effectType: 'stun', text: '💫 Stun' }
     },
 
     // Tier1 - Villagers ------------------------
     beggar: {
         id: 'beggar',
-        name: 'Beggar',
         type: 'melee',        // Melee attacker
         hp: 2,                // 2 HP (requires 2 hits from base slime)
         maxHp: 2,
@@ -51,11 +78,11 @@ export const ENEMY_TYPES = {
         moveSpeed: 1,         // Move speed (1 to 100) -> 25 px/sec
         targetX: 130,         // Close melee range near the slimes
         loot_value: 2,
+        loot_name: 'Beggar Cup',
         loot_effect: { stat: 'hp', value: 1, text: '+1 Max HP' }
     },
     farmer: {
         id: 'farmer',
-        name: 'Farmer',
         type: 'melee',        // Melee attacker
         hp: 2,                // 2 HP (requires 2 hits from base slime)
         maxHp: 2,
@@ -64,11 +91,11 @@ export const ENEMY_TYPES = {
         moveSpeed: 1.2,       // Move speed (1 to 100) -> 25 px/sec
         targetX: 140,         // Close melee range near the slimes
         loot_value: 2,
+        loot_name: 'Farmer Hat',
         loot_effect: { stat: 'hp', value: 1, text: '+1 Max HP' }
     },
     torchfarmer: {
         id: 'torchfarmer',
-        name: 'Torch Farmer',
         type: 'melee',        // Melee attacker
         hp: 2,                // 2 HP (requires 2 hits from base slime)
         maxHp: 2,
@@ -77,6 +104,7 @@ export const ENEMY_TYPES = {
         moveSpeed: 1.2,       // Move speed (1 to 100) -> 25 px/sec
         targetX: 110,         // Close melee range near the slimes
         loot_value: 10,
+        loot_name: 'Burning Torch',
         loot_effect: [
             { stat: 'effect', effectType: 'burn', value: 1, text: '🔥 Burn' },
             { stat: 'hp', value: -3, text: '-3 Max HP' }
@@ -84,7 +112,6 @@ export const ENEMY_TYPES = {
     },
     fisher: {
         id: 'fisher',
-        name: 'Fisherman',
         type: 'melee',        // Melee attacker
         hp: 2,                // 2 HP (requires 2 hits from base slime)
         maxHp: 2,
@@ -93,11 +120,11 @@ export const ENEMY_TYPES = {
         moveSpeed: 1.3,       // Move speed (1 to 100) -> 25 px/sec
         targetX: 130,         // Close melee range near the slimes
         loot_value: 6,
+        loot_name: 'Smelly Fish',
         loot_effect: { stat: 'hp', value: 2, text: '+2 Max HP' }
     },
     thief: {
         id: 'thief',
-        name: 'Thief',
         type: 'melee',        // Melee attacker
         hp: 2,                // 2 HP (requires 2 hits from base slime)
         maxHp: 2,
@@ -106,13 +133,13 @@ export const ENEMY_TYPES = {
         moveSpeed: 7,         // Move speed (1 to 100) -> 25 px/sec
         targetX: 100,         // Close melee range near the slimes
         loot_value: 10,
+        loot_name: 'Thief Mask',
         loot_effect: { stat: 'crit', value: 10, text: '+10% Crit' }
     },
 
     // Tier2 - Adventurers -------------------------
     guard: {
         id: 'guard',
-        name: 'Guard',
         type: 'melee',        // Melee attacker
         hp: 20,                // 5 HP
         maxHp: 20,
@@ -121,25 +148,25 @@ export const ENEMY_TYPES = {
         moveSpeed: 1.5,       // Move speed
         targetX: 130,         // Close melee range near the slimes
         loot_value: 10,
+        loot_name: 'Guard Shield',
         loot_effect: { stat: 'hp', value: 2, text: '+2 Max HP' }
     },
-    archer: {
-        id: 'archer',
-        name: 'Archer',
+    hunter: {
+        id: 'hunter',
         type: 'ranged',       // Ranged attacker
         projectile: 'arrow',  // Arrow projectile type
         hp: 12,
         maxHp: 12,
         damage: 2,            // 2 Damage per projectile
-        attackSpeed: 0.5,     // 0.8 attacks per second
+        attackSpeed: 1.2,     // 0.8 attacks per second
         moveSpeed: 1.4,
         targetX: 380,         // Right boundary
         loot_value: 8,
+        loot_name: 'Hunting Bow',
         loot_effect: { stat: 'crit', value: 5, text: '+5% Crit' }
     },
     adventurer: {
         id: 'adventurer',
-        name: 'Adventurer',
         type: 'melee',        // Melee attacker
         hp: 14,                // 4 HP
         maxHp: 14,
@@ -148,11 +175,11 @@ export const ENEMY_TYPES = {
         moveSpeed: 1.7,       // Move speed
         targetX: 130,         // Close melee range near the slimes
         loot_value: 10,
+        loot_name: 'Backpack',
         loot_effect: { stat: 'regen', value: 1, text: '+1 HP Regen' }
     },
     assassin: {
         id: 'assassin',
-        name: 'Assassin',
         type: 'melee',        // Melee attacker
         hp: 14,                // 4 HP
         maxHp: 14,
@@ -161,11 +188,11 @@ export const ENEMY_TYPES = {
         moveSpeed: 10,       // Move speed
         targetX: 130,         // Close melee range near the slimes
         loot_value: 20,
+        loot_name: 'Poison Dagger',
         loot_effect: { stat: 'effect', effectType: 'poison', value: 1, text: '🧪 Poison' }
     },
     lancer: {
         id: 'lancer',
-        name: 'Lancer',
         type: 'melee',        // Melee attacker
         hp: 15,                // 4 HP
         maxHp: 15,
@@ -174,12 +201,12 @@ export const ENEMY_TYPES = {
         moveSpeed: 2,       // Move speed
         targetX: 150,         // Close melee range near the slimes
         loot_value: 10,
+        loot_name: 'Lance Tip',
         loot_effect: [{ stat: 'crit', value: 2, text: '+2% Crit' },
         { stat: 'damage', value: 1, text: '+1 Damage' }]
     },
     lumberjack: {
         id: 'lumberjack',
-        name: 'Lumberjack',
         type: 'melee',        // Melee attacker
         hp: 20,                // 4 HP
         maxHp: 20,
@@ -188,56 +215,72 @@ export const ENEMY_TYPES = {
         moveSpeed: 2,       // Move speed
         targetX: 100,         // Close melee range near the slimes
         loot_value: 6,
-        loot_effect: [{ stat: 'hp', value: 2, text: '+2 Max HP' },
-        { stat: 'damage', value: 1, text: '+1 Damage' }]
+        loot_name: 'Woodcutter Axe',
+        loot_effect: [{ stat: 'hp', value: 1, text: '+1 Max HP' },
+        { stat: 'damage', value: 2, text: '+2 Damage' }]
     },
 
 
-    // Tier 3 - Army
+    // Tier 3 - Army ~50 PV
     soldier: {
         id: 'soldier',
-        name: 'Soldier',
         type: 'melee',        // Melee attacker
-        hp: 27,                // 5 HP
-        maxHp: 27,
-        damage: 2,
-        attackSpeed: 0.6,     // attack per second
-        moveSpeed: 1.8,       // Move speed
+        hp: 60,                // 5 HP
+        maxHp: 60,
+        damage: 4,
+        attackSpeed: 1.5,     // attack per second
+        moveSpeed: 3,       // Move speed
         targetX: 130,         // Close melee range near the slimes
         loot_value: 20,
-        loot_effect: { stat: 'damage', value: 2, text: '+2 Damage' }
+        loot_name: 'Swag Helmet',
+        loot_effect: [{ stat: 'hp', value: 3, text: '+3 Max HP' },
+        { stat: 'crit', value: 2, text: '+2% Crit' }]
     },
     soldier2h: {
         id: 'soldier2h',
-        name: 'Greatsword Soldier',
         type: 'melee',        // Melee attacker
-        hp: 15,                // 5 HP
-        maxHp: 15,
+        hp: 50,                // 5 HP
+        maxHp: 50,
         damage: 5,            // 4 Damage per attack
-        attackSpeed: 0.6,     // 1 attack per second
+        attackSpeed: 1,     // 1 attack per second
         moveSpeed: 5,       // Move speed
         targetX: 130,         // Close melee range near the slimes
         loot_value: 30,
-        loot_effect: { stat: 'damage', value: 2, text: '+2 Damage' }
+        loot_name: 'Greatsword',
+        loot_effect: [{ stat: 'crit', value: 5, text: '+5% Crit' },
+        { stat: 'damage', value: 2, text: '+2 Damage' }]
+    },
+    archer: {
+        id: 'archer',
+        type: 'ranged',       // Ranged attacker
+        projectile: 'arrow',  // Arrow projectile type
+        hp: 45,
+        maxHp: 45,
+        damage: 5,            // 2 Damage per projectile
+        attackSpeed: 1.5,     // 0.8 attacks per second
+        moveSpeed: 2,
+        targetX: 380,         // Right boundary
+        loot_value: 30,
+        loot_name: 'Long Bow',
+        loot_effect: { stat: 'crit', value: 5, text: '+10% Crit' }
     },
     tank: {
         id: 'tank',
-        name: 'Knight',
-        type: 'tank',         // Tank defender
-        hp: 35,
-        maxHp: 35,
-        damage: 1,
-        attackSpeed: 0.5,     // 0.5 attacks per second
+        type: 'tank',
+        hp: 100,
+        maxHp: 100,
+        damage: 0,
+        attackSpeed: 0,     // Attacks per second
         moveSpeed: 1.5,
         targetX: 250,         // Center of battlefield
         loot_value: 20,
+        loot_name: 'Knight Shield',
         loot_effect: { stat: 'hp', value: 3, text: '+10 Max HP' }
     },
 
-    // Tests
-    test: {
+    // Tests ------------------------------------
+    testtank: {
         id: 'tank',
-        name: 'Test Knight',
         type: 'tank',         // Tank defender
         hp: 99999,
         maxHp: 99999,
@@ -245,23 +288,70 @@ export const ENEMY_TYPES = {
         attackSpeed: 0,     // 0.5 attacks per second
         moveSpeed: 0.6,       // Slow move speed
         targetX: 250,         // Center of battlefield
-        loot_value: 100,
+        loot_value: 1,
+        loot_name: 'Test Knight Shield',
         loot_effect: { stat: 'hp', value: 1, text: '+1 Max HP' }
-    }
+    },
+    testmoney: {
+        id: 'thief',
+        type: 'tank',
+        hp: 1,
+        maxHp: 1,
+        damage: 1,
+        attackSpeed: 0,     // Attacks per second
+        moveSpeed: 5,
+        targetX: 250,         // 250 = Center of battlefield, 100 = Slimes, 400 = long range
+        loot_value: 1000,
+        loot_name: 'Test Money Shield',
+        loot_effect: { stat: 'hp', value: 1, text: '+1 Max HP' }
+    }, testrange: {
+        id: 'catapult',
+        type: 'ranged',
+        projectile: 'boulder',
+        hp: 99999,
+        maxHp: 99999,
+        damage: 1,
+        attackSpeed: 0.5,   // Attacks per second
+        moveSpeed: 0.3,
+        targetX: 400,       // 250 = Center of battlefield, 100 = Slimes, 400 = long range
+        loot_value: 1,
+        loot_name: 'Test Range Shield',
+        loot_effect: { stat: 'hp', value: 1, text: '+1 Max HP' }
+    },
 };
 
 export const PROJECTILE_TYPES = {
     arrow: {
         id: 'arrow',
-        className: 'projectile-arrow',
+        sprite: 'images/projectiles/arrow.png',
+        fallbackIcon: '🏹',
         arcHeight: 25, // Curved arc height in px
-        duration: 0.5  // Parabolic flight time in seconds
+        duration: 0.5, // Parabolic flight time in seconds
+        rotationMode: 'tangent' // Follows smooth flight curve angle
     },
     fireball: {
         id: 'fireball',
-        className: 'projectile-fireball',
+        sprite: 'images/projectiles/fireball.png',
+        fallbackIcon: '🔥',
         arcHeight: 30, // Smooth arc height in px
-        duration: 0.5  // Fast & snappy flight time matching arrows
+        duration: 0.5, // Fast & snappy flight time matching arrows
+        rotationMode: 'tangent' // Follows smooth flight curve angle
+    },
+    flask: {
+        id: 'flask',
+        sprite: 'images/projectiles/flask.png',
+        fallbackIcon: '🧪',
+        arcHeight: 35, // Curved high arc height in px
+        duration: 1.0, // 50% slower flight speed (1.0s vs 0.5s)
+        rotationMode: 'spin' // Rotates on itself continuously during flight
+    },
+    boulder: {
+        id: 'boulder',
+        sprite: 'images/projectiles/boulder.png',
+        fallbackIcon: '🪨',
+        arcHeight: 35, // Curved high arc height in px
+        duration: 1.0, // 50% slower flight speed like flask
+        rotationMode: 'spin' // Rotates on itself continuously during flight
     }
 };
 
@@ -358,9 +448,13 @@ export function parseEnemyList(rawList) {
  * Enemy entries support 'type:count' syntax (e.g., 'archer:10', 'soldier:3').
  */
 function generateWaveComposition(waveNum) {
+    // Tests
+    //if (waveNum === 1) return [0, 'testmoney:1'];
+    //if (waveNum === 2) return [0, 'testrange:1'];
+
     // 1-10, Manual play, Villagers
     if (waveNum === 1) return [0, 'beggar:1'];
-    if (waveNum === 2) return [0, 'beggar:2', 'farmer'];
+    if (waveNum === 2) return [0.5, 'beggar:2', 'farmer'];
     if (waveNum === 3) return [0.5, 'farmer:3', 'fisher:2'];
     if (waveNum === 4) return [0.1, 'thief:1', 'guard:1'];
     if (waveNum === 5) return [0.2, 'beggar:7', 'torchfarmer:1'];
@@ -371,22 +465,31 @@ function generateWaveComposition(waveNum) {
     if (waveNum === 10) return [0, 'mage:1'];
 
     // 11-20 Autoplay, Adventurers
-    if (waveNum === 11) return [0.1, 'adventurer:2', 'archer:3'];
-    if (waveNum === 12) return [0.1, 'adventurer:2', 'assassin:2', 'archer:3'];
-    if (waveNum === 13) return [0.1, 'assassin:4', 'lumberjack:2', 'archer:3'];
-    if (waveNum === 14) return [0.1, 'lumberjack:5', 'lancer:3', 'archer:3'];
-    if (waveNum === 15) return [0.1, 'lancer:3', 'guard:5', 'archer:5'];
-    if (waveNum === 16) return [0.1, 'guard:10', 'archer:6'];
-    if (waveNum === 17) return [0.1, 'guard:10', 'lancer:5', 'adventurer:2', 'archer:2'];
-    if (waveNum === 18) return [0.1, 'guard:7', 'archer:15'];
-    if (waveNum === 19) return [0.1, 'assassin:15', 'archer:15'];
-    if (waveNum === 20) return [0.1, 'berserker:1', 'archer:5'];
+    if (waveNum === 11) return [0.1, 'adventurer:2', 'hunter:3'];
+    if (waveNum === 12) return [0.1, 'adventurer:2', 'assassin:2', 'hunter:3'];
+    if (waveNum === 13) return [0.1, 'assassin:4', 'lumberjack:2', 'hunter:3'];
+    if (waveNum === 14) return [0.1, 'lumberjack:5', 'lancer:3', 'hunter:3'];
+    if (waveNum === 15) return [0.1, 'lancer:3', 'guard:5', 'hunter:5'];
+    if (waveNum === 16) return [0.1, 'guard:10', 'hunter:6'];
+    if (waveNum === 17) return [0.1, 'guard:10', 'lancer:5', 'adventurer:2', 'hunter:2'];
+    if (waveNum === 18) return [0.1, 'guard:7', 'hunter:15'];
+    if (waveNum === 19) return [0.1, 'assassin:15', 'hunter:15'];
+    if (waveNum === 20) return [0, 'berserker:1', 'alchemist:1'];
+
+    // 21-30 Soldiers TODO
+    if (waveNum === 21) return [0.1, 'soldier:1', 'tank:1'];
+    if (waveNum === 22) return [0.1, 'guard:10', 'lancer:10', 'archer:10'];
+    if (waveNum === 23) return [0.1, 'guard:10', 'lancer:10', 'assassin:10', 'archer:10'];
+    if (waveNum === 24) return [0.1, 'guard:10', 'lancer:10', 'assassin:10', 'archer:10', 'berserker:1'];
+    if (waveNum === 25) return [0.1, 'guard:10', 'lancer:10', 'assassin:10', 'archer:10', 'berserker:2'];
+    if (waveNum === 26) return [0.1, 'guard:10', 'lancer:10', 'assassin:10', 'archer:10', 'berserker:3'];
+    if (waveNum === 27) return [0.1, 'guard:10', 'lancer:10', 'assassin:10', 'archer:10', 'berserker:4'];
+    if (waveNum === 28) return [0.1, 'guard:10', 'lancer:10', 'assassin:10', 'archer:10', 'berserker:5'];
+    if (waveNum === 29) return [0.1, 'guard:10', 'lancer:10', 'assassin:10', 'archer:10', 'berserker:6'];
+    if (waveNum === 30) return [0, 'catapult:2', 'tank:4'];
 
     // Infinite mode: Soft HP % Multiplier scaling (+10% per wave beyond wave 11: +10% wave 12, +20% wave 13, +30% wave 14...)
     else {
-        // Test tank
-        return [0, 'test:1'];
-
         // Infinite scaling waves
         const hpMultiplier = 1.0 + Math.max(0, waveNum - 11) * 0.10;
         return {
@@ -465,6 +568,7 @@ export function resetGameFull() {
     gameState.slimeDamage = 1;
     gameState.slimeRegen = 0;
     gameState.hasSlimeDied = false;
+    gameState.hasUsedDivision = false;
     gameState.digestionLevel = 0;
     gameState.ignitionLevel = 0;
     gameState.glaciationLevel = 0;
@@ -476,6 +580,7 @@ export function resetGameFull() {
         augmentation: false,
         regen: false,
         digestion: false,
+        selectionCard: false,
         selection: false,
         ignition: false,
         glaciation: false,
@@ -656,7 +761,7 @@ export function triggerLootDrop(enemy) {
         }
 
         const enemyDef = ENEMY_TYPES[enemy.typeId] || {};
-        const lootName = enemyDef.name || enemy.typeId || 'Enemy';
+        const lootName = enemyDef.loot_name || enemy.typeId || 'Loot';
         const lootEffect = enemyDef.loot_effect || { hpBonus: 1 };
 
         const lootObj = {
@@ -947,88 +1052,84 @@ export function updateEnemies(deltaSeconds) {
         }
     }
 
-    // --- Process Burn Status (1 damage per stack per 0.5s DoT) on burning slimes ---
+    // --- Process Status Effects (Burn DoT, Poison DoT, Stun) & Status Icons on Slimes ---
     if (gameState.slimes) {
+        const armyContainer = document.getElementById('armyContainer');
+
         gameState.slimes.forEach(slime => {
-            if (slime.hp > 0 && slime.effects && slime.effects.burnTimer > 0) {
+            if (slime.hp <= 0) return;
+
+            if (!slime.effects) {
+                slime.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0, stunTimer: 0 };
+            }
+
+            // 1. Process Burn Status DoT (1 damage per stack every 0.5s)
+            if (slime.effects.burnTimer > 0) {
                 slime.effects.burnTimer -= deltaSeconds;
-                slime.effects.burnTickTimer += deltaSeconds;
+                slime.effects.burnTickTimer = (slime.effects.burnTickTimer || 0) + deltaSeconds;
 
                 if (slime.effects.burnTickTimer >= 0.5) {
                     slime.effects.burnTickTimer -= 0.5;
                     const burnDmg = Math.max(1, slime.effects.burnStacks || 1);
-                    slime.hp = Math.max(0, slime.hp - burnDmg);
-
-                    const hpPct = Math.max(0, (slime.hp / slime.maxHp) * 100);
-                    const hpFill = document.getElementById(`roster_hp_fill_${slime.id}`);
-                    const rosterItem = document.getElementById(`roster_item_${slime.id}`);
-
-                    if (hpFill) {
-                        hpFill.style.width = `${hpPct}%`;
-                        if (hpPct < 35) hpFill.style.background = '#ef4444';
-                        else if (hpPct < 65) hpFill.style.background = '#f59e0b';
-                        else hpFill.style.background = '#10b981';
-                    }
-
-                    if (rosterItem) {
-                        rosterItem.title = `${slime.type || 'Slime'}: ${slime.hp}/${slime.maxHp} HP`;
-                        rosterItem.classList.add('roster-hit-flash');
-                        setTimeout(() => rosterItem.classList.remove('roster-hit-flash'), 180);
-                    }
-
-                    saveStateToLocal();
-                    updateUI();
-
-                    const armyContainer = document.getElementById('armyContainer');
-                    let slimeX = 75;
-                    let slimeY = 120;
-
-                    if (armyContainer) {
-                        const unit = armyContainer.querySelector(`[data-slime-id="${slime.id}"]`);
-                        if (unit) {
-                            slimeX = parseFloat(unit.style.left) || 75;
-                            slimeY = parseFloat(unit.style.top) || 120;
-                            const img = unit.querySelector('.slime-img');
-                            if (img) {
-                                img.classList.add('hit-flash-red');
-                                setTimeout(() => img.classList.remove('hit-flash-red'), 180);
-                            }
-
-                            if (slime.hp <= 0) {
-                                gameState.hasSlimeDied = true;
-                                const ejectClass = Math.random() > 0.5 ? 'cartoon-ko-eject' : 'cartoon-ko-eject-left';
-                                unit.classList.add(ejectClass);
-                                setTimeout(() => {
-                                    unit.remove();
-                                    gameState.slimes = gameState.slimes.filter(s => s.id !== slime.id);
-                                    gameState.armySize = gameState.slimes.length;
-                                    saveStateToLocal();
-                                    updateUI();
-
-                                    if (gameState.slimes.length === 0) {
-                                        rewindWaveState();
-                                    }
-                                }, 800);
-                            }
-                        }
-                    }
-
-                    // Pop floating ORANGE pixel art damage number on slime burn tick for total stacked burn damage
-                    showFloatingDamageNumber(slimeX + 10, slimeY - 14, burnDmg, 'burn-dmg');
+                    damageSpecificSlime(slime, burnDmg);
                 }
 
                 if (slime.effects.burnTimer <= 0) {
                     slime.effects.burnStacks = 0;
                 }
+            }
 
-                // Toggle is-burning class on slime DOM element
-                const armyContainer = document.getElementById('armyContainer');
-                if (armyContainer) {
-                    const unit = armyContainer.querySelector(`[data-slime-id="${slime.id}"]`);
-                    if (unit) {
-                        if (slime.effects.burnTimer > 0) unit.classList.add('is-burning');
-                        else unit.classList.remove('is-burning');
+            // 2. Process Poison Status DoT (2 damage per stack every 1.0s)
+            if (slime.effects.poisonTimer > 0) {
+                slime.effects.poisonTimer -= deltaSeconds;
+                slime.effects.poisonTickTimer = (slime.effects.poisonTickTimer || 0) + deltaSeconds;
+
+                if (slime.effects.poisonTickTimer >= 1.0) {
+                    slime.effects.poisonTickTimer -= 1.0;
+                    const poisonDmg = Math.max(2, (slime.effects.poisonStacks || 1) * 2);
+                    damageSpecificSlime(slime, poisonDmg, 'poison-dmg');
+                }
+
+                if (slime.effects.poisonTimer <= 0) {
+                    slime.effects.poisonStacks = 0;
+                }
+            }
+
+            // 3. Process Stun Status Timer
+            if (slime.effects.stunTimer > 0) {
+                slime.effects.stunTimer -= deltaSeconds;
+                if (slime.effects.stunTimer <= 0) {
+                    slime.effects.stunTimer = 0;
+                }
+            }
+
+            // 4. Update Slime Status Row Icons (🔥 🧪 💫) & CSS Filters
+            if (armyContainer) {
+                const unit = armyContainer.querySelector(`[data-slime-id="${slime.id}"]`);
+                if (unit) {
+                    const statusRow = unit.querySelector('.slime-status-row');
+                    if (statusRow) {
+                        let statusHTML = '';
+                        if (slime.effects.burnTimer > 0) {
+                            statusHTML += '<span class="status-icon burn-icon">🔥</span>';
+                        }
+                        if (slime.effects.poisonTimer > 0) {
+                            statusHTML += '<span class="status-icon poison-icon">🧪</span>';
+                        }
+                        if (slime.effects.stunTimer > 0) {
+                            statusHTML += '<span class="status-icon stun-icon">💫</span>';
+                        }
+                        statusRow.innerHTML = statusHTML;
                     }
+
+                    if (slime.effects.burnTimer > 0) unit.classList.add('is-burning');
+                    else unit.classList.remove('is-burning');
+
+                    if (slime.effects.poisonTimer > 0) unit.classList.add('is-poisoned');
+                    else unit.classList.remove('is-poisoned');
+
+                    if (slime.effects.stunTimer > 0) unit.classList.add('is-stunned');
+                    else unit.classList.remove('is-stunned');
                 }
             }
         });
@@ -1038,33 +1139,66 @@ export function updateEnemies(deltaSeconds) {
 }
 
 /**
- * Fire Ranged Projectiles with parabolic arc trajectory & dynamic flight rotation
+ * Fire Ranged Projectiles using sprite images from images/projectiles/${id}.png
+ * with parabolic arc trajectory & dynamic flight rotation / spinning
  */
 function fireProjectiles(enemy) {
     const overlay = document.querySelector('.battlefield-overlay');
     if (!overlay) return;
 
-    const projKey = enemy.projectile || 'arrow';
-    const projType = PROJECTILE_TYPES[projKey] || PROJECTILE_TYPES.arrow;
+    const projKey = (enemy.projectile || 'arrow').toLowerCase();
+    const projType = PROJECTILE_TYPES[projKey] || {
+        id: projKey,
+        sprite: `images/projectiles/${projKey}.png`,
+        fallbackIcon: '💥',
+        arcHeight: 25,
+        duration: 0.5,
+        rotationMode: 'tangent'
+    };
 
     const projEl = document.createElement('div');
-    projEl.className = `enemy-projectile ${projType.className}`;
+    projEl.className = 'enemy-projectile-wrapper';
     projEl.style.left = `${enemy.x}px`;
     projEl.style.top = `${enemy.y + 10}px`;
+
+    const spritePath = projType.sprite || `images/projectiles/${projKey}.png`;
+    const fallback = projType.fallbackIcon || '💥';
+
+    projEl.innerHTML = `
+        <img src="${spritePath}" 
+             alt="${projKey}" 
+             class="projectile-sprite-img"
+             onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
+        <span class="projectile-sprite-fallback" style="display:none;">${fallback}</span>
+    `;
+
     overlay.appendChild(projEl);
 
     activeProjectiles.push({
         type: projType,
+        key: projKey,
         startX: enemy.x,
         startY: enemy.y + 10,
         targetX: 105,
         targetY: enemy.y + 10,
         progress: 0,
-        duration: projType.duration,
-        arcHeight: projType.arcHeight,
+        duration: projType.duration || 0.5,
+        arcHeight: projType.arcHeight || 25,
+        rotationMode: projType.rotationMode || 'tangent',
         damage: enemy.damage,
         el: projEl
     });
+
+    // Trigger shoot recoil vibration animation on firing enemy
+    if (enemy.el) {
+        enemy.el.classList.remove('enemy-shoot-recoil');
+        void enemy.el.offsetWidth; // Force reflow for rapid attacks
+        enemy.el.classList.add('enemy-shoot-recoil');
+        const enemyRef = enemy.el;
+        setTimeout(() => {
+            if (enemyRef) enemyRef.classList.remove('enemy-shoot-recoil');
+        }, 200);
+    }
 }
 
 /**
@@ -1074,7 +1208,7 @@ export function applyBurnEffectToSlime(slime, duration = 3.0) {
     if (!slime || slime.hp <= 0) return;
 
     if (!slime.effects) {
-        slime.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0 };
+        slime.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0, stunTimer: 0 };
     }
 
     if (slime.effects.burnTimer > 0) {
@@ -1085,16 +1219,65 @@ export function applyBurnEffectToSlime(slime, duration = 3.0) {
     slime.effects.burnTimer = duration;
 }
 
+/**
+ * Apply Poison Status Effect to a slime (3 seconds DoT: 2 dmg per stack every 1.0s)
+ */
+export function applyPoisonEffectToSlime(slime, duration = 3.0, stacks = 2) {
+    if (!slime || slime.hp <= 0) return;
+
+    if (!slime.effects) {
+        slime.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0, stunTimer: 0 };
+    }
+
+    if (slime.effects.poisonTimer > 0) {
+        slime.effects.poisonStacks = (slime.effects.poisonStacks || 0) + stacks;
+    } else {
+        slime.effects.poisonStacks = stacks;
+    }
+    slime.effects.poisonTimer = duration;
+}
+
+/**
+ * Apply Stun Status Effect to a slime (cannot attack or eat while stunned)
+ */
+export function applyStunEffectToSlime(slime, duration = 2.5) {
+    if (!slime || slime.hp <= 0) return;
+
+    if (!slime.effects) {
+        slime.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0, stunTimer: 0 };
+    }
+
+    slime.effects.stunTimer = Math.max(slime.effects.stunTimer || 0, duration);
+}
+
 function updateProjectiles(deltaSeconds) {
     for (let i = activeProjectiles.length - 1; i >= 0; i--) {
         const p = activeProjectiles[i];
         p.progress += deltaSeconds / p.duration;
 
         if (p.progress >= 1.0) {
-            const hitSlime = damageRandomSlime(p.damage);
-            if (hitSlime && p.type && p.type.id === 'fireball') {
-                applyBurnEffectToSlime(hitSlime, 3.0);
+            if (p.key === 'boulder' || (p.type && p.type.id === 'boulder')) {
+                // Boulder AoE: Hits up to 3 unique slimes for damage and applies Stun to all 3
+                const hitSlimes = damageMultipleRandomSlimes(3, p.damage);
+                hitSlimes.forEach(slime => {
+                    applyStunEffectToSlime(slime, 2.5);
+                });
+            } else if (p.key === 'flask' || (p.type && p.type.id === 'flask')) {
+                // Flask AoE: Hits up to 3 unique slimes for 2 damage and applies 2 stacks of Poison each
+                const hitSlimes = damageMultipleRandomSlimes(3, p.damage || 2);
+                hitSlimes.forEach(slime => {
+                    applyPoisonEffectToSlime(slime, 3.0, 2);
+                });
+            } else if (p.key === 'fireball' || (p.type && p.type.id === 'fireball')) {
+                // Fireball AoE: Hits up to 2 unique slimes for damage and applies Burn DoT to both
+                const hitSlimes = damageMultipleRandomSlimes(2, p.damage);
+                hitSlimes.forEach(slime => {
+                    applyBurnEffectToSlime(slime, 3.0);
+                });
+            } else {
+                damageRandomSlime(p.damage);
             }
+
             if (p.el) p.el.remove();
             activeProjectiles.splice(i, 1);
         } else {
@@ -1102,10 +1285,16 @@ function updateProjectiles(deltaSeconds) {
             const curX = p.startX + (p.targetX - p.startX) * t;
             const curY = p.startY + (p.targetY - p.startY) * t - 4 * p.arcHeight * t * (1 - t);
 
-            // Calculate instantaneous tangent flight vector for rotation angle
-            const vx = p.targetX - p.startX;
-            const vy = (p.targetY - p.startY) - 4 * p.arcHeight * (1 - 2 * t);
-            const angleDeg = Math.atan2(vy, vx) * (180 / Math.PI);
+            let angleDeg = 0;
+            if (p.rotationMode === 'spin') {
+                // Continuous 360-degree rotation spinning fast as it travels
+                angleDeg = (t * 1080) % 360;
+            } else {
+                // Calculate instantaneous tangent flight vector for rotation angle
+                const vx = p.targetX - p.startX;
+                const vy = (p.targetY - p.startY) - 4 * p.arcHeight * (1 - 2 * t);
+                angleDeg = Math.atan2(vy, vx) * (180 / Math.PI);
+            }
 
             if (p.el) {
                 p.el.style.left = `${curX}px`;
@@ -1124,16 +1313,48 @@ export function damageRandomSlime(damageAmount) {
 
     const aliveSlimes = gameState.slimes.filter(s => s.hp > 0);
     if (aliveSlimes.length === 0) {
-        rewindWaveState();
         return null;
     }
 
     const randomSlime = aliveSlimes[Math.floor(Math.random() * aliveSlimes.length)];
-    randomSlime.hp = Math.max(0, randomSlime.hp - damageAmount);
+    return damageSpecificSlime(randomSlime, damageAmount);
+}
 
-    const hpPct = Math.max(0, (randomSlime.hp / randomSlime.maxHp) * 100);
-    const hpFill = document.getElementById(`roster_hp_fill_${randomSlime.id}`);
-    const rosterItem = document.getElementById(`roster_item_${randomSlime.id}`);
+/**
+ * Deals damage to up to `count` unique alive slimes in the army (AoE impact)
+ */
+export function damageMultipleRandomSlimes(count = 3, damageAmount = 2) {
+    if (!gameState.slimes) return [];
+
+    const aliveSlimes = gameState.slimes.filter(s => s.hp > 0);
+    if (aliveSlimes.length === 0) {
+        return [];
+    }
+
+    // Pick up to `count` unique random slimes without duplicates
+    const shuffled = [...aliveSlimes].sort(() => 0.5 - Math.random());
+    const targetSlimes = shuffled.slice(0, Math.min(count, aliveSlimes.length));
+
+    const hitSlimes = [];
+    targetSlimes.forEach(slime => {
+        const hit = damageSpecificSlime(slime, damageAmount);
+        if (hit) hitSlimes.push(hit);
+    });
+
+    return hitSlimes;
+}
+
+/**
+ * Applies damage to a specific slime instance
+ */
+export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg') {
+    if (!slime || slime.hp <= 0) return null;
+
+    slime.hp = Math.max(0, slime.hp - damageAmount);
+
+    const hpPct = Math.max(0, (slime.hp / slime.maxHp) * 100);
+    const hpFill = document.getElementById(`roster_hp_fill_${slime.id}`);
+    const rosterItem = document.getElementById(`roster_item_${slime.id}`);
 
     if (hpFill) {
         hpFill.style.width = `${hpPct}%`;
@@ -1143,7 +1364,7 @@ export function damageRandomSlime(damageAmount) {
     }
 
     if (rosterItem) {
-        rosterItem.title = `${randomSlime.type || 'Slime'}: ${randomSlime.hp}/${randomSlime.maxHp} HP`;
+        rosterItem.title = `${slime.type || 'Slime'}: ${slime.hp}/${slime.maxHp} HP`;
         rosterItem.classList.add('roster-hit-flash');
         setTimeout(() => rosterItem.classList.remove('roster-hit-flash'), 180);
     }
@@ -1153,7 +1374,7 @@ export function damageRandomSlime(damageAmount) {
     let slimeY = 120;
 
     if (armyContainer) {
-        const unit = armyContainer.querySelector(`[data-slime-id="${randomSlime.id}"]`);
+        const unit = armyContainer.querySelector(`[data-slime-id="${slime.id}"]`);
         if (unit) {
             slimeX = parseFloat(unit.style.left) || 75;
             slimeY = parseFloat(unit.style.top) || 120;
@@ -1166,40 +1387,122 @@ export function damageRandomSlime(damageAmount) {
                 }, 180);
             }
 
-            if (randomSlime.hp <= 0) {
+            if (slime.hp <= 0) {
                 gameState.hasSlimeDied = true;
-                const ejectClass = Math.random() > 0.5 ? 'cartoon-ko-eject' : 'cartoon-ko-eject-left';
-                unit.classList.add(ejectClass);
-                setTimeout(() => {
-                    unit.remove();
-                    // Permanently remove dead slime from gameState.slimes
-                    gameState.slimes = gameState.slimes.filter(s => s.id !== randomSlime.id);
-                    gameState.armySize = gameState.slimes.length;
-                    saveStateToLocal();
-                    updateUI();
+                // Instantly remove dead slime from memory array
+                gameState.slimes = gameState.slimes.filter(s => s.id !== slime.id);
+                gameState.armySize = gameState.slimes.length;
+                saveStateToLocal();
 
-                    // If all slimes in army died, trigger auto-rewind to previous wave state
-                    if (gameState.slimes.length === 0) {
-                        rewindWaveState();
+                const remainingAlive = gameState.slimes.filter(s => s.hp > 0);
+
+                playSlimeDeathAnimation(unit, slime, () => {
+                    const remainingAlive = gameState.slimes ? gameState.slimes.filter(s => s.hp > 0) : [];
+                    if (remainingAlive.length === 0) {
+                        const remainingDying = document.querySelectorAll('.slime-unit[data-is-dying="true"]');
+                        if (remainingDying.length === 0) {
+                            rewindWaveState();
+                        }
                     }
-                }, 800);
+                });
+
+                if (remainingAlive.length > 0) {
+                    updateUI();
+                }
             }
-        } else if (randomSlime.hp <= 0) {
-            // Permanently remove dead slime if unit element is not found
-            gameState.slimes = gameState.slimes.filter(s => s.id !== randomSlime.id);
+        } else if (slime.hp <= 0) {
+            gameState.slimes = gameState.slimes.filter(s => s.id !== slime.id);
             gameState.armySize = gameState.slimes.length;
             saveStateToLocal();
-            updateUI();
 
-            if (gameState.slimes.length === 0) {
+            const remainingAlive = gameState.slimes.filter(s => s.hp > 0);
+            if (remainingAlive.length === 0) {
                 rewindWaveState();
+            } else {
+                updateUI();
             }
         }
     }
 
-    // Pop floating RED pixel art damage number over hit slime
-    showFloatingDamageNumber(slimeX + 10, slimeY - 14, damageAmount, 'slime-dmg');
-    return randomSlime;
+    // Pop floating pixel art damage number over hit slime
+    showFloatingDamageNumber(slimeX + (Math.random() * 16 - 8), slimeY - 14, damageAmount, dmgType);
+    return slime;
+}
+
+/**
+ * Play 3-Stage Slime Hero Death Animation:
+ * 1. dying1.png (1.0s): Vibrates and immobilizes slime where it stands
+ * 2. dying2.png (1.0s): Completely still/frozen in place
+ * 3. dying3.png: Ascends slowly towards the sky until out of bounds
+ */
+export function playSlimeDeathAnimation(unit, slime, onDeathComplete = null) {
+    if (!unit) {
+        if (onDeathComplete) onDeathComplete();
+        return;
+    }
+
+    const typeId = slime ? (slime.type || unit.dataset.slimeType || 'base') : (unit.dataset.slimeType || 'base');
+    const slimeConfig = SLIME_TYPES[typeId] || SLIME_TYPES.base;
+    const folder = slimeConfig.folder || `images/slimes/${typeId}`;
+    const imgEl = unit.querySelector('.slime-img');
+    const shadowEl = unit.querySelector('.slime-shadow-sm');
+
+    // Immobilize unit where it stands & mark as dying to prevent renderSlimeArmy DOM cleanup
+    unit.dataset.isDying = 'true';
+    unit.dataset.isAttacking = 'true';
+    unit.dataset.isEating = 'true';
+    unit.style.zIndex = '450';
+
+    if (imgEl) {
+        imgEl.style.transform = 'none';
+        imgEl.style.transition = 'none';
+        imgEl.style.animation = 'none';
+        imgEl.classList.remove('hit-flash-red');
+    }
+
+    if (shadowEl) {
+        shadowEl.style.transform = 'none';
+        shadowEl.style.transition = 'none';
+        shadowEl.style.opacity = '0.3';
+    }
+
+    // --- PHASE 1 (1.0s): dying1.png + Vibration ---
+    if (imgEl) {
+        imgEl.src = `${folder}/dying1.png`;
+        imgEl.onerror = () => { imgEl.src = 'images/slimes/base/dying1.png'; };
+    }
+    unit.classList.add('slime-dying-vibrate');
+
+    // --- PHASE 2 (1.0s): dying2.png + Frozen in place ---
+    setTimeout(() => {
+        unit.classList.remove('slime-dying-vibrate');
+        if (imgEl) {
+            imgEl.src = `${folder}/dying2.png`;
+            imgEl.onerror = () => { imgEl.src = 'images/slimes/base/dying2.png'; };
+        }
+
+        // --- PHASE 3: dying3.png + Ascend to the Sky ---
+        setTimeout(() => {
+            if (imgEl) {
+                imgEl.src = `${folder}/dying3.png`;
+                imgEl.onerror = () => { imgEl.src = 'images/slimes/base/dying3.png'; };
+            }
+            if (shadowEl) {
+                shadowEl.style.transition = 'opacity 1.5s ease-out';
+                shadowEl.style.opacity = '0';
+            }
+
+            unit.classList.add('slime-dying-ascend');
+
+            // Remove unit once out of bounds in the sky (~2.8s) & trigger onDeathComplete
+            setTimeout(() => {
+                unit.remove();
+                if (onDeathComplete) {
+                    onDeathComplete();
+                }
+            }, 2800);
+        }, 1000);
+    }, 1000);
 }
 
 let isRewinding = false;
@@ -1235,6 +1538,18 @@ export function rewindWaveState() {
         if (p.el) p.el.remove();
     });
     activeProjectiles = [];
+
+    // Clear all leftover ground loots from DOM & memory state
+    activeGroundLoots.forEach(l => {
+        if (l.el) l.el.remove();
+    });
+    activeGroundLoots = [];
+
+    const overlay = document.querySelector('.battlefield-overlay');
+    if (overlay) {
+        const leftoverLoots = overlay.querySelectorAll('.ground-loot-item');
+        leftoverLoots.forEach(el => el.remove());
+    }
 
     // 2. Play cartoon KO animation for 850ms, then trigger Slime Rain Sky-Drop!
     setTimeout(() => {

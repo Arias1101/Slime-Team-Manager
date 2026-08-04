@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Slime Lives Matter - Slime Army Design System
+   Slime Team Manager - Design System & Modern UI
    ========================================================================== */
 
 :root {
@@ -42,6 +42,12 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
+}
+
+body.modal-open {
+    overflow: hidden !important;
+    height: 100vh !important;
+    touch-action: none;
 }
 
 .app-container {
@@ -1156,7 +1162,7 @@ body {
 }
 
 .floating-damage-num.poison-dmg {
-    color: #22c55e !important;
+    color: #a855f7 !important;
     font-size: 13px !important;
     z-index: 150 !important;
     text-shadow:
@@ -1164,8 +1170,8 @@ body {
         1px -1px 0 #000,
         -1px 1px 0 #000,
         1px 1px 0 #000,
-        0 0 10px #22c55e,
-        0 0 16px rgba(34, 197, 94, 0.9) !important;
+        0 0 6px #581c87,
+        0 0 10px rgba(88, 28, 135, 0.95) !important;
     animation: floatPoisonDamageNum 0.75s cubic-bezier(0.2, 0.8, 0.4, 1.2) forwards !important;
 }
 
@@ -1356,13 +1362,13 @@ body {
 .upgrade-info {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 14px;
     flex: 1;
 }
 
 .upgrade-icon-img {
-    width: 28px;
-    height: 28px;
+    width: 42px;
+    height: 42px;
     object-fit: contain;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
@@ -1864,16 +1870,16 @@ body {
     max-width: 94vw;
     height: 580px;
     max-height: 90vh;
-    background: rgba(15, 23, 42, 0.95);
+    background: rgba(24, 24, 27, 0.96);
     border: 2px solid rgba(245, 158, 11, 0.4);
     border-radius: 16px;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(245, 158, 11, 0.2);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85), 0 0 30px rgba(245, 158, 11, 0.15);
     backdrop-filter: blur(12px);
     display: flex;
     flex-direction: column;
     padding: 20px 24px;
     gap: 16px;
-    color: #f8fafc;
+    color: #f4f4f5;
     overflow-y: hidden;
 }
 
@@ -1898,7 +1904,7 @@ body {
     display: flex;
     align-items: center;
     gap: 6px;
-    background: rgba(245, 158, 11, 0.15);
+    background: rgba(245, 158, 11, 0.12);
     border: 1px solid rgba(245, 158, 11, 0.4);
     padding: 4px 12px;
     border-radius: 20px;
@@ -1906,7 +1912,7 @@ body {
 
 .shop-header-scraps .scraps-label {
     font-size: 0.85rem;
-    color: #cbd5e1;
+    color: #d4d4d8;
     font-weight: 600;
 }
 
@@ -1946,7 +1952,7 @@ body {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: #94a3b8;
+    color: #a1a1aa;
 }
 
 /* Roster Browser */
@@ -1955,7 +1961,7 @@ body {
     flex-wrap: wrap;
     gap: 8px;
     padding: 10px;
-    background: rgba(30, 41, 59, 0.6);
+    background: rgba(39, 39, 42, 0.7);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 10px;
     height: 105px;
@@ -1966,8 +1972,8 @@ body {
 .shop-slime-avatar {
     width: 48px;
     height: 48px;
-    background: rgba(15, 23, 42, 0.8);
-    border: 2px solid rgba(255, 255, 255, 0.1);
+    background: #3f3f46;
+    border: 1px solid #52525b;
     border-radius: 10px;
     display: flex;
     flex-direction: column;
@@ -1979,13 +1985,13 @@ body {
 }
 
 .shop-slime-avatar:hover {
-    border-color: rgba(245, 158, 11, 0.5);
+    border-color: rgba(245, 158, 11, 0.6);
     transform: translateY(-2px);
 }
 
 .shop-slime-avatar.selected {
     border-color: #f59e0b;
-    background: rgba(245, 158, 11, 0.15);
+    background: rgba(245, 158, 11, 0.2);
     box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
 }
 
@@ -1999,7 +2005,7 @@ body {
 .shop-avatar-name {
     font-size: 0.6rem;
     font-weight: 700;
-    color: #cbd5e1;
+    color: #e4e4e7;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -2015,7 +2021,7 @@ body {
 
 /* Selected Slime Details & Equipment */
 .shop-selected-slime-card {
-    background: rgba(30, 41, 59, 0.7);
+    background: rgba(39, 39, 42, 0.85);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
     padding: 14px;
@@ -2039,9 +2045,10 @@ body {
     height: 42px;
     object-fit: contain;
     image-rendering: pixelated;
-    background: rgba(15, 23, 42, 0.6);
+    background: #52525b;
+    border: 1px solid #71717a;
     border-radius: 8px;
-    padding: 2px;
+    padding: 3px;
 }
 
 .shop-slime-info-text {
@@ -2053,7 +2060,7 @@ body {
 .shop-slime-info-name {
     font-size: 1rem;
     font-weight: 800;
-    color: #f1f5f9;
+    color: #f4f4f5;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -2068,13 +2075,13 @@ body {
 .shop-slime-info-stats {
     font-size: 0.78rem;
     font-weight: 600;
-    color: #94a3b8;
+    color: #a1a1aa;
 }
 
 .shop-slime-equipment-title {
     font-size: 0.78rem;
     font-weight: 700;
-    color: #cbd5e1;
+    color: #e4e4e7;
     text-transform: uppercase;
 }
 
@@ -2093,8 +2100,8 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(30, 30, 32, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 8px;
     padding: 6px 10px;
 }
@@ -2111,6 +2118,10 @@ body {
     height: 24px;
     object-fit: contain;
     image-rendering: pixelated;
+    background: #52525b;
+    border: 1px solid #71717a;
+    border-radius: 6px;
+    padding: 2px;
 }
 
 .shop-eq-details {
@@ -2122,7 +2133,7 @@ body {
 .shop-eq-name {
     font-size: 0.78rem;
     font-weight: 700;
-    color: #f1f5f9;
+    color: #f4f4f5;
 }
 
 .shop-eq-effect {
@@ -2162,21 +2173,21 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: rgba(30, 41, 59, 0.8);
-    border: 1px solid rgba(245, 158, 11, 0.25);
+    background: rgba(39, 39, 42, 0.85);
+    border: 1px solid rgba(245, 158, 11, 0.3);
     border-radius: 12px;
     padding: 12px 14px;
     transition: all 0.15s ease;
 }
 
 .shop-market-card:hover:not(.bought) {
-    border-color: rgba(245, 158, 11, 0.6);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    border-color: rgba(245, 158, 11, 0.7);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
 }
 
 .shop-market-card.bought {
     opacity: 0.5;
-    background: rgba(15, 23, 42, 0.5);
+    background: rgba(24, 24, 27, 0.6);
     border-color: rgba(255, 255, 255, 0.08);
 }
 
@@ -2192,7 +2203,8 @@ body {
     height: 36px;
     object-fit: contain;
     image-rendering: pixelated;
-    background: rgba(15, 23, 42, 0.6);
+    background: #52525b;
+    border: 1px solid #71717a;
     border-radius: 8px;
     padding: 3px;
 }
@@ -2410,4 +2422,185 @@ body {
     opacity: 0.3;
     cursor: not-allowed;
     filter: grayscale(1);
+}
+
+/* ==========================================
+   SPRITE-BASED ENEMY PROJECTILE STYLES
+   ========================================== */
+
+.enemy-projectile-wrapper {
+    position: absolute;
+    z-index: 850;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform-origin: center center;
+    will-change: transform, left, top;
+}
+
+.projectile-sprite-img {
+    height: 18px;
+    width: auto;
+    max-width: 32px;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
+.projectile-sprite-fallback {
+    font-size: 14px;
+    line-height: 1;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+/* Ranged Enemy Shoot Recoil Vibration Animation */
+.enemy-shoot-recoil {
+    animation: enemyShootVibration 0.18s ease-in-out;
+}
+
+@keyframes enemyShootVibration {
+    0% {
+        transform: translateX(0) scale(1);
+    }
+    25% {
+        transform: translateX(4px) scale(1.08) rotate(3deg);
+    }
+    50% {
+        transform: translateX(-3px) scale(0.95) rotate(-2deg);
+    }
+    75% {
+        transform: translateX(2px) scale(1.02);
+    }
+    100% {
+        transform: translateX(0) scale(1);
+    }
+}
+
+/* ==========================================
+   STATUS ROW & EFFECT OVERLAYS
+   ========================================== */
+
+.slime-status-row,
+.enemy-status-row {
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    z-index: 100;
+    pointer-events: none;
+}
+
+.status-icon {
+    font-size: 11px;
+    line-height: 1;
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.8));
+    animation: statusIconPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes statusIconPop {
+    0% { transform: scale(0); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* Poisoned Visual Effect Filter (Muted Dark Toxic Purple) */
+.slime-unit.is-poisoned .slime-img,
+.enemy-unit.is-poisoned .enemy-sprite,
+.enemy-card.is-poisoned {
+    filter: brightness(0.55) drop-shadow(0 0 4px #581c87) drop-shadow(0 0 6px #6b21a8) saturate(1.4) hue-rotate(200deg) !important;
+}
+
+/* Roster Vacant Empty Slot Styles */
+.roster-grid-item.empty-slot {
+    background: rgba(24, 26, 32, 0.4);
+    border: 1px dashed rgba(255, 255, 255, 0.15);
+    opacity: 0.55;
+    cursor: default;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+}
+
+.roster-empty-icon {
+    font-size: 13px;
+    line-height: 1;
+    opacity: 0.6;
+}
+
+.roster-empty-label {
+    font-size: 0.52rem;
+    font-weight: 700;
+    color: #94a3b8;
+    margin-top: 1px;
+    white-space: nowrap;
+}
+
+/* Stunned Visual Effect Filter & Dizzy Wobble Animation */
+.slime-unit.is-stunned .slime-img,
+.enemy-unit.is-stunned .enemy-sprite {
+    filter: brightness(0.75) sepia(0.6) hue-rotate(180deg) !important;
+    animation: dizzyWobble 0.4s infinite ease-in-out alternate !important;
+}
+
+@keyframes dizzyWobble {
+    0% {
+        transform: rotate(-8deg) scale(0.95);
+    }
+    100% {
+        transform: rotate(8deg) scale(1.05);
+    }
+}
+
+/* Custom 3-Stage Slime Hero Death Animation */
+.slime-unit.slime-dying-vibrate .slime-img {
+    animation: slimeDeathVibrate 0.12s infinite ease-in-out alternate !important;
+}
+
+@keyframes slimeDeathVibrate {
+    0% {
+        transform: translate(-2px, 0) rotate(-3deg);
+    }
+    50% {
+        transform: translate(2px, -1px) rotate(3deg);
+    }
+    100% {
+        transform: translate(-1px, 2px) rotate(-2deg);
+    }
+}
+
+.slime-unit.slime-dying-ascend {
+    animation: slimeAscendUp 2.8s linear forwards !important;
+    pointer-events: none !important;
+}
+
+.slime-unit.slime-dying-ascend .slime-img {
+    animation: slimeGhostSway 0.5s infinite alternate ease-in-out !important;
+}
+
+@keyframes slimeAscendUp {
+    0% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    70% {
+        opacity: 0.8;
+    }
+    100% {
+        transform: translateY(-300px);
+        opacity: 0;
+    }
+}
+
+@keyframes slimeGhostSway {
+    0% {
+        transform: translateX(-5px) rotate(-4deg);
+    }
+    100% {
+        transform: translateX(5px) rotate(4deg);
+    }
 }

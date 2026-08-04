@@ -105,7 +105,7 @@ export function triggerRandomSlimeAttack(overrideTypeId = null) {
     const slimeUnits = Array.from(armyContainer.querySelectorAll('.slime-unit'));
     if (slimeUnits.length === 0) return;
 
-    const availableSlimes = slimeUnits.filter(unit => unit.dataset.isAttacking !== 'true' && unit.dataset.isEating !== 'true');
+    const availableSlimes = slimeUnits.filter(unit => unit.dataset.isAttacking !== 'true' && unit.dataset.isEating !== 'true' && !unit.classList.contains('is-stunned'));
     if (availableSlimes.length === 0) return;
 
     const randomSlimeEl = availableSlimes[Math.floor(Math.random() * availableSlimes.length)];
@@ -414,7 +414,7 @@ function dispatchSingleSlimeToEat() {
     if (!armyContainer) return;
 
     const slimeUnits = Array.from(armyContainer.querySelectorAll('.slime-unit'))
-        .filter(u => u.dataset.isAttacking !== 'true' && u.dataset.isEating !== 'true');
+        .filter(u => u.dataset.isAttacking !== 'true' && u.dataset.isEating !== 'true' && !u.classList.contains('is-stunned'));
 
     if (slimeUnits.length === 0) return;
 
@@ -707,6 +707,7 @@ function scheduleSingleAscendedAttack(slimeObj) {
 
 function attemptAscendedSlimeAttack(slimeObj) {
     if (!slimeObj.ascended || (slimeObj.hp !== undefined && slimeObj.hp <= 0)) return;
+    if (slimeObj.effects && slimeObj.effects.stunTimer > 0) return;
     if (!activeEnemies || activeEnemies.length === 0) return;
 
     // Only attack enemies within visible screen bounds (x <= 450)

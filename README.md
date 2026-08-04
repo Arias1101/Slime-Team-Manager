@@ -1,4 +1,4 @@
-# 🧪 Slime Lives Matter (SLM) - Idle Game
+# 🧪 Slime Team Manager - Idle Game
 
 A lightweight, modern hosted Slime Idle Game built with HTML5, CSS3 (Glassmorphism & animations), JavaScript (ES Modules), and Firebase Google Auth & Cloud Persistence.
 
@@ -17,7 +17,7 @@ A lightweight, modern hosted Slime Idle Game built with HTML5, CSS3 (Glassmorphi
 ## 📁 Project Architecture & Folder Structure
 
 ```
-SLM - Slime Lives Matter/
+Slime Team Manager/
 ├── index.html                 # Main Game View & Layout
 ├── css/
 │   └── styles.css             # Neon Slime Theme & UI Design System

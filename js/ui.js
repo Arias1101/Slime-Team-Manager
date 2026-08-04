@@ -2,7 +2,7 @@
  * User Interface & Authentication Screen Renderer
  */
 
-import { gameState, SLIME_TYPES, killSlime } from './state.js';
+import { gameState, SLIME_TYPES, killSlime, syncSlimesArray } from './state.js';
 import { updateUpgradesUI } from './upgrades.js';
 import { activeGroundLoots } from './enemies.js';
 
@@ -21,6 +21,7 @@ const SLIME_FALLBACK_SRC = 'images/slimes/army.png';
 
 let lastRenderedArmySize = -1;
 let currentInspectedSlime = null;
+let isRainAnimating = false;
 
 /**
  * Main UI Update Function
@@ -87,43 +88,80 @@ function updateSlimeRoster() {
     const rosterCountEl = document.getElementById('rosterCount');
     if (!rosterListEl) return;
 
+    const activeCount = gameState.slimes ? gameState.slimes.length : 0;
     if (rosterCountEl) {
-        rosterCountEl.textContent = `${gameState.slimes ? gameState.slimes.length : 0} Slimes`;
+        rosterCountEl.textContent = `${activeCount} Slimes`;
     }
 
-    if (!gameState.slimes) return;
+    // Map active slimes by slotIndex
+    const slimesBySlot = new Map();
+    let maxSlotIndex = 0;
+
+    if (gameState.slimes) {
+        gameState.slimes.forEach(s => {
+            const slot = s.slotIndex !== undefined ? s.slotIndex : 0;
+            slimesBySlot.set(slot, s);
+            if (slot > maxSlotIndex) maxSlotIndex = slot;
+        });
+    }
+
+    // Check bestRoster so slimes at the end of the roster also render as vacant slots when dead
+    if (gameState.bestRoster) {
+        gameState.bestRoster.forEach(b => {
+            const slot = b.slotIndex !== undefined ? b.slotIndex : 0;
+            if (slot > maxSlotIndex) maxSlotIndex = slot;
+        });
+    }
 
     rosterListEl.innerHTML = '';
-    gameState.slimes.forEach((slime) => {
-        const item = document.createElement('div');
-        const isAscended = slime.ascended === true;
-        const slimeConfig = SLIME_TYPES[slime.type] || SLIME_TYPES.base;
-        const displayName = slime.name || slime.id || slimeConfig.name;
 
-        item.className = isAscended ? 'roster-grid-item ascended' : 'roster-grid-item';
-        item.id = `roster_item_${slime.id}`;
-        item.title = `${displayName} (${slimeConfig.name})${isAscended ? ' ✨' : ''}: ${slime.hp}/${slime.maxHp} HP`;
+    // Render slots 0 through maxSlotIndex in numerical order
+    for (let s = 0; s <= maxSlotIndex; s++) {
+        if (slimesBySlot.has(s)) {
+            const slime = slimesBySlot.get(s);
+            const item = document.createElement('div');
+            const isAscended = slime.ascended === true;
+            const slimeConfig = SLIME_TYPES[slime.type] || SLIME_TYPES.base;
+            const displayName = slime.name || slime.id || slimeConfig.name;
 
-        const hpPct = Math.max(0, (slime.hp / slime.maxHp) * 100);
-        let barColor = '#10b981';
-        if (hpPct < 35) barColor = '#ef4444';
-        else if (hpPct < 65) barColor = '#f59e0b';
+            item.className = isAscended ? 'roster-grid-item ascended' : 'roster-grid-item';
+            item.id = `roster_item_${slime.id}`;
+            item.title = `[Slot #${s + 1}] ${displayName} (${slimeConfig.name})${isAscended ? ' ✨' : ''}: ${slime.hp}/${slime.maxHp} HP`;
 
-        const iconSrc = `${slimeConfig.folder}/${slimeConfig.prefix}1.png`;
+            const hpPct = Math.max(0, (slime.hp / slime.maxHp) * 100);
+            let barColor = '#10b981';
+            if (hpPct < 35) barColor = '#ef4444';
+            else if (hpPct < 65) barColor = '#f59e0b';
 
-        item.innerHTML = `
-            <img src="${iconSrc}" alt="${displayName}" class="roster-grid-icon">
-            <div class="roster-grid-hp-bar">
-                <div class="roster-hp-fill" id="roster_hp_fill_${slime.id}" style="width: ${hpPct}%; background: ${barColor};"></div>
-            </div>
-        `;
+            const iconSrc = `${slimeConfig.folder}/${slimeConfig.prefix}1.png`;
 
-        item.addEventListener('click', () => {
-            openSlimeInspectorModal(slime);
-        });
+            item.innerHTML = `
+                <img src="${iconSrc}" alt="${displayName}" class="roster-grid-icon">
+                <div class="roster-grid-hp-bar">
+                    <div class="roster-hp-fill" id="roster_hp_fill_${slime.id}" style="width: ${hpPct}%; background: ${barColor};"></div>
+                </div>
+            `;
 
-        rosterListEl.appendChild(item);
-    });
+            item.addEventListener('click', () => {
+                openSlimeInspectorModal(slime);
+            });
+
+            rosterListEl.appendChild(item);
+        } else {
+            // Vacant/empty slot placeholder in roster
+            const fallenSlime = (gameState.bestRoster || []).find(b => b.slotIndex === s);
+            const fallenName = fallenSlime ? (fallenSlime.name || fallenSlime.id) : null;
+            const ripTitle = fallenName ? `RIP ${fallenName}...` : `RIP Slot #${s + 1}...`;
+
+            const emptyItem = document.createElement('div');
+            emptyItem.className = 'roster-grid-item empty-slot';
+            emptyItem.title = ripTitle;
+            emptyItem.innerHTML = `
+                <div class="roster-empty-icon">💀</div>
+            `;
+            rosterListEl.appendChild(emptyItem);
+        }
+    }
 }
 
 /**
@@ -134,32 +172,13 @@ function pseudoRandom(i, seed = 1) {
     return (x - Math.floor(x)) * 2 - 1;
 }
 
-let isRainAnimating = false;
-
 /**
- * Render Slime Army Pyramid Stack in 3D Perspective
+ * Calculates 3D battlefield coordinates (posX, posY, calculatedZ) for a given slotIndex
  */
-function renderSlimeArmy() {
-    if (!armyContainerEl || isRainAnimating) return;
-
-    // Collect set of current valid slime IDs from state
-    const currentSlimeIds = new Set(
-        gameState.slimes ? gameState.slimes.map(s => String(s.id)) : []
-    );
-
-    // Remove any DOM unit in armyContainerEl whose slime ID is no longer in gameState.slimes
-    const existingNodes = Array.from(armyContainerEl.querySelectorAll('.slime-unit'));
-    existingNodes.forEach(node => {
-        const id = node.dataset.slimeId;
-        if (!currentSlimeIds.has(id)) {
-            node.remove();
-        }
-    });
-
+export function getSlimeSlotCoordinates(slotIndex) {
     const centerX = 95;
     const centerY = 92;
 
-    // Definition of the 3 Pyramid Layers
     const layers = [
         {
             maxSlimes: 30,
@@ -174,8 +193,8 @@ function renderSlimeArmy() {
         },
         {
             maxSlimes: 20,
-            yOffset: -2, // Lowered 10px from -12 to close gap between layer 1 and layer 2
-            zBase: 100,  // Always renders ON TOP of Layer 1
+            yOffset: -2,
+            zBase: 100,
             rings: [
                 { count: 1, radiusX: 0, radiusY: 0 },
                 { count: 6, radiusX: 14, radiusY: 8 },
@@ -184,8 +203,8 @@ function renderSlimeArmy() {
         },
         {
             maxSlimes: 10,
-            yOffset: -14, // Lowered 10px from -24 to stay snug on Layer 2
-            zBase: 200,   // Always renders ON TOP of Layer 2 & 1
+            yOffset: -14,
+            zBase: 200,
             rings: [
                 { count: 1, radiusX: 0, radiusY: 0 },
                 { count: 9, radiusX: 16, radiusY: 9 }
@@ -193,83 +212,107 @@ function renderSlimeArmy() {
         }
     ];
 
-    let globalSlimeIndex = 0;
-
-    for (let l = 0; l < layers.length && globalSlimeIndex < gameState.armySize; l++) {
+    let remainingIndex = slotIndex;
+    for (let l = 0; l < layers.length; l++) {
         const layer = layers[l];
-        const slimesInThisLayer = Math.min(layer.maxSlimes, gameState.armySize - globalSlimeIndex);
-        let layerSlimeCount = 0;
+        if (remainingIndex < layer.maxSlimes) {
+            let countAccumulator = 0;
+            for (let r = 0; r < layer.rings.length; r++) {
+                const ring = layer.rings[r];
+                if (remainingIndex < countAccumulator + ring.count) {
+                    const k = remainingIndex - countAccumulator;
+                    const angleOffset = (r % 2 === 1) ? 0.3 : 0;
+                    const angle = (k / ring.count) * 2 * Math.PI + angleOffset;
 
-        for (let r = 0; r < layer.rings.length && layerSlimeCount < slimesInThisLayer; r++) {
-            const ring = layer.rings[r];
-            const countInRing = Math.min(ring.count, slimesInThisLayer - layerSlimeCount);
-            for (let k = 0; k < countInRing; k++) {
-                const i = globalSlimeIndex;
-                const slimeObj = gameState.slimes && gameState.slimes[i] ? gameState.slimes[i] : { id: i + 1, type: 'base' };
-                const slimeId = String(slimeObj.id);
+                    const jitterX = pseudoRandom(slotIndex, 1) * 2.5;
+                    const jitterY = pseudoRandom(slotIndex, 2) * 2;
 
-                const angleOffset = (r % 2 === 1) ? 0.3 : 0;
-                const angle = (k / ring.count) * 2 * Math.PI + angleOffset;
+                    const posX = Math.floor(centerX + Math.cos(angle) * ring.radiusX + jitterX);
+                    const posY = Math.floor(centerY + Math.sin(angle) * ring.radiusY + jitterY + layer.yOffset);
+                    const calculatedZ = Math.floor(posY + 10);
 
-                const jitterX = pseudoRandom(i, 1) * 2.5;
-                const jitterY = pseudoRandom(i, 2) * 2;
-
-                const posX = Math.floor(centerX + Math.cos(angle) * ring.radiusX + jitterX);
-                const posY = Math.floor(centerY + Math.sin(angle) * ring.radiusY + jitterY + layer.yOffset);
-
-                // If this slime unit already exists in the DOM, update top position to stay snug
-                const existingUnit = armyContainerEl.querySelector(`.slime-unit[data-slime-id="${slimeId}"]`);
-                if (existingUnit) {
-                    if (existingUnit.dataset.isAttacking !== 'true' && existingUnit.dataset.isEating !== 'true') {
-                        const calculatedZ = Math.floor(posY + 10);
-                        existingUnit.style.top = `${posY}px`;
-                        existingUnit.style.zIndex = `${calculatedZ}`;
-                        existingUnit.dataset.originalZ = `${calculatedZ}`;
-                    }
-                    layerSlimeCount++;
-                    globalSlimeIndex++;
-                    continue;
+                    return { slotIndex, layer: l, posX, posY, calculatedZ, isBaseLayer: (l === 0) };
                 }
-
-                const slimeConfig = SLIME_TYPES[slimeObj.type] || SLIME_TYPES.base;
-                const slimeImgSrc = `${slimeConfig.folder}/${slimeConfig.prefix}1.png`;
-
-                const unit = document.createElement('div');
-                unit.className = 'slime-unit';
-                unit.dataset.layer = `${l + 1}`;
-                unit.dataset.slimeId = slimeId;
-                unit.dataset.slimeType = slimeObj.type;
-
-                unit.style.position = 'absolute';
-                unit.style.left = `${posX}px`;
-                unit.style.top = `${posY}px`;
-
-                // 3D Perspective Depth Sorting: Lower on main window (larger posY) -> HIGHER zIndex so front slimes overlap back slimes!
-                const calculatedZ = Math.floor(posY + 10);
-                unit.style.zIndex = `${calculatedZ}`;
-                unit.dataset.originalZ = `${calculatedZ}`;
-
-                // Asynchronous bounce delay
-                const animDelay = (Math.abs(pseudoRandom(i, 3)) * 2.5).toFixed(2);
-
-                // Ground shadow only for base layer slimes (layer 0)
-                const shadowHTML = (l === 0) ? '<div class="slime-shadow-sm"></div>' : '';
-
-                unit.innerHTML = `
-                    <img src="${slimeImgSrc}" 
-                         onerror="this.onerror=null; this.src='${SLIME_FALLBACK_SRC}';" 
-                         alt="${slimeConfig.name}" 
-                         class="slime-img" 
-                         style="animation-delay: ${animDelay}s">
-                    ${shadowHTML}
-                `;
-                armyContainerEl.appendChild(unit);
-
-                layerSlimeCount++;
-                globalSlimeIndex++;
+                countAccumulator += ring.count;
             }
         }
+        remainingIndex -= layer.maxSlimes;
     }
+
+    const fallbackX = centerX + (slotIndex % 5) * 10;
+    const fallbackY = centerY + Math.floor(slotIndex / 5) * 8;
+    return { slotIndex, layer: 0, posX: fallbackX, posY: fallbackY, calculatedZ: fallbackY + 10, isBaseLayer: true };
+}
+
+/**
+ * Render Slime Army Stack in 3D Perspective with Fixed Slot Indexing
+ */
+function renderSlimeArmy() {
+    if (!armyContainerEl || isRainAnimating) return;
+    syncSlimesArray();
+
+    // Collect set of current valid slime IDs from state
+    const currentSlimeIds = new Set(
+        gameState.slimes ? gameState.slimes.map(s => String(s.id)) : []
+    );
+
+    // Remove any DOM unit in armyContainerEl whose slime ID is no longer in gameState.slimes
+    // (unless currently playing hero death animation or cartoon KO eject)
+    const existingNodes = Array.from(armyContainerEl.querySelectorAll('.slime-unit'));
+    existingNodes.forEach(node => {
+        const id = node.dataset.slimeId;
+        if (!currentSlimeIds.has(id) && node.dataset.isDying !== 'true' && !node.classList.contains('cartoon-ko-eject') && !node.classList.contains('cartoon-ko-eject-left')) {
+            node.remove();
+        }
+    });
+
+    if (!gameState.slimes || gameState.slimes.length === 0) return;
+
+    gameState.slimes.forEach(slimeObj => {
+        const slimeId = String(slimeObj.id);
+        const slot = slimeObj.slotIndex !== undefined ? slimeObj.slotIndex : 0;
+        const coords = getSlimeSlotCoordinates(slot);
+
+        const existingUnit = armyContainerEl.querySelector(`.slime-unit[data-slime-id="${slimeId}"]`);
+        if (existingUnit) {
+            if (existingUnit.dataset.isAttacking !== 'true' && existingUnit.dataset.isEating !== 'true') {
+                existingUnit.style.left = `${coords.posX}px`;
+                existingUnit.style.top = `${coords.posY}px`;
+                existingUnit.style.zIndex = `${coords.calculatedZ}`;
+                existingUnit.dataset.originalZ = `${coords.calculatedZ}`;
+            }
+            return;
+        }
+
+        const slimeConfig = SLIME_TYPES[slimeObj.type] || SLIME_TYPES.base;
+        const slimeImgSrc = `${slimeConfig.folder}/${slimeConfig.prefix}1.png`;
+
+        const unit = document.createElement('div');
+        unit.className = 'slime-unit';
+        unit.dataset.layer = `${coords.layer + 1}`;
+        unit.dataset.slimeId = slimeId;
+        unit.dataset.slimeType = slimeObj.type;
+
+        unit.style.position = 'absolute';
+        unit.style.left = `${coords.posX}px`;
+        unit.style.top = `${coords.posY}px`;
+        unit.style.zIndex = `${coords.calculatedZ}`;
+        unit.dataset.originalZ = `${coords.calculatedZ}`;
+
+        const animDelay = (Math.abs(pseudoRandom(slot, 3)) * 2.5).toFixed(2);
+        const shadowHTML = coords.isBaseLayer ? '<div class="slime-shadow-sm"></div>' : '';
+
+        unit.innerHTML = `
+            <div class="slime-status-row"></div>
+            <img src="${slimeImgSrc}" 
+                 onerror="this.onerror=null; this.src='${SLIME_FALLBACK_SRC}';" 
+                 alt="${slimeConfig.name}" 
+                 class="slime-img" 
+                 style="animation-delay: ${animDelay}s">
+            ${shadowHTML}
+        `;
+        armyContainerEl.appendChild(unit);
+    });
 }
 
 /**
@@ -622,12 +665,22 @@ export function openSlimeInspectorModal(slime) {
         }
     }
 
+    if (killBtnEl) {
+        if (gameState.unlockedUpgrades && gameState.unlockedUpgrades.selection) {
+            killBtnEl.style.display = '';
+        } else {
+            killBtnEl.style.display = 'none';
+        }
+    }
+
     backdropEl.classList.remove('hidden');
+    document.body.classList.add('modal-open');
 }
 
 export function closeSlimeInspectorModal() {
     const backdropEl = document.getElementById('slimeModalBackdrop');
     if (backdropEl) backdropEl.classList.add('hidden');
+    document.body.classList.remove('modal-open');
 }
 
 /**

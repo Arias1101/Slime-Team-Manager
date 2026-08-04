@@ -66,12 +66,12 @@ const SLIME_NAME_POOL = [
     'Ooze', 'Splurge', 'John', 'Karim', 'Jean-François Petit', 'Pierre', 'Gimli',
     'Seigneur Blindax', 'Petit Flan', 'Michel Brouzouf', 'Raymond le Rincé',
     'Rainman', 'Flambino', 'Toxic Ex', 'Lord of the Rings',
-    'Squeaky', 'Jello',
+    'Squeaky Boy', 'Jello Mr Bean',
     'Jeeves', 'Steeve', 'Stephan', 'Stephen',
     'The Rock', 'Ice Cube', 'Fire Man', 'The Dude',
     'Pelavius', 'Brutus Maximus', 'Kebab', 'Bruscetta', 'La Porta',
     'Small Brain', 'Big Brain', 'Knuckles the Guide',
-    'Michael', 'Elton'
+    'Michael', 'Obama', 'GooBall', 'Slay Queen', 'Jackson Five', 'Taxi Joe'
 ];
 
 /**
@@ -113,6 +113,7 @@ export const defaultState = {
     slimeDamage: 1,       // Damage dealt by slimes (default 1)
     slimeRegen: 0,        // HP regenerated per wave (default 0)
     hasSlimeDied: false,  // Unlocks Regeneration upgrade when true
+    hasUsedDivision: false, // Unlocks Selection upgrade when true
     digestionLevel: 0,    // Level of Digestion upgrade (extra slimes going to eat)
     ignitionLevel: 0,     // Level of Ignition upgrade (0-10, 2% Fire Slime spawn chance per level)
     glaciationLevel: 0,   // Level of Glaciation upgrade (0-10, 2% Ice Slime spawn chance per level)
@@ -124,6 +125,7 @@ export const defaultState = {
         augmentation: false,
         regen: false,
         digestion: false,
+        selectionCard: false,
         selection: false,
         ignition: false,
         glaciation: false,
@@ -131,11 +133,11 @@ export const defaultState = {
         intoxication: false
     },
     bestRoster: [         // Persistent blueprint of highest slimes count obtained (with unique names, stats & ascension)
-        { id: 'Gooey', name: 'Gooey', type: 'base', hp: 10, maxHp: 10, damage: 1, critChance: 0, regen: 0, ascended: false, equipment: [] }
+        { id: 'Gooey', name: 'Gooey', type: 'base', hp: 10, maxHp: 10, damage: 1, critChance: 0, regen: 0, ascended: false, slotIndex: 0, equipment: [] }
     ],
     waveSnapshots: {},    // Map of saved roster & state snapshots per cleared wave
     slimes: [
-        { id: 'Gooey', name: 'Gooey', type: 'base', hp: 10, maxHp: 10, damage: 1, critChance: 0, regen: 0, ascended: false, equipment: [] }
+        { id: 'Gooey', name: 'Gooey', type: 'base', hp: 10, maxHp: 10, damage: 1, critChance: 0, regen: 0, ascended: false, slotIndex: 0, equipment: [] }
     ],
     lastSavedTimestamp: Date.now()
 };
@@ -152,17 +154,19 @@ export function addScraps(amount = 1) {
 }
 
 /**
- * Ensures gameState.slimes contains array of slimes
+ * Ensures gameState.slimes contains array of slimes with unique slotIndex values
  */
 export function syncSlimesArray() {
-    if (!gameState.slimes || gameState.slimes.length === 0) {
-        const uniqueName = 'Gooey';
-        gameState.slimes = [
-            { id: uniqueName, name: uniqueName, type: 'base', hp: 10, maxHp: 10, damage: 1, critChance: 0, regen: 0, ascended: false, equipment: [] }
-        ];
-        gameState.armySize = gameState.slimes.length;
-    } else {
-        // Ensure every existing slime has a unique name, id, and damage stat
+    if (!gameState.slimes) {
+        gameState.slimes = [];
+        gameState.armySize = 0;
+        return;
+    }
+    if (gameState.slimes.length === 0) {
+        gameState.armySize = 0;
+        return;
+    }
+    const usedSlots = new Set();
         gameState.slimes.forEach((s) => {
             if (!s.name || s.name === 'Base Slime' || s.name === 'Fire Slime' || s.name === 'Ice Slime' || s.name === 'Stone Slime' || s.name === 'Toxic Slime') {
                 s.name = generateUniqueSlimeName();
@@ -172,9 +176,15 @@ export function syncSlimesArray() {
             if (!s.damage) s.damage = (slimeConfig.attackDamage || 1) + ((gameState.slimeDamage || 1) - 1);
             if (s.critChance === undefined) s.critChance = 0;
             if (s.regen === undefined) s.regen = 0;
+
+            if (s.slotIndex === undefined || s.slotIndex === null || usedSlots.has(s.slotIndex)) {
+                let nextSlot = 0;
+                while (usedSlots.has(nextSlot)) nextSlot++;
+                s.slotIndex = nextSlot;
+            }
+            usedSlots.add(s.slotIndex);
         });
-        gameState.armySize = gameState.slimes.length;
-    }
+    gameState.armySize = gameState.slimes.length;
 }
 
 /**
@@ -186,7 +196,21 @@ export function getArmySizeUpgradeCost() {
 }
 
 /**
- * Purchase Army Size Upgrade: deducts (4 + CurrentSlimes) scraps & adds 1 Slime (with Fire/Ice spawn chance)
+ * Finds the lowest available/vacant slotIndex (0, 1, 2, 3...) in order
+ */
+export function getNextAvailableSlotIndex() {
+    syncSlimesArray();
+    if (!gameState.slimes || gameState.slimes.length === 0) return 0;
+    const usedSlots = new Set(gameState.slimes.map(s => s.slotIndex).filter(idx => idx !== undefined && idx !== null));
+    let slot = 0;
+    while (usedSlots.has(slot)) {
+        slot++;
+    }
+    return slot;
+}
+
+/**
+ * Purchase Army Size Upgrade: deducts scraps & adds 1 Slime into the lowest vacant slot
  */
 export function buyArmySizeUpgrade() {
     const currentSlimes = (gameState.slimes && gameState.slimes.length) ? gameState.slimes.length : (gameState.armySize || 1);
@@ -220,6 +244,7 @@ export function buyArmySizeUpgrade() {
     const uniqueName = generateUniqueSlimeName();
     const slimeConfig = SLIME_TYPES[newSlimeType] || SLIME_TYPES.base;
     const baseDamage = (slimeConfig.attackDamage || 1) + ((gameState.slimeDamage || 1) - 1);
+    const slotIndex = getNextAvailableSlotIndex();
 
     const newSlime = {
         id: uniqueName,
@@ -231,6 +256,7 @@ export function buyArmySizeUpgrade() {
         critChance: 0,
         regen: 0,
         ascended: false,
+        slotIndex: slotIndex,
         equipment: []
     };
 
@@ -239,6 +265,7 @@ export function buyArmySizeUpgrade() {
 
     gameState.armySize = gameState.slimes.length;
     gameState.maxSlimesReached = Math.max(gameState.maxSlimesReached || 1, gameState.bestRoster.length);
+    gameState.hasUsedDivision = true;
 
     saveStateToLocal();
     return true;
@@ -294,15 +321,15 @@ export function getSlimeDamage() {
 }
 
 /**
- * Get current cost for Augmentation Upgrade (4 + currentSlimeDamage)
+ * Get current cost for Augmentation Upgrade (Exponential: 10 * 1.45^level)
  */
 export function getAugmentationUpgradeCost() {
-    const currentDmg = getSlimeDamage();
-    return 4 + currentDmg;
+    const level = Math.max(0, getSlimeDamage() - 1);
+    return Math.floor(10 * Math.pow(1.45, level));
 }
 
 /**
- * Purchase Augmentation Upgrade: deducts (4 + currentSlimeDamage) scraps & increases slime damage by 1
+ * Purchase Augmentation Upgrade: deducts exponential cost scraps & increases slime damage by 1
  */
 export function buyAugmentationUpgrade() {
     const cost = getAugmentationUpgradeCost();
@@ -331,11 +358,11 @@ export function getSlimeRegen() {
 }
 
 /**
- * Get current cost for Regeneration Upgrade (3 + currentRegenLevel)
+ * Get current cost for Regeneration Upgrade (Exponential: 8 * 1.60^level)
  */
 export function getRegenUpgradeCost() {
-    const currentRegen = getSlimeRegen();
-    return 3 + currentRegen * 5;
+    const level = Math.max(0, getSlimeRegen());
+    return Math.floor(8 * Math.pow(1.60, level));
 }
 
 /**
@@ -349,6 +376,29 @@ export function buyRegenUpgrade() {
     gameState.slimeRegen = (gameState.slimeRegen || 0) + 1;
 
     updateBestRoster();
+    saveStateToLocal();
+    return true;
+}
+
+/**
+ * Get cost for Selection Upgrade (5 Scraps)
+ */
+export function getSelectionUpgradeCost() {
+    return 5;
+}
+
+/**
+ * Purchase Selection Upgrade: deducts 5 scraps & unlocks Slime Sacrifice on character sheets
+ */
+export function buySelectionUpgrade() {
+    const cost = getSelectionUpgradeCost();
+    if ((gameState.scraps || 0) < cost) return false;
+    if (gameState.unlockedUpgrades && gameState.unlockedUpgrades.selection) return false;
+
+    gameState.scraps -= cost;
+    if (!gameState.unlockedUpgrades) gameState.unlockedUpgrades = {};
+    gameState.unlockedUpgrades.selection = true;
+
     saveStateToLocal();
     return true;
 }
@@ -548,6 +598,7 @@ export function saveWaveSnapshot(waveNum, uncollectedLootValue = 0) {
             critChance: s.critChance || 0,
             regen: s.regen || 0,
             ascended: !!s.ascended,
+            slotIndex: s.slotIndex !== undefined ? s.slotIndex : 0,
             equipment: s.equipment ? JSON.parse(JSON.stringify(s.equipment)) : []
         }))
     };
@@ -578,6 +629,7 @@ export function updateBestRoster() {
             critChance: s.critChance || 0,
             regen: s.regen || 0,
             ascended: !!s.ascended,
+            slotIndex: s.slotIndex !== undefined ? s.slotIndex : 0,
             equipment: s.equipment ? JSON.parse(JSON.stringify(s.equipment)) : []
         }));
     } else {
@@ -587,6 +639,7 @@ export function updateBestRoster() {
             const bestMatch = gameState.bestRoster.find(b => (b.name || b.id) === activeKey);
             if (bestMatch) {
                 bestMatch.ascended = activeSlime.ascended || bestMatch.ascended;
+                if (activeSlime.slotIndex !== undefined) bestMatch.slotIndex = activeSlime.slotIndex;
                 if (activeSlime.damage) bestMatch.damage = activeSlime.damage;
                 if (activeSlime.maxHp) bestMatch.maxHp = activeSlime.maxHp;
                 if (activeSlime.critChance) bestMatch.critChance = activeSlime.critChance;
@@ -610,13 +663,13 @@ export function restoreBestRoster() {
         } else {
             const defaultName = 'Gooey';
             gameState.bestRoster = [
-                { id: defaultName, name: defaultName, type: 'base', hp: 10, maxHp: 10, damage: 1, critChance: 0, regen: 0, ascended: false, equipment: [] }
+                { id: defaultName, name: defaultName, type: 'base', hp: 10, maxHp: 10, damage: 1, critChance: 0, regen: 0, ascended: false, slotIndex: 0, equipment: [] }
             ];
         }
     }
 
     // Respawn every slime from bestRoster with 100% full HP and exact individual stats
-    gameState.slimes = gameState.bestRoster.map(s => ({
+    gameState.slimes = gameState.bestRoster.map((s, idx) => ({
         id: s.id || s.name,
         name: s.name || String(s.id || 'Gooey'),
         type: s.type || 'base',
@@ -626,6 +679,7 @@ export function restoreBestRoster() {
         critChance: s.critChance || 0,
         regen: s.regen || 0,
         ascended: !!s.ascended,
+        slotIndex: s.slotIndex !== undefined ? s.slotIndex : idx,
         equipment: s.equipment ? JSON.parse(JSON.stringify(s.equipment)) : []
     }));
 

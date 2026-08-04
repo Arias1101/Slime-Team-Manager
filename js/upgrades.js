@@ -18,6 +18,8 @@ import {
     getDigestionLevel,
     getDigestionUpgradeCost,
     buyDigestionUpgrade,
+    getSelectionUpgradeCost,
+    buySelectionUpgrade,
     getIgnitionLevel,
     getIgnitionUpgradeCost,
     buyIgnitionUpgrade,
@@ -72,7 +74,7 @@ export function updateUpgradesUI() {
     if (totalScore >= 10) gameState.unlockedUpgrades.augmentation = true;
     if (gameState.hasSlimeDied === true) gameState.unlockedUpgrades.regen = true;
     if ((gameState.maxWaveCleared || 0) >= 7) gameState.unlockedUpgrades.digestion = true;
-    if ((gameState.maxSlimesReached || 1) >= 60) gameState.unlockedUpgrades.selection = true;
+    if (gameState.hasUsedDivision === true || (gameState.maxSlimesReached || 1) >= 2) gameState.unlockedUpgrades.selectionCard = true;
 
     if ((gameState.maxWaveCleared || 0) >= 10) {
         gameState.unlockedUpgrades.ignition = true;
@@ -103,6 +105,12 @@ export function updateUpgradesUI() {
     if (upgradeDigestionCardEl) {
         if (gameState.unlockedUpgrades.digestion) upgradeDigestionCardEl.classList.remove('hidden');
         else upgradeDigestionCardEl.classList.add('hidden');
+    }
+
+    const upgradeSelectionCardEl = document.getElementById('upgradeSelectionCard');
+    if (upgradeSelectionCardEl) {
+        if (gameState.unlockedUpgrades.selectionCard) upgradeSelectionCardEl.classList.remove('hidden');
+        else upgradeSelectionCardEl.classList.add('hidden');
     }
 
     if (upgradeIgnitionCardEl) {
@@ -257,6 +265,34 @@ export function updateUpgradesUI() {
         }
     }
 
+    // Upgrade 6: Selection
+    const upgradeSelectionCostEl = document.getElementById('upgradeSelectionCost');
+    const btnUpgradeSelectionEl = document.getElementById('btnUpgradeSelection');
+
+    if (upgradeSelectionCostEl && btnUpgradeSelectionEl) {
+        const isBought = gameState.unlockedUpgrades && gameState.unlockedUpgrades.selection;
+        if (isBought) {
+            upgradeSelectionCostEl.textContent = 'UNLOCKED';
+            btnUpgradeSelectionEl.setAttribute('disabled', 'disabled');
+            btnUpgradeSelectionEl.classList.add('disabled');
+            btnUpgradeSelectionEl.classList.remove('affordable');
+        } else {
+            const costSelection = getSelectionUpgradeCost();
+            upgradeSelectionCostEl.textContent = `${costSelection} 🍖`;
+
+            const canAffordSelection = (gameState.scraps || 0) >= costSelection;
+            if (canAffordSelection) {
+                btnUpgradeSelectionEl.removeAttribute('disabled');
+                btnUpgradeSelectionEl.classList.remove('disabled');
+                btnUpgradeSelectionEl.classList.add('affordable');
+            } else {
+                btnUpgradeSelectionEl.setAttribute('disabled', 'disabled');
+                btnUpgradeSelectionEl.classList.add('disabled');
+                btnUpgradeSelectionEl.classList.remove('affordable');
+            }
+        }
+    }
+
     // Upgrade 7: Ignition
     const upgradeIgnitionValueEl = document.getElementById('upgradeIgnitionValue');
     const upgradeIgnitionCostEl = document.getElementById('upgradeIgnitionCost');
@@ -378,6 +414,16 @@ export function initUpgradesModule() {
     if (btnUpgradeDigestionEl) {
         btnUpgradeDigestionEl.addEventListener('click', () => {
             const success = buyDigestionUpgrade();
+            if (success) {
+                updateUI();
+            }
+        });
+    }
+
+    const btnUpgradeSelectionEl = document.getElementById('btnUpgradeSelection');
+    if (btnUpgradeSelectionEl) {
+        btnUpgradeSelectionEl.addEventListener('click', () => {
+            const success = buySelectionUpgrade();
             if (success) {
                 updateUI();
             }
