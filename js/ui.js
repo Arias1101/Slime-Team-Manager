@@ -5,7 +5,7 @@
 import { gameState, SLIME_TYPES, killSlime, syncSlimesArray, rerollSlimeType } from './state.js';
 import { updateUpgradesUI } from './upgrades.js';
 import { activeGroundLoots } from './enemies.js';
-import { setGamePaused } from './engine.js';
+import { setGamePaused, isGamePaused } from './engine.js';
 
 const scrapsCountEl = document.getElementById('scrapsCount');
 const scoreCountEl = document.getElementById('scoreCount');
@@ -17,7 +17,7 @@ const gameScreenEl = document.getElementById('gameScreen');
 const firebaseNoticeEl = document.getElementById('firebaseNotice');
 
 // Primary Slime Image path
-const SLIME_IMG_SRC = 'images/slimes/base/slime1.png';
+const SLIME_IMG_SRC = 'images/slimes/base/jump.png';
 const SLIME_FALLBACK_SRC = 'images/slimes/army.png';
 
 let lastRenderedArmySize = -1;
@@ -56,7 +56,7 @@ export function updateUI() {
 
         eatBtnEl.classList.remove('state-empty', 'state-moderate', 'state-abundant', 'pulse-eat-btn');
 
-        if (lootCount === 0) {
+        if (lootCount === 0 || isGamePaused) {
             eatBtnEl.classList.add('state-empty');
             eatBtnEl.setAttribute('disabled', 'disabled');
         } else {
@@ -123,54 +123,92 @@ function updateSlimeRoster() {
         });
     }
 
-    rosterListEl.innerHTML = '';
+    const currentNodes = Array.from(rosterListEl.children);
 
     // Render slots 0 through maxSlotIndex in numerical order
     for (let s = 0; s <= maxSlotIndex; s++) {
-        if (slimesBySlot.has(s)) {
-            const slime = slimesBySlot.get(s);
-            const item = document.createElement('div');
+        const slime = slimesBySlot.get(s);
+        const existingNode = currentNodes[s];
+
+        if (slime) {
             const isAscended = slime.ascended === true;
             const slimeConfig = SLIME_TYPES[slime.type] || SLIME_TYPES.base;
             const displayName = slime.name || slime.id || slimeConfig.name;
-
-            item.className = isAscended ? 'roster-grid-item ascended' : 'roster-grid-item';
-            item.id = `roster_item_${slime.id}`;
-            item.title = `[Slot #${s + 1}] ${displayName} (${slimeConfig.name})${isAscended ? ' ✨' : ''}: ${slime.hp}/${slime.maxHp} HP`;
-
             const hpPct = Math.max(0, (slime.hp / slime.maxHp) * 100);
+
             let barColor = '#10b981';
             if (hpPct < 35) barColor = '#ef4444';
             else if (hpPct < 65) barColor = '#f59e0b';
 
-            const iconSrc = `${slimeConfig.folder}/${slimeConfig.prefix}1.png`;
+            // Check if we can reuse the existing node
+            if (existingNode &&
+                existingNode.classList.contains('roster-grid-item') &&
+                !existingNode.classList.contains('empty-slot') &&
+                existingNode.dataset.slimeId === String(slime.id)) {
 
-            item.innerHTML = `
-                <img src="${iconSrc}" alt="${displayName}" class="roster-grid-icon">
-                <div class="roster-grid-hp-bar">
-                    <div class="roster-hp-fill" id="roster_hp_fill_${slime.id}" style="width: ${hpPct}%; background: ${barColor};"></div>
-                </div>
-            `;
+                // Only update HP bar fill style and title without resetting innerHTML!
+                existingNode.title = `[Slot #${s + 1}] ${displayName} (${slimeConfig.name})${isAscended ? ' ✨' : ''}: ${slime.hp}/${slime.maxHp} HP`;
+                existingNode.classList.toggle('ascended', isAscended);
 
-            item.addEventListener('click', () => {
-                openSlimeInspectorModal(slime);
-            });
+                const hpFill = existingNode.querySelector('.roster-hp-fill');
+                if (hpFill) {
+                    hpFill.style.width = `${hpPct}%`;
+                    hpFill.style.background = barColor;
+                }
+            } else {
+                const item = document.createElement('div');
+                item.className = isAscended ? 'roster-grid-item ascended' : 'roster-grid-item';
+                item.id = `roster_item_${slime.id}`;
+                item.dataset.slimeId = String(slime.id);
+                item.title = `[Slot #${s + 1}] ${displayName} (${slimeConfig.name})${isAscended ? ' ✨' : ''}: ${slime.hp}/${slime.maxHp} HP`;
 
-            rosterListEl.appendChild(item);
+                const iconSrc = `${slimeConfig.folder}/jump.png`;
+                item.innerHTML = `
+                    <img src="${iconSrc}" alt="${displayName}" class="roster-grid-icon">
+                    <div class="roster-grid-hp-bar">
+                        <div class="roster-hp-fill" style="width: ${hpPct}%; background: ${barColor};"></div>
+                    </div>
+                `;
+
+                item.addEventListener('click', () => {
+                    openSlimeInspectorModal(slime);
+                });
+
+                if (existingNode) {
+                    existingNode.replaceWith(item);
+                } else {
+                    rosterListEl.appendChild(item);
+                }
+            }
         } else {
             // Vacant/empty slot placeholder in roster
             const fallenSlime = (gameState.bestRoster || []).find(b => b.slotIndex === s);
             const fallenName = fallenSlime ? (fallenSlime.name || fallenSlime.id) : null;
             const ripTitle = fallenName ? `RIP ${fallenName}...` : `RIP Slot #${s + 1}...`;
 
-            const emptyItem = document.createElement('div');
-            emptyItem.className = 'roster-grid-item empty-slot';
-            emptyItem.title = ripTitle;
-            emptyItem.innerHTML = `
-                <div class="roster-empty-icon">💀</div>
-            `;
-            rosterListEl.appendChild(emptyItem);
+            if (existingNode && existingNode.classList.contains('empty-slot') && existingNode.title === ripTitle) {
+                // Already RIP and matches - do nothing!
+            } else {
+                const emptyItem = document.createElement('div');
+                emptyItem.className = 'roster-grid-item empty-slot';
+                emptyItem.id = `roster_item_empty_${s}`;
+                emptyItem.title = ripTitle;
+                emptyItem.innerHTML = `
+                    <div class="roster-empty-icon">💀</div>
+                `;
+
+                if (existingNode) {
+                    existingNode.replaceWith(emptyItem);
+                } else {
+                    rosterListEl.appendChild(emptyItem);
+                }
+            }
         }
+    }
+
+    // Remove any extra trailing slots if maxSlotIndex has shrunk
+    while (rosterListEl.children.length > maxSlotIndex + 1) {
+        rosterListEl.lastElementChild.remove();
     }
 
     // Update --roster-height CSS variable dynamically so upgrades container fits viewport perfectly
@@ -294,6 +332,8 @@ function renderSlimeArmy() {
 
         const existingUnit = armyContainerEl.querySelector(`.slime-unit[data-slime-id="${slimeId}"]`);
         if (existingUnit) {
+            slimeObj.el = existingUnit;
+            slimeObj.statusRowEl = existingUnit.querySelector('.slime-status-row');
             if (existingUnit.dataset.isAttacking !== 'true' && existingUnit.dataset.isEating !== 'true') {
                 existingUnit.style.left = `${coords.posX}px`;
                 existingUnit.style.top = `${coords.posY}px`;
@@ -304,7 +344,7 @@ function renderSlimeArmy() {
         }
 
         const slimeConfig = SLIME_TYPES[slimeObj.type] || SLIME_TYPES.base;
-        const slimeImgSrc = `${slimeConfig.folder}/${slimeConfig.prefix}1.png`;
+        const slimeImgSrc = `${slimeConfig.folder}/jump.png`;
 
         const unit = document.createElement('div');
         unit.className = 'slime-unit';
@@ -331,6 +371,8 @@ function renderSlimeArmy() {
             ${shadowHTML}
         `;
         armyContainerEl.appendChild(unit);
+        slimeObj.el = unit;
+        slimeObj.statusRowEl = unit.querySelector('.slime-status-row');
     });
 }
 
@@ -375,9 +417,9 @@ function renderUserProfile(user) {
 /**
  * Play Slime Rain Sky-Drop Respawn Animation:
  * Slimes drop from the sky 1 by 1 every 0.05s (50ms).
- * - Airborne fall: slime3.png sprite
- * - Ground impact: slime8.png sprite
- * - Idle: slime1.png sprite
+ * - Airborne fall: jump.png frame 3
+ * - Ground impact: jump.png frame 8
+ * - Idle: jump.png frame 1
  * Triggers onComplete callback when ALL slimes have landed and are idling on the ground!
  */
 export function playSlimeRainRespawnAnimation(onComplete) {
@@ -491,9 +533,7 @@ export function playSlimeRainRespawnAnimation(onComplete) {
             if (!armyContainerEl) return;
 
             const slimeConfig = SLIME_TYPES[pos.slimeObj.type] || SLIME_TYPES.base;
-            const fallingImgSrc = `${slimeConfig.folder}/${slimeConfig.prefix}3.png`; // slime3.png during fall
-            const impactImgSrc = `${slimeConfig.folder}/${slimeConfig.prefix}8.png`;  // slime8.png on ground hit
-            const idleImgSrc = `${slimeConfig.folder}/${slimeConfig.prefix}1.png`;    // slime1.png for idle
+            const sheetUrl = `${slimeConfig.folder}/jump.png`;
 
             const unit = document.createElement('div');
             unit.className = 'slime-unit';
@@ -509,11 +549,13 @@ export function playSlimeRainRespawnAnimation(onComplete) {
             unit.style.top = `${startY}px`;
             unit.style.zIndex = `${pos.zIndex}`;
 
+            // Initial falling frame is frame 3 (-38px)
             unit.innerHTML = `
-                <img src="${fallingImgSrc}" 
+                <img src="${sheetUrl}" 
                      onerror="this.onerror=null; this.src='${SLIME_FALLBACK_SRC}';" 
                      alt="${slimeConfig.name}" 
-                     class="slime-img slime-sky-falling">
+                     class="slime-img slime-sky-falling"
+                     style="object-position: -38px 0px;">
                 ${pos.shadowHTML}
             `;
             armyContainerEl.appendChild(unit);
@@ -531,19 +573,21 @@ export function playSlimeRainRespawnAnimation(onComplete) {
                 if (progress < 1.0) {
                     requestAnimationFrame(stepFall);
                 } else {
-                    // 2. Impact Ground: switch to slime8.png
+                    // 2. Impact Ground: switch to impact frame (Frame 8 = -133px)
                     unit.style.top = `${pos.posY}px`;
                     unit.dataset.isFalling = 'false';
                     if (imgEl) {
-                        imgEl.src = impactImgSrc;
+                        imgEl.src = sheetUrl;
+                        imgEl.style.objectPosition = '-133px 0px';
                         imgEl.classList.remove('slime-sky-falling');
                         imgEl.classList.add('slime-impact-squish');
                     }
 
-                    // 3. After 120ms squish impact, switch to slime1.png (idle)
+                    // 3. After 120ms squish impact, switch to idle frame (Frame 1 = 0px)
                     setTimeout(() => {
                         if (imgEl) {
-                            imgEl.src = idleImgSrc;
+                            imgEl.src = sheetUrl;
+                            imgEl.style.objectPosition = '0px 0px';
                             imgEl.classList.remove('slime-impact-squish');
                             imgEl.style.animationDelay = `${pos.animDelay}s`;
                         }
@@ -599,7 +643,10 @@ export function openSlimeInspectorModal(slime) {
     const slimeConfig = SLIME_TYPES[slime.type] || SLIME_TYPES.base;
     const isAscended = slime.ascended === true;
 
-    if (portraitEl) portraitEl.src = `${slimeConfig.folder}/${slimeConfig.prefix}1.png`;
+    if (portraitEl) {
+        portraitEl.src = `${slimeConfig.folder}/jump.png`;
+        portraitEl.style.objectPosition = '0px 0px';
+    }
     if (nameEl) nameEl.textContent = slime.name || slimeConfig.name || 'Slime';
     if (badgeEl) {
         badgeEl.textContent = isAscended ? `${slimeConfig.name} ✨` : slimeConfig.name;
@@ -752,13 +799,14 @@ export function initSlimeModalListeners() {
             rerollBtnEl.classList.add('is-active');
             rerollBtnEl.setAttribute('disabled', 'disabled');
 
-            // 2. Play 1s vibrating dying1.png portrait animation
+            // 2. Play 1s vibrating die.png portrait animation
             const portraitEl = document.getElementById('slimeModalPortrait');
             const currentSlimeType = currentInspectedSlime.type || 'base';
             const currentConfig = SLIME_TYPES[currentSlimeType] || SLIME_TYPES.base;
 
             if (portraitEl) {
-                portraitEl.src = `${currentConfig.folder}/dying1.png`;
+                portraitEl.src = `${currentConfig.folder}/die.png`;
+                portraitEl.style.objectPosition = '0px 0px';
                 portraitEl.classList.add('slime-dying-vibrate');
             }
 
@@ -777,9 +825,8 @@ export function initSlimeModalListeners() {
                     openSlimeInspectorModal(updatedSlime || currentInspectedSlime);
                     updateUI();
                 } else {
-                    if (portraitEl) {
-                        portraitEl.src = `${currentConfig.folder}/${currentConfig.prefix}1.png`;
-                    }
+                        portraitEl.src = `${currentConfig.folder}/jump.png`;
+                        portraitEl.style.objectPosition = '0px 0px';
                     openSlimeInspectorModal(currentInspectedSlime);
                 }
             }, 1000);

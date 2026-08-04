@@ -197,7 +197,8 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
         else if (progress < 0.90) spriteFrame = 7;
         else spriteFrame = 8;
 
-        imgEl.src = `${slimeConfig.folder}/${slimeConfig.prefix}${spriteFrame}.png`;
+        imgEl.src = `${slimeConfig.folder}/jump.png`;
+        imgEl.style.objectPosition = `${-(spriteFrame - 1) * 19}px 0px`;
 
         if (progress >= 0.90 && !hasDealtDamage) {
             hasDealtDamage = true;
@@ -351,7 +352,8 @@ function dealTargetEnemyDamage(targetEnemy, damageAmount, slimeConfig, isCrit = 
  * Smooth walking return from impact landing point back to origin position in horde
  */
 function startSmoothReturnWalk(unitEl, imgEl, shadowEl, slimeConfig, maxDx = 100) {
-    imgEl.src = `${slimeConfig.folder}/${slimeConfig.prefix}1.png`;
+    imgEl.src = `${slimeConfig.folder}/jump.png`;
+    imgEl.style.objectPosition = '0px 0px';
 
     const returnDuration = Math.round(Math.max(650, 400 + maxDx * 3.6));
 
@@ -468,7 +470,8 @@ function dispatchSingleSlimeToEat() {
     const slimeConfig = SLIME_TYPES[slimeType] || SLIME_TYPES.base;
 
     // Use sprite 2 of the corresponding slime during the loot animation
-    imgEl.src = `${slimeConfig.folder}/${slimeConfig.prefix}2.png`;
+    imgEl.src = `${slimeConfig.folder}/jump.png`;
+    imgEl.style.objectPosition = '-19px 0px';
 
     const slideDuration = Math.round(Math.max(450, distance * 3.8));
     const startSlideTime = performance.now();
@@ -497,7 +500,8 @@ function dispatchSingleSlimeToEat() {
 
     function eatLootAndReturn() {
         // Switch to sprite 4 (eating pose) when stopping on top of the loot!
-        imgEl.src = `${slimeConfig.folder}/${slimeConfig.prefix}4.png`;
+        imgEl.src = `${slimeConfig.folder}/jump.png`;
+        imgEl.style.objectPosition = '-57px 0px';
 
         if (targetLoot.el) {
             targetLoot.el.style.transition = 'transform 0.15s ease-in, opacity 0.15s ease-in';
@@ -587,7 +591,8 @@ function dispatchSingleSlimeToEat() {
         // Short 200ms eating pose pause before returning
         setTimeout(() => {
             // Switch back to sprite 2 for the return slide
-            imgEl.src = `${slimeConfig.folder}/${slimeConfig.prefix}2.png`;
+            imgEl.src = `${slimeConfig.folder}/jump.png`;
+            imgEl.style.objectPosition = '-19px 0px';
 
             // --- PHASE 2: 60 FPS Return Walk back to Pyramid ---
             const returnDuration = Math.round(Math.max(500, distance * 4.0));
@@ -610,7 +615,8 @@ function dispatchSingleSlimeToEat() {
                     requestAnimationFrame(animateReturnWalk);
                 } else {
                     // Return complete! Clean up & reset idle state with sprite 1
-                    imgEl.src = `${slimeConfig.folder}/${slimeConfig.prefix}1.png`;
+                    imgEl.src = `${slimeConfig.folder}/jump.png`;
+                    imgEl.style.objectPosition = '0px 0px';
                     imgEl.style.transform = '';
                     imgEl.style.transition = '';
                     imgEl.style.animation = '';

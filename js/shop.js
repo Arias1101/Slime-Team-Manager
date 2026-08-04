@@ -29,7 +29,7 @@ export function initShopModule() {
  * Generate 3 random shop items selected from ENEMY_TYPES
  */
 function generateShopStock() {
-    const enemyKeys = Object.keys(ENEMY_TYPES).filter(k => k !== 'test');
+    const enemyKeys = Object.keys(ENEMY_TYPES).filter(k => k !== 'test' && ENEMY_TYPES[k].tier !== -1);
     if (enemyKeys.length === 0) return;
 
     shopInventory = [];
@@ -159,7 +159,7 @@ function renderSlimeRosterBrowser() {
         card.title = `${slime.name} (${slimeConfig.name}): ${slime.hp}/${slime.maxHp} HP`;
 
         card.innerHTML = `
-            <img src="${slimeConfig.folder}/${slimeConfig.prefix}1.png" class="shop-avatar-img" alt="${slime.name}">
+            <img src="${slimeConfig.folder}/jump.png" class="shop-avatar-img" alt="${slime.name}">
             <span class="shop-avatar-name">${slime.name}</span>
             ${isAscended ? '<span class="shop-avatar-sparkle">✨</span>' : ''}
         `;
@@ -192,14 +192,16 @@ function renderSelectedSlimeSheet() {
 
     let html = `
         <div class="shop-slime-info-header">
-            <img src="${slimeConfig.folder}/${slimeConfig.prefix}1.png" class="shop-slime-portrait" alt="${selectedSlime.name}">
+            <img src="${slimeConfig.folder}/jump.png" class="shop-slime-portrait" alt="${selectedSlime.name}">
             <div class="shop-slime-info-text">
                 <div class="shop-slime-info-name">
                     ${selectedSlime.name}
                     ${isAscended ? '<span class="ascended-badge">✨ Ascended</span>' : ''}
                 </div>
                 <div class="shop-slime-info-stats">
-                    ❤️ ${selectedSlime.hp}/${selectedSlime.maxHp} HP | ⚔️ ${selectedSlime.damage} Dmg | ⚡ ${selectedSlime.critChance || 0}% Crit
+                    <span title="Health Points (HP) - Slime dies if this hits 0.">❤️ ${selectedSlime.hp}/${selectedSlime.maxHp} HP</span> | 
+                    <span title="Damage - Base power dealt to enemies during collisions.">⚔️ ${selectedSlime.damage} Dmg</span> | 
+                    <span title="Critical Chance - Probability to deal double damage on hits.">⚡ ${selectedSlime.critChance || 0}% Crit</span>
                 </div>
             </div>
         </div>

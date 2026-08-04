@@ -547,6 +547,35 @@ export function updateUpgradesUI() {
     if (tabBtnUpgradesEl) {
         tabBtnUpgradesEl.textContent = affordableCount > 0 ? `🧪 Upgrades (${affordableCount})` : `🧪 Upgrades`;
     }
+
+    // Dynamic Visual Sorting: Affordable upgrade cards sit at the top while maintaining relative order
+    const defaultOrder = [
+        'upgradeArmySizeCard',
+        'upgradeSelectionCard',
+        'upgradeAugmentationCard',
+        'upgradeAscensionCard',
+        'upgradeRegenCard',
+        'upgradeDigestionCard',
+        'upgradeIncubationCard',
+        'upgradeIgnitionCard',
+        'upgradeGlaciationCard',
+        'upgradePetrificationCard',
+        'upgradeIntoxicationCard',
+        'upgradeEvolutionCard',
+        'upgradeExaltationCard'
+    ];
+
+    const upgradeCards = document.querySelectorAll('#upgradesContainer .upgrade-card');
+    upgradeCards.forEach(card => {
+        const idx = defaultOrder.indexOf(card.id);
+        const orderIndex = idx !== -1 ? idx : 999;
+        
+        // Check if this upgrade card is affordable (contains a button with class 'affordable')
+        const isAffordable = !!card.querySelector('.btn-plus.affordable');
+        
+        // Affordable ones have low orders (0-12), expensive ones have high orders (1000-1012)
+        card.style.order = isAffordable ? orderIndex : (orderIndex + 1000);
+    });
 }
 
 /**

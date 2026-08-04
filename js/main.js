@@ -4,7 +4,7 @@
 
 import { loadStateFromLocal } from './state.js';
 import { initAuth, loginWithGoogle, logoutUser } from './auth.js';
-import { startEngine } from './engine.js';
+import { startEngine, setGamePaused, isGamePaused } from './engine.js';
 import { updateUI, setAuthScreenState, showFirebaseNotice, playSlimeRainRespawnAnimation, initSlimeModalListeners, initMainTabsListeners } from './ui.js';
 import { initEnemiesModule, startNextWave, setAutoPlay, resetGameFull, rewindWaveState } from './enemies.js';
 import { triggerRandomSlimeAttack, triggerSlimeEatLoot, initAscendedAutoAttacks } from './slimes.js';
@@ -97,7 +97,22 @@ document.addEventListener('DOMContentLoaded', () => {
         battlefieldCard.addEventListener('click', (e) => {
             // Ignore click if clicking directly on a button inside the card
             if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+            if (isGamePaused) return;
             triggerRandomSlimeAttack();
+        });
+    }
+
+    // Manual Pause/Play Button Click Handler
+    const btnPauseGame = document.getElementById('btnPauseGame');
+    if (btnPauseGame) {
+        btnPauseGame.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent triggering battlefield click
+            const isPausedNow = !isGamePaused;
+            setGamePaused(isPausedNow, true); // Set manual pause!
+            btnPauseGame.textContent = isPausedNow ? '▶️' : '⏸️';
+            btnPauseGame.title = isPausedNow ? 'Resume' : 'Pause';
+            btnPauseGame.classList.toggle('paused', isPausedNow);
+            updateUI(); // Force Eat button state check!
         });
     }
 

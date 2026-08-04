@@ -8,12 +8,17 @@ import { updateEnemies } from './enemies.js';
 
 let lastTickTime = Date.now();
 export let isGamePaused = false;
+export let isManuallyPaused = false;
 
-export function setGamePaused(paused) {
-    isGamePaused = paused;
+export function setGamePaused(paused, isManual = false) {
+    if (isManual) {
+        isManuallyPaused = paused;
+    }
+    isGamePaused = paused || isManuallyPaused;
+
     const battlefieldCard = document.querySelector('.battlefield-card');
     if (battlefieldCard) {
-        if (paused) {
+        if (isGamePaused) {
             battlefieldCard.classList.add('game-paused');
         } else {
             battlefieldCard.classList.remove('game-paused');
