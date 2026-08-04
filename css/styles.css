@@ -30,6 +30,12 @@
     user-select: none;
 }
 
+html, body {
+    height: 100vh;
+    overflow-y: hidden;
+    overflow-x: hidden;
+}
+
 body {
     background-color: var(--bg-dark);
     background-image:
@@ -38,7 +44,6 @@ body {
         radial-gradient(at 50% 50%, rgba(34, 36, 44, 0.3) 0px, transparent 70%);
     color: var(--color-text);
     font-family: var(--font-body);
-    min-height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -338,10 +343,10 @@ body.modal-open {
     max-width: 532px;
     display: flex;
     flex-direction: column;
-    padding: 16px;
-    gap: 12px;
+    padding: 10px 16px;
+    gap: 8px;
     position: relative;
-    margin-top: 80px;
+    margin-top: 70px;
 }
 
 /* Slime Status Roster Panel (Always-Visible Top Horizontal Rows: 15 items per line) */
@@ -2840,9 +2845,27 @@ body.modal-open {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    max-height: 520px;
+    max-height: calc(100vh - 340px);
     overflow-y: auto;
     padding-right: 4px;
+}
+
+.upgrades-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.upgrades-container::-webkit-scrollbar-track {
+    background: rgba(18, 19, 22, 0.4);
+    border-radius: 4px;
+}
+
+.upgrades-container::-webkit-scrollbar-thumb {
+    background: rgba(16, 185, 129, 0.4);
+    border-radius: 4px;
+}
+
+.upgrades-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(16, 185, 129, 0.8);
 }
 
 .upgrade-card {
