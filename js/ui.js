@@ -47,17 +47,26 @@ export function updateUI() {
         }
     }
 
-    // Update Eat Button loot count & pulsing animation when loot > 10
+    // Update Eat Button loot count & responsive states
     const eatBtnEl = document.getElementById('btnEat');
     const eatLootCountEl = document.getElementById('eatLootCount');
     if (eatBtnEl && eatLootCountEl) {
         const lootCount = activeGroundLoots ? activeGroundLoots.length : 0;
         eatLootCountEl.textContent = lootCount;
 
-        if (lootCount > 9) {
-            eatBtnEl.classList.add('pulse-eat-btn');
+        eatBtnEl.classList.remove('state-empty', 'state-moderate', 'state-abundant', 'pulse-eat-btn');
+
+        if (lootCount === 0) {
+            eatBtnEl.classList.add('state-empty');
+            eatBtnEl.setAttribute('disabled', 'disabled');
         } else {
-            eatBtnEl.classList.remove('pulse-eat-btn');
+            eatBtnEl.removeAttribute('disabled');
+            if (lootCount >= 1 && lootCount <= 5) {
+                eatBtnEl.classList.add('state-moderate');
+            } else {
+                eatBtnEl.classList.add('state-abundant');
+                eatBtnEl.classList.add('pulse-eat-btn');
+            }
         }
     }
 

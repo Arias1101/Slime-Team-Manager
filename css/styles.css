@@ -461,7 +461,7 @@ body.modal-open {
 .battlefield-wrapper {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 0;
     width: 500px;
 }
 
@@ -475,7 +475,7 @@ body.modal-open {
     background-size: 100% 100%;
     background-position: center;
     background-repeat: no-repeat;
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     border: 1px solid var(--border-color);
     box-shadow: var(--shadow-glow);
     overflow: hidden;
@@ -987,8 +987,8 @@ body.modal-open {
 .battle-controls-bar {
     display: flex;
     justify-content: center;
-    gap: 12px;
-    margin-top: 10px;
+    gap: 0;
+    margin-top: 0;
     width: 100%;
 }
 
@@ -2444,17 +2444,14 @@ body.modal-open {
    ========================================== */
 
 .btn-eat-main {
-    min-width: 170px;
-    padding: 7px 22px;
-    background: linear-gradient(135deg, #f59e0b, #d97706);
-    border: 1px solid #fbbf24;
-    border-radius: 8px;
-    color: #0f172a;
+    width: 100%;
+    padding: 10px 22px;
+    border-top: none;
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
     font-size: 0.95rem;
     font-weight: 800;
     cursor: pointer;
     transition: all 0.15s ease;
-    box-shadow: 0 2px 10px rgba(245, 158, 11, 0.35);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -2462,18 +2459,53 @@ body.modal-open {
     letter-spacing: 0.3px;
 }
 
-.btn-eat-main:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.5);
-    filter: brightness(1.1);
+/* state-empty: Nothing to eat, grayed out/disabled style */
+.btn-eat-main.state-empty,
+.btn-eat-main[disabled] {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-top: none;
+    color: rgba(255, 255, 255, 0.25);
+    cursor: not-allowed;
+    box-shadow: none;
+    pointer-events: none;
 }
 
-.btn-eat-main:active {
-    transform: translateY(1px) scale(0.95);
+/* state-moderate: 1 to 5 items, enabled but subtle */
+.btn-eat-main.state-moderate {
+    background: rgba(30, 41, 59, 0.85);
+    border: 1px solid rgba(251, 191, 36, 0.35);
+    border-top: none;
+    color: #fbbf24;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.btn-eat-main.state-moderate:hover {
+    background: rgba(245, 158, 11, 0.15);
+    border-color: rgba(251, 191, 36, 0.6);
+    color: #f59e0b;
+}
+.btn-eat-main.state-moderate:active {
+    background: rgba(245, 158, 11, 0.3);
+    color: #fbbf24;
+}
+
+/* state-abundant: More than 5 items, vibrant yellow/orange gradient */
+.btn-eat-main.state-abundant {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    border: 1px solid #fbbf24;
+    border-top: none;
+    color: #0f172a;
+    box-shadow: 0 2px 10px rgba(245, 158, 11, 0.25);
+}
+.btn-eat-main.state-abundant:hover {
+    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.4);
+    filter: brightness(1.1);
+}
+.btn-eat-main.state-abundant:active {
     background: linear-gradient(135deg, #ea580c, #c2410c);
     border-color: #f97316;
     color: #ffffff;
-    box-shadow: 0 1px 4px rgba(234, 88, 12, 0.6);
+    box-shadow: 0 1px 4px rgba(234, 88, 12, 0.5);
 }
 
 .btn-eat-main.pulse-eat-btn {
@@ -2482,19 +2514,16 @@ body.modal-open {
 
 @keyframes eatPulseGlow {
     0% {
-        transform: scale(1);
-        box-shadow: 0 0 10px rgba(245, 158, 11, 0.4), 0 4px 14px rgba(245, 158, 11, 0.35);
+        box-shadow: 0 0 10px rgba(245, 158, 11, 0.4), 0 4px 14px rgba(245, 158, 11, 0.25);
     }
 
     50% {
-        transform: scale(1.06);
-        box-shadow: 0 0 25px rgba(245, 158, 11, 0.9), 0 8px 25px rgba(245, 158, 11, 0.7);
+        box-shadow: 0 0 25px rgba(245, 158, 11, 0.8), 0 8px 25px rgba(245, 158, 11, 0.5);
         border-color: #fef08a;
     }
 
     100% {
-        transform: scale(1);
-        box-shadow: 0 0 10px rgba(245, 158, 11, 0.4), 0 4px 14px rgba(245, 158, 11, 0.35);
+        box-shadow: 0 0 10px rgba(245, 158, 11, 0.4), 0 4px 14px rgba(245, 158, 11, 0.25);
     }
 }
 
