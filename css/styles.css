@@ -526,6 +526,19 @@ body.modal-open {
     color: #fca5a5;
 }
 
+.enemy-wave-count {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: #fca5a5;
+    font-family: var(--font-heading);
+    font-size: 0.68rem;
+    padding: 1px 8px;
+    border-radius: 10px;
+    margin-bottom: 6px;
+    letter-spacing: 0.5px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
 .army-container {
     position: relative;
     width: 100%;

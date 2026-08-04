@@ -61,7 +61,7 @@ export function updateUI() {
             eatBtnEl.setAttribute('disabled', 'disabled');
         } else {
             eatBtnEl.removeAttribute('disabled');
-            if (lootCount >= 1 && lootCount <= 5) {
+            if (lootCount >= 1 && lootCount <= 9) {
                 eatBtnEl.classList.add('state-moderate');
             } else {
                 eatBtnEl.classList.add('state-abundant');

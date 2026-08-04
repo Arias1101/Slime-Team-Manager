@@ -360,6 +360,16 @@ export let activeEnemies = [];
 export let activeProjectiles = [];
 export let activeGroundLoots = [];
 
+export let waveTotalEnemies = 0;
+export let waveSpawnedEnemies = 0;
+
+export function updateWaveCountdownUI() {
+    const el = document.getElementById('enemyWaveCount');
+    if (el) {
+        el.textContent = `${waveSpawnedEnemies}/${waveTotalEnemies}`;
+    }
+}
+
 let isAutoPlay = true; // Game is always playing by default
 let isWaveActive = false;
 let autoWaveTimeoutId = null;
@@ -544,6 +554,10 @@ export function startNextWave() {
     const enemyList = parseEnemyList(rawEnemyList);
     const intervalMs = Math.max(0, spawnIntervalSec * 1000);
 
+    waveTotalEnemies = enemyList.length;
+    waveSpawnedEnemies = 0;
+    updateWaveCountdownUI();
+
     // Spawn enemies based on configured interval (0 = instant spawn)
     enemyList.forEach((enemyType, idx) => {
         if (intervalMs === 0) {
@@ -637,6 +651,10 @@ export function resetGameFull() {
     // 4. Force DOM army container to clear and re-render 1 Base Slime
     const armyContainerEl = document.getElementById('armyContainer');
     if (armyContainerEl) armyContainerEl.innerHTML = '';
+
+    waveTotalEnemies = 0;
+    waveSpawnedEnemies = 0;
+    updateWaveCountdownUI();
 
     // 5. Update UI & restart Wave 1
     updateUI();
@@ -855,6 +873,11 @@ export function spawnEnemy(typeId = 'beggar', hpMultiplier = 1.0) {
 
     activeEnemies.push(enemyInstance);
     renderNewEnemyDOM(enemyInstance);
+
+    // Update wave countdown
+    waveSpawnedEnemies = Math.min(waveTotalEnemies, waveSpawnedEnemies + 1);
+    updateWaveCountdownUI();
+
     return enemyInstance;
 }
 
