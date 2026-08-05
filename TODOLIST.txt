@@ -1,19 +1,17 @@
 --------------- TODO NOW -----------------
-1) Add the wave counter to the top right small counter, when its counting down: "Wave X in 10s" and when its counting ennemy spawns: "Wave X: 7/12"
-2) Put the "variable" number from each upgrade text next to the title of the upgrade like so "(Current: X)" to prevent the intempesting resizing of upgrade cards when the number changes in size.
-3) Remove smart sorting of upgrades and increase size of the upgrade window by about 10px or so, because the scrollbar overlaps a bit on upgrade cards.
-4) give a fixed size to the squares of upgrades costs so their size doesnt change when gaining / spending scraps
-5) Add a yellow / orange border for upgrades at lvl 0 (until they are upgraded for the first time)
-6) Rework the Slime Character Sheet layout. Add a tab (disabled for now) in the sheet with "Talent Tree" as title, wich will be unlocked and developped later. Reduce size of the stats of the slime to only one liners to make room for buttons. Move buttons next to the exit cross inside the sheet instead of above.
-7) Add a counter for each slime, counting how many wave it cleared since last time it died. When a slime dies, reset this counter. Add this counter as "XP points" on the slime character sheet.
-8) Replace the Incubation Upgrade with a unique upgrade that auto clic Eat ONCE when the last ennemy of each wave dies.
-9) Change the style of the Ascension in the Roster (its currently pink with pink glowing background). Instead, only use a pink border. However, when a Slime is Burning / Poisoned / Frozen / Stunned, its background in the roster should reflect it by changing color.
-10) Remove "Exaltation" from the game for now.
-11) When 60 Slimes are Ascended for the first time, set the price label of the upgrade to MAX
-12) Add an Upgrade "Fortification" to the game wich increases the max hp of slimes by 1. Base price and increase rate are the same as the damage upgrade, this upgrade is unlocked when finishing the wave 30.
-13) Set a maximum for the "Regeneration" Upgrade (5 hp/s max by default), this maximum increases by half the lvl of the new Max Hp Upgrade.
-14) When the boss (catapult) of wave 30 dies, the shop appears although I did not pick up its loot (the boulder). Additionaly, if I wait 10 second without picking the loot of a boss, a popup saying the shop is arriving appears. After that, nothing happens if I pick up the loot. This popup should absolutly wait for all loot to be gone from the battlefield to appear.
-15) Use the same pixel art font as the one used for damage numbers everywhere on the App, from numbers to titles and descriptions.
+1) Put the "variable" number from each upgrade text next to the title of the upgrade like so "(Current: X)" to prevent the intempesting resizing of upgrade cards when the number changes in size.
+2) Move the price of upgrades under the button to gain width, reduce font size of the price and width of the price box.
+3) Add a yellow / orange border for upgrades at lvl 0 (until they are upgraded for the first time)
+4) Rework the Slime Character Sheet layout. Add a tab (disabled for now) in the sheet with "Talent Tree" as title, wich will be unlocked and developped later. Reduce size of the stats of the slime to only one liners to make room for buttons. Move buttons next to the exit cross inside the sheet instead of above.
+5) Add a counter for each slime, counting how many wave it cleared since last time it died. When a slime dies, reset this counter. Add this counter as "XP points" on the slime character sheet.
+6) Replace the Incubation Upgrade with a unique upgrade that auto clic Eat ONCE when the last ennemy of each wave dies.
+7) Change the style of the Ascension in the Roster (its currently pink with pink glowing background). Instead, only use a pink border. However, when a Slime is Burning / Poisoned / Frozen / Stunned, its background in the roster should reflect it by changing color.
+8) Remove "Exaltation" from the game for now.
+9) When 60 Slimes are Ascended for the first time, set the price label of the upgrade to MAX
+10) Add an Upgrade "Fortification" to the game wich increases the max hp of slimes by 1. Base price and increase rate are the same as the damage upgrade, this upgrade is unlocked when finishing the wave 30.
+11) Set a maximum for the "Regeneration" Upgrade (5 hp/s max by default), this maximum increases by half the lvl of the new Max Hp Upgrade.
+12) When the boss (catapult) of wave 30 dies, the shop appears although I did not pick up its loot (the boulder). Additionaly, if I wait 10 second without picking the loot of a boss, a popup saying the shop is arriving appears. After that, nothing happens if I pick up the loot. This popup should absolutly wait for all loot to be gone from the battlefield to appear.
+13) Use the same pixel art font as the one used for damage numbers everywhere on the App, from numbers to titles and descriptions.
 
 
 

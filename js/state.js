@@ -151,7 +151,9 @@ export const defaultState = {
     hasSlimeDied: false,  // Unlocks Regeneration upgrade when true
     hasUsedDivision: false, // Unlocks Selection upgrade when true
     digestionLevel: 0,    // Level of Digestion upgrade (extra slimes going to eat)
-    incubationLevel: 0,   // Level of Incubation upgrade (passive scraps & score per wave)
+    incubationLevel: 0,   // Legacy save field
+    autoEatLevel: 0,
+    fortificationLevel: 0,
     ignitionLevel: 0,     // Level of Ignition upgrade (0-10, 2% Fire Slime spawn chance per level)
     glaciationLevel: 0,   // Level of Glaciation upgrade (0-10, 2% Ice Slime spawn chance per level)
     petrificationLevel: 0,// Level of Petrification upgrade (0-10, 2% Stone Slime spawn chance per level)
@@ -163,6 +165,8 @@ export const defaultState = {
         regen: false,
         digestion: false,
         incubation: false,
+        autoEat: false,
+        fortification: false,
         selectionCard: false,
         selection: false,
         evolutionCard: false,
@@ -218,6 +222,7 @@ export function syncSlimesArray() {
         if (!s.damage) s.damage = (slimeConfig.attackDamage || 1) + ((gameState.slimeDamage || 1) - 1);
         if (s.critChance === undefined) s.critChance = 0;
         if (s.regen === undefined) s.regen = 0;
+        if (s.wavesClearedSinceDeath === undefined) s.wavesClearedSinceDeath = 0;
 
         if (s.slotIndex === undefined || s.slotIndex === null || usedSlots.has(s.slotIndex)) {
             let nextSlot = 0;
@@ -335,7 +340,7 @@ export function buyArmySizeUpgrade() {
             damage: baseDamage,
             critChance: 0,
             regen: 0,
-            ascended: isExalted,
+            ascended: false,
             slotIndex: slotIndex,
             equipment: []
         };
@@ -453,6 +458,7 @@ export function getRegenUpgradeCost() {
  * Purchase Regeneration Upgrade: deducts (3 + currentRegenLevel) scraps & increases HP regen per wave by 1
  */
 export function buyRegenUpgrade() {
+    if (getSlimeRegen() >= getRegenMax()) return false;
     const cost = getRegenUpgradeCost();
     if ((gameState.scraps || 0) < cost) return false;
 
@@ -491,7 +497,7 @@ export function buySelectionUpgrade() {
  * Get current Incubation upgrade level (default 0)
  */
 export function getIncubationLevel() {
-    return gameState.incubationLevel || 0;
+    return gameState.autoEatLevel || 0;
 }
 
 /**
@@ -499,21 +505,16 @@ export function getIncubationLevel() {
  */
 export function getIncubationUpgradeCost() {
     const level = Math.max(0, getIncubationLevel());
-    return Math.floor(5 * Math.pow(1.50, level));
+    return level > 0 ? Infinity : 15;
 }
 
 /**
  * Purchase Incubation Upgrade: deducts scraps & increases passive scraps per wave by 5
  */
 export function buyIncubationUpgrade() {
-    const cost = getIncubationUpgradeCost();
-    if ((gameState.scraps || 0) < cost) return false;
-
-    gameState.scraps -= cost;
-    gameState.incubationLevel = (gameState.incubationLevel || 0) + 1;
-
-    saveStateToLocal();
-    return true;
+    if ((gameState.autoEatLevel || 0) > 0) return false;
+    const cost = 15; if ((gameState.scraps || 0) < cost) return false;
+    gameState.scraps -= cost; gameState.autoEatLevel = 1; saveStateToLocal(); return true;
 }
 
 /**
@@ -902,3 +903,12 @@ export function loadStateFromLocal() {
     }
     saveStateToLocal();
 }
+
+
+
+export function getRegenMax() { return 5 + Math.floor((gameState.fortificationLevel || 0) / 2); }
+export function getFortificationLevel() { return gameState.fortificationLevel || 0; }
+export function getFortificationUpgradeCost() { return Math.floor(10 * Math.pow(1.45, getFortificationLevel())); }
+export function buyFortificationUpgrade() { const cost = getFortificationUpgradeCost(); if ((gameState.scraps || 0) < cost) return false; gameState.scraps -= cost; gameState.fortificationLevel = getFortificationLevel() + 1; (gameState.slimes || []).forEach(s => { s.maxHp = (s.maxHp || 10) + 1; s.hp = Math.min(s.maxHp, (s.hp || 0) + 1); }); updateBestRoster(); saveStateToLocal(); return true; }
+
+

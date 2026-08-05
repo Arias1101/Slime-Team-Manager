@@ -3,7 +3,7 @@
  */
 
 import { gameState, addScraps, saveStateToLocal, saveWaveSnapshot, restoreBestRoster, SLIME_TYPES } from './state.js';
-import { healAllSlimes, initAscendedAutoAttacks, clearAscendedAutoAttacks, showFloatingDamageNumber, showFloatingStatusTextAt, showBattlefieldWaveBanner } from './slimes.js';
+import { healAllSlimes, initAscendedAutoAttacks, clearAscendedAutoAttacks, showFloatingDamageNumber, showFloatingStatusTextAt, showBattlefieldWaveBanner, triggerSlimeEatLoot } from './slimes.js';
 import { updateUI, playSlimeRainRespawnAnimation } from './ui.js';
 import { openShopModal } from './shop.js';
 import { isGamePaused } from './engine.js';
@@ -83,9 +83,10 @@ export const ENEMY_TYPES = {
         attackSpeed: 0.1,
         moveSpeed: 20,
         targetX: 150,
-        loot_value: 50,
-        loot_name: 'Car',
-        loot_effect: { stat: 'effect', effectType: 'stun', text: '💫 Stun' }
+        loot_value: 500,
+        loot_name: 'Shiny Horse Badge',
+        loot_effect: [{ stat: 'damage', value: 5, text: '+10 Damage' },
+        { stat: 'effect', effectType: 'stun', text: '💫 Stun' }]
     },
 
     // Tier1 - Villagers ------------------------
@@ -435,7 +436,7 @@ export let waveSpawnedEnemies = 0;
 export function updateWaveCountdownUI() {
     const el = document.getElementById('enemyWaveCount');
     if (el) {
-        el.textContent = `${waveSpawnedEnemies}/${waveTotalEnemies}`;
+        el.textContent = `Wave ${gameState.currentWave}: ${waveSpawnedEnemies}/${waveTotalEnemies}`;
     }
 }
 
@@ -465,7 +466,7 @@ export function startNextWaveCountdown(seconds = 10) {
 function updateWaveCountdownText() {
     const el = document.getElementById('enemyWaveCount');
     if (el) {
-        el.textContent = `Next wave: ${nextWaveCountdownSec}`;
+        el.textContent = `Wave ${gameState.currentWave} in ${nextWaveCountdownSec}s`;
     }
 }
 
@@ -697,6 +698,8 @@ export function resetGameFull() {
     gameState.hasUsedDivision = false;
     gameState.digestionLevel = 0;
     gameState.incubationLevel = 0;
+    gameState.autoEatLevel = 0;
+    gameState.fortificationLevel = 0;
     gameState.ignitionLevel = 0;
     gameState.glaciationLevel = 0;
     gameState.petrificationLevel = 0;
@@ -803,11 +806,13 @@ function checkWaveCompletion() {
             });
         }
 
-        // Apply Incubation passive bonus scraps & score per wave cleared (+5 per level)
-        if ((gameState.incubationLevel || 0) > 0) {
-            const bonusScraps = (gameState.incubationLevel || 0) * 5;
-            addScraps(bonusScraps);
-            console.log(`[INCUBATION] Granted +${bonusScraps} passive Scraps & Score for clearing wave!`);
+        // XP is the number of waves survived since this Slime last died.
+        (gameState.slimes || []).forEach(s => { s.wavesClearedSinceDeath = (s.wavesClearedSinceDeath || 0) + 1; });
+        // Give airborne slimes time to land before sending one to eat.
+        if ((gameState.autoEatLevel || 0) > 0) {
+            setTimeout(() => {
+                if (activeGroundLoots.length > 0) triggerSlimeEatLoot();
+            }, 2000);
         }
 
         // Sum total scrap value of uncollected ground loots on battlefield
@@ -825,15 +830,10 @@ function checkWaveCompletion() {
         // Every 10th wave (10, 20, 30...), wait for slimes to eat ALL ground loots, then trigger congrats banner + 2s break!
         if (clearedWaveNum > 0 && clearedWaveNum % 10 === 0) {
             console.log(`[MERCHANT SHOP] Wave ${clearedWaveNum} cleared! Waiting for slimes to eat all ground loots...`);
-
-            let waitTicks = 0;
-            const maxWaitTicks = 80; // Max 12 seconds safety timeout
-
             const checkLootInterval = setInterval(() => {
-                waitTicks++;
                 const hasRemainingLoot = activeGroundLoots && activeGroundLoots.length > 0;
 
-                if (!hasRemainingLoot || waitTicks >= maxWaitTicks) {
+                if (!hasRemainingLoot) {
                     clearInterval(checkLootInterval);
 
                     // Re-save wave snapshot & update UI with newly collected scraps
@@ -1551,6 +1551,7 @@ export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg') 
 
             if (slime.hp <= 0) {
                 gameState.hasSlimeDied = true;
+                slime.wavesClearedSinceDeath = 0;
                 // Instantly remove dead slime from memory array
                 gameState.slimes = gameState.slimes.filter(s => s.id !== slime.id);
                 gameState.armySize = gameState.slimes.length;
@@ -1782,3 +1783,10 @@ export function spawnSlashEffect(enemy) {
         }
     }, 50);
 }
+
+
+
+
+
+
+

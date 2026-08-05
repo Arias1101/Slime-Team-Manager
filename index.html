@@ -167,206 +167,186 @@
                         </div>
                         <div class="upgrades-container" id="upgradesContainer">
                             <!-- Upgrade: Division -->
-                            <div class="upgrade-card" id="upgradeArmySizeCard">
+                            <div class="upgrade-card level-zero" id="upgradeArmySizeCard">
                                 <div class="upgrade-info">
                                     <img src="images/upgrades/division.png" alt="Division" class="upgrade-icon-img">
                                     <div class="upgrade-details">
-                                        <h4 class="upgrade-card-title">Division</h4>
-                                        <span class="upgrade-text">A random Slime divides itself, creating a new one (
-                                            <strong id="upgradeSlimeCount" class="upgrade-value">1</strong> Slimes
-                                            currently)</span>
+                                        <h4 class="upgrade-card-title">Division <span class="upgrade-current">(Current: <strong id="upgradeSlimeCount" class="upgrade-value">1</strong>)</span></h4>
+                                        <span class="upgrade-text">A random Slime divides itself, creating a new one.</span>
                                     </div>
                                 </div>
                                 <div class="upgrade-action">
-                                    <span class="upgrade-cost" id="upgradeArmySizeCost">5 🍖</span>
                                     <button id="btnUpgradeArmySize" class="btn-plus" disabled>+</button>
+                                    <span class="upgrade-cost" id="upgradeArmySizeCost">5 🍖</span>
                                 </div>
                             </div>
 
                             <!-- Upgrade: Selection -->
-                            <div class="upgrade-card" id="upgradeSelectionCard">
+                            <div class="upgrade-card level-zero" id="upgradeSelectionCard">
                                 <div class="upgrade-info">
                                     <img src="images/upgrades/selection.png" alt="Selection" class="upgrade-icon-img"
                                         onerror="this.onerror=null; this.src='images/upgrades/division.png';">
                                     <div class="upgrade-details">
                                         <h4 class="upgrade-card-title">Selection</h4>
-                                        <span class="upgrade-text">Unlock the ability to kill a Slime</span>
+                                        <span class="upgrade-text">Unlock the ability to kill a Slime.</span>
                                     </div>
                                 </div>
                                 <div class="upgrade-action">
-                                    <span class="upgrade-cost" id="upgradeSelectionCost">1 🍖</span>
                                     <button id="btnUpgradeSelection" class="btn-plus" disabled>+</button>
+                                    <span class="upgrade-cost" id="upgradeSelectionCost">1 🍖</span>
                                 </div>
                             </div>
 
                             <!-- Upgrade: Augmentation -->
-                            <div class="upgrade-card" id="upgradeAugmentationCard">
+                            <div class="upgrade-card level-zero" id="upgradeAugmentationCard">
                                 <div class="upgrade-info">
                                     <img src="images/upgrades/augmentation.png" alt="Augmentation"
                                         class="upgrade-icon-img"
                                         onerror="this.onerror=null; this.src='images/upgrades/augmentation.png';">
                                     <div class="upgrade-details">
-                                        <h4 class="upgrade-card-title">Augmentation</h4>
-                                        <span class="upgrade-text">Slimes do more damage (<strong
-                                                id="upgradeDamageValue" class="upgrade-value">1</strong> damage
-                                            currently)</span>
+                                        <h4 class="upgrade-card-title">Augmentation <span class="upgrade-current">(Current: <strong id="upgradeDamageValue" class="upgrade-value">1</strong>)</span></h4>
+                                        <span class="upgrade-text">Slimes do more damage.</span>
                                     </div>
                                 </div>
                                 <div class="upgrade-action">
-                                    <span class="upgrade-cost" id="upgradeAugmentationCost">5 🍖</span>
                                     <button id="btnUpgradeAugmentation" class="btn-plus" disabled>+</button>
+                                    <span class="upgrade-cost" id="upgradeAugmentationCost">5 🍖</span>
                                 </div>
                             </div>
 
                             <!-- Upgrade: Ascension -->
-                            <div class="upgrade-card" id="upgradeAscensionCard">
+                            <div class="upgrade-card level-zero" id="upgradeAscensionCard">
                                 <div class="upgrade-info">
                                     <img src="images/upgrades/ascention.png" alt="Ascension" class="upgrade-icon-img"
                                         onerror="this.onerror=null; this.src='images/upgrades/ascension.png';">
                                     <div class="upgrade-details">
-                                        <h4 class="upgrade-card-title">Ascension</h4>
-                                        <span class="upgrade-text">A random Slime ascends to a new level of
-                                            consciousness (
-                                            <strong id="upgradeAscendedCount" class="upgrade-value">0</strong> ascended
-                                            Slimes currently)</span>
+                                        <h4 class="upgrade-card-title">Ascension <span class="upgrade-current">(Current: <strong id="upgradeAscendedCount" class="upgrade-value">0</strong>)</span></h4>
+                                        <span class="upgrade-text">A random Slime ascends to a new level of consciousness.</span>
                                     </div>
                                 </div>
                                 <div class="upgrade-action">
-                                    <span class="upgrade-cost" id="upgradeAscensionCost">10 🍖</span>
                                     <button id="btnUpgradeAscension" class="btn-plus" disabled>+</button>
+                                    <span class="upgrade-cost" id="upgradeAscensionCost">10 🍖</span>
                                 </div>
                             </div>
 
                             <!-- Upgrade: Regeneration -->
-                            <div class="upgrade-card" id="upgradeRegenCard">
+                            <div class="upgrade-card level-zero" id="upgradeRegenCard">
                                 <div class="upgrade-info">
                                     <img src="images/upgrades/regeneration.png" alt="Regeneration"
                                         class="upgrade-icon-img"
                                         onerror="this.onerror=null; this.src='images/upgrades/regeneration.png';">
                                     <div class="upgrade-details">
-                                        <h4 class="upgrade-card-title">Regeneration</h4>
-                                        <span class="upgrade-text">Your Slimes can regenerate. (<strong
-                                                id="upgradeRegenValue" class="upgrade-value">0</strong> HP per wave
-                                            currently)</span>
+                                        <h4 class="upgrade-card-title">Regeneration <span class="upgrade-current">(Current: <strong id="upgradeRegenValue" class="upgrade-value">0</strong>)</span></h4>
+                                        <span class="upgrade-text">Your Slimes regenerate HP over time.</span>
                                     </div>
                                 </div>
                                 <div class="upgrade-action">
-                                    <span class="upgrade-cost" id="upgradeRegenCost">3 🍖</span>
                                     <button id="btnUpgradeRegen" class="btn-plus" disabled>+</button>
+                                    <span class="upgrade-cost" id="upgradeRegenCost">3 🍖</span>
                                 </div>
                             </div>
 
                             <!-- Upgrade: Digestion -->
-                            <div class="upgrade-card" id="upgradeDigestionCard">
+                            <div class="upgrade-card level-zero" id="upgradeDigestionCard">
                                 <div class="upgrade-info">
                                     <img src="images/upgrades/digestion.png" alt="Digestion" class="upgrade-icon-img"
                                         onerror="this.onerror=null; this.src='images/upgrades/digestion.png';">
                                     <div class="upgrade-details">
-                                        <h4 class="upgrade-card-title">Digestion</h4>
-                                        <span class="upgrade-text">Multiple Slimes Eat when you tell them to.
-                                            <strong id="upgradeDigestionValue" class="upgrade-value">1</strong> Slimes
-                                            go
-                                            Eat currently)</span>
+                                        <h4 class="upgrade-card-title">Digestion <span class="upgrade-current">(Current: <strong id="upgradeDigestionValue" class="upgrade-value">1</strong>)</span></h4>
+                                        <span class="upgrade-text">Multiple Slimes Eat when you tell them to.</span>
                                     </div>
                                 </div>
                                 <div class="upgrade-action">
-                                    <span class="upgrade-cost" id="upgradeDigestionCost">1 🍖</span>
                                     <button id="btnUpgradeDigestion" class="btn-plus" disabled>+</button>
+                                    <span class="upgrade-cost" id="upgradeDigestionCost">1 🍖</span>
                                 </div>
                             </div>
 
-                            <!-- Upgrade: Incubation -->
-                            <div class="upgrade-card" id="upgradeIncubationCard">
+                            <!-- Upgrade: Auto Eat -->
+                            <div class="upgrade-card level-zero" id="upgradeIncubationCard">
                                 <div class="upgrade-info">
-                                    <img src="images/upgrades/incubation.png" alt="Incubation" class="upgrade-icon-img"
+                                    <img src="images/upgrades/incubation.png" alt="Auto Eat" class="upgrade-icon-img"
                                         onerror="this.onerror=null; this.src='images/upgrades/digestion.png';">
                                     <div class="upgrade-details">
-                                        <h4 class="upgrade-card-title">Incubation</h4>
-                                        <span class="upgrade-text">Generates passive Scraps at the end of each
-                                            wave (<strong id="upgradeIncubationValue" class="upgrade-value">0</strong>
-                                            Scraps currently)</span>
+                                        <h4 class="upgrade-card-title">Auto Eat <span class="upgrade-current">(Current: <strong id="upgradeIncubationValue" class="upgrade-value">OFF</strong>)</span></h4>
+                                        <span class="upgrade-text">Automatically Eat once when the last enemy of each wave dies.</span>
                                     </div>
                                 </div>
                                 <div class="upgrade-action">
-                                    <span class="upgrade-cost" id="upgradeIncubationCost">5 🍖</span>
                                     <button id="btnUpgradeIncubation" class="btn-plus" disabled>+</button>
+                                    <span class="upgrade-cost" id="upgradeIncubationCost">5 🍖</span>
                                 </div>
                             </div>
 
                             <!-- Upgrade: Ignition -->
-                            <div class="upgrade-card" id="upgradeIgnitionCard">
+                            <div class="upgrade-card level-zero" id="upgradeIgnitionCard">
                                 <div class="upgrade-info">
                                     <img src="images/upgrades/ignition.png" alt="Ignition" class="upgrade-icon-img"
                                         onerror="this.onerror=null; this.src='images/upgrades/ignition.png';">
                                     <div class="upgrade-details">
-                                        <h4 class="upgrade-card-title">Ignition</h4>
-                                        <span class="upgrade-text">Division has now <strong id="upgradeIgnitionValue"
-                                                class="upgrade-value">0%</strong> chance to spawn a Fire Slime.</span>
+                                        <h4 class="upgrade-card-title">Ignition <span class="upgrade-current">(Current: <strong id="upgradeIgnitionValue" class="upgrade-value">0%</strong>)</span></h4>
+                                        <span class="upgrade-text">Division can spawn a Fire Slime.</span>
                                     </div>
                                 </div>
                                 <div class="upgrade-action">
-                                    <span class="upgrade-cost" id="upgradeIgnitionCost">10 🍖</span>
                                     <button id="btnUpgradeIgnition" class="btn-plus" disabled>+</button>
+                                    <span class="upgrade-cost" id="upgradeIgnitionCost">10 🍖</span>
                                 </div>
                             </div>
 
                             <!-- Upgrade: Glaciation -->
-                            <div class="upgrade-card" id="upgradeGlaciationCard">
+                            <div class="upgrade-card level-zero" id="upgradeGlaciationCard">
                                 <div class="upgrade-info">
                                     <img src="images/upgrades/glaciation.png" alt="Glaciation" class="upgrade-icon-img"
                                         onerror="this.onerror=null; this.src='images/upgrades/glaciation.png';">
                                     <div class="upgrade-details">
-                                        <h4 class="upgrade-card-title">Glaciation</h4>
-                                        <span class="upgrade-text">Division has now <strong id="upgradeGlaciationValue"
-                                                class="upgrade-value">0%</strong> chance to spawn an Ice Slime.</span>
+                                        <h4 class="upgrade-card-title">Glaciation <span class="upgrade-current">(Current: <strong id="upgradeGlaciationValue" class="upgrade-value">0%</strong>)</span></h4>
+                                        <span class="upgrade-text">Division can spawn an Ice Slime.</span>
                                     </div>
                                 </div>
                                 <div class="upgrade-action">
-                                    <span class="upgrade-cost" id="upgradeGlaciationCost">10 🍖</span>
                                     <button id="btnUpgradeGlaciation" class="btn-plus" disabled>+</button>
+                                    <span class="upgrade-cost" id="upgradeGlaciationCost">10 🍖</span>
                                 </div>
                             </div>
 
                             <!-- Upgrade: Petrification (Hidden until further notice) -->
-                            <div class="upgrade-card" id="upgradePetrificationCard" style="display: none;">
+                            <div class="upgrade-card level-zero" id="upgradePetrificationCard" style="display: none;">
                                 <div class="upgrade-info">
                                     <img src="images/upgrades/petrification.png" alt="Petrification"
                                         class="upgrade-icon-img"
                                         onerror="this.onerror=null; this.src='images/upgrades/division.png';">
                                     <div class="upgrade-details">
-                                        <h4 class="upgrade-card-title">Petrification</h4>
-                                        <span class="upgrade-text">Division has now <strong
-                                                id="upgradePetrificationValue" class="upgrade-value">0%</strong> chance
-                                            to spawn a Stone Slime.</span>
+                                        <h4 class="upgrade-card-title">Petrification <span class="upgrade-current">(Current: <strong id="upgradePetrificationValue" class="upgrade-value">0%</strong>)</span></h4>
+                                        <span class="upgrade-text">Division can spawn a Stone Slime.</span>
                                     </div>
                                 </div>
                                 <div class="upgrade-action">
-                                    <span class="upgrade-cost" id="upgradePetrificationCost">10 🍖</span>
                                     <button id="btnUpgradePetrification" class="btn-plus" disabled>+</button>
+                                    <span class="upgrade-cost" id="upgradePetrificationCost">10 🍖</span>
                                 </div>
                             </div>
 
                             <!-- Upgrade: Intoxication -->
-                            <div class="upgrade-card" id="upgradeIntoxicationCard">
+                            <div class="upgrade-card level-zero" id="upgradeIntoxicationCard">
                                 <div class="upgrade-info">
                                     <img src="images/upgrades/Intoxication.png" alt="Intoxication"
                                         class="upgrade-icon-img"
                                         onerror="this.onerror=null; this.src='images/upgrades/division.png';">
                                     <div class="upgrade-details">
-                                        <h4 class="upgrade-card-title">Intoxication</h4>
-                                        <span class="upgrade-text">Division has now <strong
-                                                id="upgradeIntoxicationValue" class="upgrade-value">0%</strong> chance
-                                            to spawn a Toxic Slime.</span>
+                                        <h4 class="upgrade-card-title">Intoxication <span class="upgrade-current">(Current: <strong id="upgradeIntoxicationValue" class="upgrade-value">0%</strong>)</span></h4>
+                                        <span class="upgrade-text">Division can spawn a Toxic Slime.</span>
                                     </div>
                                 </div>
                                 <div class="upgrade-action">
-                                    <span class="upgrade-cost" id="upgradeIntoxicationCost">10 🍖</span>
                                     <button id="btnUpgradeIntoxication" class="btn-plus" disabled>+</button>
+                                    <span class="upgrade-cost" id="upgradeIntoxicationCost">10 🍖</span>
                                 </div>
                             </div>
 
                             <!-- Upgrade: Evolution -->
-                            <div class="upgrade-card" id="upgradeEvolutionCard">
+                            <div class="upgrade-card level-zero" id="upgradeEvolutionCard">
                                 <div class="upgrade-info">
                                     <img src="images/upgrades/evolution.png" alt="Evolution" class="upgrade-icon-img"
                                         onerror="this.onerror=null; this.src='images/upgrades/division.png';">
@@ -376,13 +356,13 @@
                                     </div>
                                 </div>
                                 <div class="upgrade-action">
-                                    <span class="upgrade-cost" id="upgradeEvolutionCost">10 🍖</span>
                                     <button id="btnUpgradeEvolution" class="btn-plus" disabled>+</button>
+                                    <span class="upgrade-cost" id="upgradeEvolutionCost">10 🍖</span>
                                 </div>
                             </div>
 
                             <!-- Upgrade: Exaltation -->
-                            <div class="upgrade-card" id="upgradeExaltationCard">
+                            <div class="upgrade-card level-zero" id="upgradeExaltationCard">
                                 <div class="upgrade-info">
                                     <img src="images/upgrades/exaltation.png" alt="Exaltation" class="upgrade-icon-img"
                                         onerror="this.onerror=null; this.src='images/upgrades/ascention.png';">
@@ -392,11 +372,10 @@
                                     </div>
                                 </div>
                                 <div class="upgrade-action">
-                                    <span class="upgrade-cost" id="upgradeExaltationCost">100 🍖</span>
                                     <button id="btnUpgradeExaltation" class="btn-plus" disabled>+</button>
+                                    <span class="upgrade-cost" id="upgradeExaltationCost">100 🍖</span>
                                 </div>
-                            </div>
-                        </div>
+                            </div>                        </div>
                     </section>
                 </div>
 
@@ -523,3 +502,5 @@
 </body>
 
 </html>
+
+

@@ -43,6 +43,14 @@ import {
 import { updateUI } from './ui.js';
 
 /**
+ * Toggle yellow/orange border for upgrades that have never been purchased (level 0)
+ */
+function setUpgradeLevelZero(cardEl, isLevelZero) {
+    if (!cardEl) return;
+    cardEl.classList.toggle('level-zero', !!isLevelZero);
+}
+
+/**
  * Update the display state of all active upgrades (visibility, labels, costs, affordable button states)
  */
 export function updateUpgradesUI() {
@@ -188,6 +196,7 @@ export function updateUpgradesUI() {
         const cost1 = getArmySizeUpgradeCost();
 
         upgradeSlimeCountEl.textContent = currentSlimes;
+        setUpgradeLevelZero(upgradeArmySizeCardEl, gameState.hasUsedDivision !== true);
 
         if (currentSlimes >= 60) {
             upgradeArmySizeCostEl.textContent = 'MAX';
@@ -220,6 +229,7 @@ export function updateUpgradesUI() {
         const unascendedCount = gameState.slimes ? gameState.slimes.filter(s => !s.ascended).length : 0;
 
         upgradeAscendedCountEl.textContent = ascendedCount;
+        setUpgradeLevelZero(upgradeAscensionCardEl, (gameState.maxAscendedSlimesReached || 0) === 0 && ascendedCount === 0);
         upgradeAscensionCostEl.textContent = `${cost2} 🍖`;
 
         const canAfford2 = (gameState.scraps || 0) >= cost2 && unascendedCount > 0;
@@ -244,6 +254,7 @@ export function updateUpgradesUI() {
         const cost3 = getAugmentationUpgradeCost();
 
         upgradeDamageValueEl.textContent = currentDamage;
+        setUpgradeLevelZero(upgradeAugmentationCardEl, currentDamage <= 1);
         upgradeAugmentationCostEl.textContent = `${cost3} 🍖`;
 
         const canAfford3 = (gameState.scraps || 0) >= cost3;
@@ -268,6 +279,7 @@ export function updateUpgradesUI() {
         const cost4 = getRegenUpgradeCost();
 
         upgradeRegenValueEl.textContent = currentRegen;
+        setUpgradeLevelZero(upgradeRegenCardEl, currentRegen <= 0);
         upgradeRegenCostEl.textContent = `${cost4} 🍖`;
 
         const canAfford4 = (gameState.scraps || 0) >= cost4;
@@ -294,6 +306,7 @@ export function updateUpgradesUI() {
         const bestRosterCount = (gameState.bestRoster && gameState.bestRoster.length) ? gameState.bestRoster.length : (gameState.slimes ? gameState.slimes.length : 1);
 
         upgradeDigestionValueEl.textContent = slimesCount;
+        setUpgradeLevelZero(upgradeDigestionCardEl, digestionLvl <= 0);
 
         if (slimesCount >= 60) {
             upgradeDigestionCostEl.textContent = 'MAX';
@@ -329,31 +342,31 @@ export function updateUpgradesUI() {
     const btnUpgradeIncubationEl = document.getElementById('btnUpgradeIncubation');
 
     if (upgradeIncubationValueEl && upgradeIncubationCostEl && btnUpgradeIncubationEl) {
-        const incubationLvl = getIncubationLevel();
-        const passiveIncome = incubationLvl * 5;
-        upgradeIncubationValueEl.textContent = `${passiveIncome}`;
+        const autoEatLevel = getIncubationLevel();
+        upgradeIncubationValueEl.textContent = autoEatLevel > 0 ? 'ON' : 'OFF';
+        setUpgradeLevelZero(upgradeIncubationCardEl, autoEatLevel <= 0);
 
-        const costIncub = getIncubationUpgradeCost();
-        upgradeIncubationCostEl.textContent = `${costIncub} 🍖`;
-
-        const canAffordIncub = (gameState.scraps || 0) >= costIncub;
-        if (canAffordIncub) {
-            btnUpgradeIncubationEl.removeAttribute('disabled');
-            btnUpgradeIncubationEl.classList.remove('disabled');
-            btnUpgradeIncubationEl.classList.add('affordable');
-        } else {
+        if (autoEatLevel > 0) {
+            upgradeIncubationCostEl.textContent = 'MAX';
             btnUpgradeIncubationEl.setAttribute('disabled', 'disabled');
             btnUpgradeIncubationEl.classList.add('disabled');
             btnUpgradeIncubationEl.classList.remove('affordable');
+        } else {
+            const costIncub = getIncubationUpgradeCost();
+            upgradeIncubationCostEl.textContent = `${costIncub} 🍖`;
+            const canAffordIncub = (gameState.scraps || 0) >= costIncub;
+            btnUpgradeIncubationEl.toggleAttribute('disabled', !canAffordIncub);
+            btnUpgradeIncubationEl.classList.toggle('disabled', !canAffordIncub);
+            btnUpgradeIncubationEl.classList.toggle('affordable', canAffordIncub);
         }
     }
-
     // Upgrade 6: Selection
     const upgradeSelectionCostEl = document.getElementById('upgradeSelectionCost');
     const btnUpgradeSelectionEl = document.getElementById('btnUpgradeSelection');
 
     if (upgradeSelectionCostEl && btnUpgradeSelectionEl) {
         const isBought = gameState.unlockedUpgrades && gameState.unlockedUpgrades.selection;
+        setUpgradeLevelZero(upgradeSelectionCardEl, !isBought);
         if (isBought) {
             upgradeSelectionCostEl.textContent = 'MAX';
             btnUpgradeSelectionEl.setAttribute('disabled', 'disabled');
@@ -382,6 +395,7 @@ export function updateUpgradesUI() {
 
     if (upgradeEvolutionCostEl && btnUpgradeEvolutionEl) {
         const isBoughtEvo = gameState.unlockedUpgrades && gameState.unlockedUpgrades.evolution;
+        setUpgradeLevelZero(upgradeEvolutionCardEl, !isBoughtEvo);
         if (isBoughtEvo) {
             upgradeEvolutionCostEl.textContent = 'MAX';
             btnUpgradeEvolutionEl.setAttribute('disabled', 'disabled');
@@ -410,6 +424,7 @@ export function updateUpgradesUI() {
 
     if (upgradeExaltationCostEl && btnUpgradeExaltationEl) {
         const isBoughtExalt = gameState.unlockedUpgrades && gameState.unlockedUpgrades.exaltation;
+        setUpgradeLevelZero(upgradeExaltationCardEl, !isBoughtExalt);
         if (isBoughtExalt) {
             upgradeExaltationCostEl.textContent = 'MAX';
             btnUpgradeExaltationEl.setAttribute('disabled', 'disabled');
@@ -441,6 +456,7 @@ export function updateUpgradesUI() {
         const ignitionLvl = getIgnitionLevel();
         const ignitionChancePct = ignitionLvl * 2;
         upgradeIgnitionValueEl.textContent = `${ignitionChancePct}%`;
+        setUpgradeLevelZero(upgradeIgnitionCardEl, ignitionLvl <= 0);
 
         if (ignitionLvl >= 10) {
             upgradeIgnitionCostEl.textContent = 'MAX';
@@ -473,6 +489,7 @@ export function updateUpgradesUI() {
         const glaciationLvl = getGlaciationLevel();
         const glaciationChancePct = glaciationLvl * 2;
         upgradeGlaciationValueEl.textContent = `${glaciationChancePct}%`;
+        setUpgradeLevelZero(upgradeGlaciationCardEl, glaciationLvl <= 0);
 
         if (glaciationLvl >= 10) {
             upgradeGlaciationCostEl.textContent = 'MAX';
@@ -509,6 +526,7 @@ export function updateUpgradesUI() {
         const intoxicationLvl = getIntoxicationLevel();
         const intoxicationChancePct = intoxicationLvl * 2;
         upgradeIntoxicationValueEl.textContent = `${intoxicationChancePct}%`;
+        setUpgradeLevelZero(upgradeIntoxicationCardEl, intoxicationLvl <= 0);
 
         if (intoxicationLvl >= 10) {
             upgradeIntoxicationCostEl.textContent = 'MAX';
@@ -548,34 +566,7 @@ export function updateUpgradesUI() {
         tabBtnUpgradesEl.textContent = affordableCount > 0 ? `🧪 Upgrades (${affordableCount})` : `🧪 Upgrades`;
     }
 
-    // Dynamic Visual Sorting: Affordable upgrade cards sit at the top while maintaining relative order
-    const defaultOrder = [
-        'upgradeArmySizeCard',
-        'upgradeSelectionCard',
-        'upgradeAugmentationCard',
-        'upgradeAscensionCard',
-        'upgradeRegenCard',
-        'upgradeDigestionCard',
-        'upgradeIncubationCard',
-        'upgradeIgnitionCard',
-        'upgradeGlaciationCard',
-        'upgradePetrificationCard',
-        'upgradeIntoxicationCard',
-        'upgradeEvolutionCard',
-        'upgradeExaltationCard'
-    ];
 
-    const upgradeCards = document.querySelectorAll('#upgradesContainer .upgrade-card');
-    upgradeCards.forEach(card => {
-        const idx = defaultOrder.indexOf(card.id);
-        const orderIndex = idx !== -1 ? idx : 999;
-        
-        // Check if this upgrade card is affordable (contains a button with class 'affordable')
-        const isAffordable = !!card.querySelector('.btn-plus.affordable');
-        
-        // Affordable ones have low orders (0-12), expensive ones have high orders (1000-1012)
-        card.style.order = isAffordable ? orderIndex : (orderIndex + 1000);
-    });
 }
 
 /**
@@ -716,3 +707,9 @@ export function initUpgradesModule() {
 
     updateUpgradesUI();
 }
+
+
+
+
+
+

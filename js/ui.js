@@ -669,12 +669,15 @@ export function openSlimeInspectorModal(slime) {
 
     const critEl = document.getElementById('slimeModalCrit');
     const regenEl = document.getElementById('slimeModalRegen');
+    const xpEl = document.getElementById('slimeModalXp');
 
     const critChance = slime.critChance || 0;
     if (critEl) critEl.textContent = `${critChance}% ⚡`;
 
     const regenVal = slime.regen || 0;
     if (regenEl) regenEl.textContent = `${regenVal} 💚`;
+
+    if (xpEl) xpEl.textContent = `${slime.wavesClearedSinceDeath || 0}`;
 
     const activeEffects = [];
     if (slimeConfig.effect === 'burn') activeEffects.push('🔥 Burn');
@@ -939,3 +942,4 @@ export function initMainTabsListeners() {
         }
     });
 }
+
