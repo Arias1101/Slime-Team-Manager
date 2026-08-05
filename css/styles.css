@@ -3330,3 +3330,10 @@ body.modal-open {
 
 .slime-modal-portrait.is-dead { animation: none; transform: scale(2.5); }
 
+
+/* Medium desktop: keep both panels visible, with one readable upgrades column. */
+@media (min-width: 901px) and (max-width: 1259px) {
+    .upgrades-container {
+        grid-template-columns: 1fr;
+    }
+}

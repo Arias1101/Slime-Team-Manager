@@ -1,7 +1,7 @@
 --------------- TODO NOW -----------------
+- When screen window width goes under 1260px, switch to a "medium width" with only one Upgrades column. Keep the "Narrow screen layout" wich triggers at 900px where upgrades goes in a separeted tab.
 
 ------------------ LATER ------------------
-- When screen window width goes under 1260px, switch to a "medium width" with only one Upgrades column. Keep the "Narrow screen layout" wich triggers at 900px where upgrades goes in a separeted tab.
 - Change the style of the Ascension in the Roster (its currently pink with pink glowing background). Instead, only use a pink border. However, when a Slime is Burning / Poisoned / Frozen / Stunned, its background in the roster should reflect it by changing color.
 - Add an Upgrade "Fortification" to the game wich increases the max hp of slimes by 1. Base price and increase rate are the same as the damage upgrade, this upgrade is unlocked when finishing the wave 30.
 - Set a maximum for the "Regeneration" Upgrade (5 hp/s max by default), this maximum increases by half the lvl of the new Max Hp Upgrade.
