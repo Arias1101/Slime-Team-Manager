@@ -1,3 +1,4 @@
+--------------- TODO NOW -----------------
 1) Add the wave counter to the top right small counter, when its counting down: "Wave X in 10s" and when its counting ennemy spawns: "Wave X: 7/12"
 2) Put the "variable" number from each upgrade text next to the title of the upgrade like so "(Current: X)" to prevent the intempesting resizing of upgrade cards when the number changes in size.
 3) Remove smart sorting of upgrades and increase size of the upgrade window by about 10px or so, because the scrollbar overlaps a bit on upgrade cards.
@@ -17,7 +18,7 @@
 
 
 
-LATER, DO NOT DO NOW:
+------- IDEAS FOR LATER, DO NOT DO THIS ---------------
 1) NewGame+ when reaching wave 100
 2) Buildings when NG+ starts for permanent upgrades (building ideas: keep X% xp on death, +X base damage, +X base hp, +X base crit)
 3) Frontlane, Midlane, Backlane and assigned classes for Slimes to unlock (Tank / Damage / Support) with talent tree
