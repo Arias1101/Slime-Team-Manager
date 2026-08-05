@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const level = getFortificationLevel();
         const cost = getFortificationUpgradeCost();
         const canAfford = (gameState.scraps || 0) >= cost;
-        const valueText = `+${level} HP`;
+        const valueText = `${10 + level}`;
         const costText = `${cost} ${String.fromCodePoint(0x1F356)}`;
         if (valueEl.textContent !== valueText) valueEl.textContent = valueText;
         if (costEl.textContent !== costText) costEl.textContent = costText;

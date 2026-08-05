@@ -3,11 +3,71 @@
  */
 
 import { gameState, addScraps, saveStateToLocal, saveWaveSnapshot, restoreBestRoster, SLIME_TYPES } from './state.js';
-import { healAllSlimes, initAscendedAutoAttacks, clearAscendedAutoAttacks, showFloatingDamageNumber, showFloatingStatusTextAt, showBattlefieldWaveBanner, triggerSlimeEatLoot } from './slimes.js';
+import { healAllSlimes, initAscendedAutoAttacks, clearAscendedAutoAttacks, showFloatingDamageNumber, showFloatingHealingNumber, showFloatingStatusTextAt, showBattlefieldWaveBanner, triggerSlimeEatLoot } from './slimes.js';
 import { updateUI, playSlimeRainRespawnAnimation } from './ui.js';
 import { openShopModal } from './shop.js';
 import { isGamePaused } from './engine.js';
+/**
+ * Scrap value contributed by one point of each loot attribute.
+ * Ice and stun are binary effects, so each occurrence always contributes one point.
+ */
+export const LOOT_STAT_WEIGHTS = Object.freeze({
+    hp: 2,
+    damage: 5,
+    regen: 10,
+    crit: 10,
+    burn: 20,
+    poison: 20,
+    ice: 40,
+    stun: 50
+});
 
+/** Calculate an item's scrap value from the effects granted by its source enemy. */
+export function calculateLootValue(lootEffect) {
+    const effects = Array.isArray(lootEffect)
+        ? lootEffect
+        : (lootEffect?.effects ? lootEffect.effects : (lootEffect ? [lootEffect] : []));
+
+    const total = effects.reduce((value, effect) => {
+        const rawStat = effect?.effectType || effect?.stat;
+        const stat = rawStat === 'freeze' ? 'ice' : rawStat;
+        const weight = LOOT_STAT_WEIGHTS[stat];
+        if (!weight) return value;
+
+        const points = stat === 'ice' || stat === 'stun' ? 1 : Number(effect.value ?? 1);
+        return value + (weight * (Number.isFinite(points) ? points : 1));
+    }, 0);
+
+    return Math.max(1, Math.round(total));
+}
+
+/** Build display labels from loot data; loot definitions never store presentation text. */
+export function formatLootEffect(effect) {
+    const stat = effect?.effectType || effect?.stat || 'hp';
+    const value = Number(effect?.value ?? 1);
+    const amount = Number.isFinite(value) ? value : 1;
+    const signed = (amount >= 0 ? '+' : '') + amount;
+
+    switch (stat) {
+        case 'hp': return signed + ' Max HP';
+        case 'damage': return signed + ' Damage';
+        case 'regen': return signed + ' HP Regen';
+        case 'crit': return signed + '% Crit';
+        case 'burn': return String.fromCodePoint(0x1F525) + ' Burn ' + amount;
+        case 'poison': return String.fromCodePoint(0x1F9EA) + ' Poison ' + amount;
+        case 'freeze':
+        case 'ice': return String.fromCodePoint(0x2744, 0xFE0F) + ' Freeze';
+        case 'stun': return String.fromCodePoint(0x1F4AB) + ' Stun';
+        default: return signed + ' ' + stat;
+    }
+}
+
+export function formatLootEffects(lootEffect) {
+    const effects = Array.isArray(lootEffect)
+        ? lootEffect
+        : (lootEffect?.effects ? lootEffect.effects : (lootEffect ? [lootEffect] : []));
+    return effects.map(formatLootEffect).join(', ') || '+1 Max HP';
+}
 export const ENEMY_TYPES = {
     // Tier X - Bosses ------------------------
     mage: {
@@ -21,41 +81,38 @@ export const ENEMY_TYPES = {
         attackSpeed: 1,     // attacks per second
         moveSpeed: 2,
         targetX: 380,         // 400=right border, 100 = Slime army
-        loot_value: 100,
         loot_name: 'Staff of Frostfire',
-        loot_effect: [{ stat: 'effect', effectType: 'freeze', text: '❄️ Freeze' },
-        { stat: 'effect', effectType: 'burn', value: 1, text: '🔥 Burn' }]
+        loot_effect: [{ stat: 'effect', effectType: 'freeze' },
+        { stat: 'effect', effectType: 'burn', value: 1 }]
     },
     berserker: {
         id: 'berserker',
         type: 'melee',
         projectile: 'slash1',
         tier: 0,
-        hp: 3000,
-        maxHp: 3000,
+        hp: 5000,
+        maxHp: 5000,
         damage: 15,            // Damages
-        attackSpeed: 1,     // attacks per second
+        attackSpeed: 1.2,     // attacks per second
         moveSpeed: 2,
         targetX: 100,         // 400=right border, 100 = Slime army
-        loot_value: 200,
         loot_name: 'Berserker Greataxe',
-        loot_effect: [{ stat: 'damage', value: 5, text: '+5 Damage' },
-        { stat: 'hp', value: 5, text: '+5 Max HP' }]
+        loot_effect: [{ stat: 'damage', value: 5 },
+        { stat: 'hp', value: 5 }]
     },
     alchemist: {
         id: 'alchemist',
         type: 'ranged',
         projectile: 'flask',
         tier: 0,
-        hp: 1500,
-        maxHp: 1500,
+        hp: 2000,
+        maxHp: 2000,
         damage: 1,
-        attackSpeed: 0.5,
+        attackSpeed: 0.6,
         moveSpeed: 1,
         targetX: 300,
-        loot_value: 50,
         loot_name: 'Alchemical Flask',
-        loot_effect: { stat: 'effect', effectType: 'poison', value: 5, text: '🧪 Poison 5' }
+        loot_effect: { stat: 'effect', effectType: 'poison', value: 5 }
     },
     catapult: {
         id: 'catapult',
@@ -68,9 +125,8 @@ export const ENEMY_TYPES = {
         attackSpeed: 0.5,
         moveSpeed: 0.4,
         targetX: 400,
-        loot_value: 50,
         loot_name: 'Catapult Boulder',
-        loot_effect: { stat: 'effect', effectType: 'stun', text: '💫 Stun' }
+        loot_effect: { stat: 'effect', effectType: 'stun' }
     },
     car: {
         id: 'car',
@@ -83,10 +139,24 @@ export const ENEMY_TYPES = {
         attackSpeed: 0.1,
         moveSpeed: 20,
         targetX: 150,
-        loot_value: 500,
         loot_name: 'Shiny Horse Badge',
-        loot_effect: [{ stat: 'damage', value: 5, text: '+10 Damage' },
-        { stat: 'effect', effectType: 'stun', text: '💫 Stun' }]
+        loot_effect: [{ stat: 'damage', value: 10 },
+        { stat: 'effect', effectType: 'stun' }]
+    },
+    stonegolem: {
+        id: 'stonegolem',
+        type: 'melee',
+        projectile: 'slash1',
+        tier: 0,
+        hp: 20000,
+        maxHp: 20000,
+        damage: 15,            // Damages
+        attackSpeed: 1,        // attacks per second
+        moveSpeed: 1,
+        targetX: 100,         // 400=right border, 100 = Slime army
+        loot_name: 'Stone Golem Head',
+        loot_effect: [{ stat: 'hp', value: 5 },
+        { stat: 'effect', effectType: 'stun' }]
     },
 
     // Tier1 - Villagers ------------------------
@@ -101,9 +171,8 @@ export const ENEMY_TYPES = {
         attackSpeed: 1.0,     // 1 attack per second
         moveSpeed: 1,         // Move speed (1 to 100) -> 25 px/sec
         targetX: 130,         // Close melee range near the slimes
-        loot_value: 2,
         loot_name: 'Beggar Cup',
-        loot_effect: { stat: 'hp', value: 1, text: '+1 Max HP' }
+        loot_effect: { stat: 'hp', value: 1 }
     },
     farmer: {
         id: 'farmer',
@@ -116,9 +185,8 @@ export const ENEMY_TYPES = {
         attackSpeed: 1.0,     // 1 attack per second
         moveSpeed: 1.2,       // Move speed (1 to 100) -> 25 px/sec
         targetX: 140,         // Close melee range near the slimes
-        loot_value: 2,
         loot_name: 'Farmer Hat',
-        loot_effect: { stat: 'hp', value: 1, text: '+1 Max HP' }
+        loot_effect: { stat: 'hp', value: 1 }
     },
     torchfarmer: {
         id: 'torchfarmer',
@@ -131,11 +199,10 @@ export const ENEMY_TYPES = {
         attackSpeed: 1.0,     // 1 attack per second
         moveSpeed: 1.2,       // Move speed (1 to 100) -> 25 px/sec
         targetX: 110,         // Close melee range near the slimes
-        loot_value: 10,
         loot_name: 'Burning Torch',
         loot_effect: [
-            { stat: 'effect', effectType: 'burn', value: 1, text: '🔥 Burn' },
-            { stat: 'hp', value: -3, text: '-3 Max HP' }
+            { stat: 'effect', effectType: 'burn', value: 1 },
+            { stat: 'hp', value: -3 }
         ]
     },
     fisher: {
@@ -149,9 +216,8 @@ export const ENEMY_TYPES = {
         attackSpeed: 1.0,     // 1 attack per second
         moveSpeed: 1.3,       // Move speed (1 to 100) -> 25 px/sec
         targetX: 130,         // Close melee range near the slimes
-        loot_value: 6,
         loot_name: 'Smelly Fish',
-        loot_effect: { stat: 'hp', value: 2, text: '+2 Max HP' }
+        loot_effect: { stat: 'hp', value: 2 }
     },
     thief: {
         id: 'thief',
@@ -164,9 +230,8 @@ export const ENEMY_TYPES = {
         attackSpeed: 1.0,     // 1 attack per second
         moveSpeed: 7,         // Move speed (1 to 100) -> 25 px/sec
         targetX: 100,         // Close melee range near the slimes
-        loot_value: 10,
         loot_name: 'Thief Mask',
-        loot_effect: { stat: 'crit', value: 10, text: '+10% Crit' }
+        loot_effect: { stat: 'crit', value: 10 }
     },
 
     // Tier2 - Adventurers -------------------------
@@ -175,92 +240,86 @@ export const ENEMY_TYPES = {
         type: 'melee',        // Melee attacker
         projectile: 'slash1',
         tier: 2,
-        hp: 20,                // 5 HP
-        maxHp: 20,
+        hp: 30,                // 5 HP
+        maxHp: 30,
         damage: 3,            // 4 Damage per attack
         attackSpeed: 0.8,     // 1 attack per second
         moveSpeed: 1.5,       // Move speed
-        targetX: 130,         // Close melee range near the slimes
-        loot_value: 10,
+        targetX: 160,         // Close melee range near the slimes
         loot_name: 'Guard Shield',
-        loot_effect: { stat: 'hp', value: 2, text: '+2 Max HP' }
+        loot_effect: { stat: 'hp', value: 2 }
     },
     hunter: {
         id: 'hunter',
         type: 'ranged',       // Ranged attacker
         projectile: 'arrow',  // Arrow projectile type
         tier: 2,
-        hp: 12,
-        maxHp: 12,
+        hp: 20,
+        maxHp: 20,
         damage: 2,            // 2 Damage per projectile
         attackSpeed: 1.2,     // 0.8 attacks per second
         moveSpeed: 1.4,
         targetX: 380,         // Right boundary
-        loot_value: 8,
         loot_name: 'Hunting Bow',
-        loot_effect: { stat: 'crit', value: 5, text: '+5% Crit' }
+        loot_effect: { stat: 'crit', value: 5 }
     },
     adventurer: {
         id: 'adventurer',
         type: 'melee',        // Melee attacker
         projectile: 'slash1',
         tier: 2,
-        hp: 14,                // 4 HP
-        maxHp: 14,
+        hp: 25,                // 4 HP
+        maxHp: 25,
         damage: 2,            // 3 Damage per attack
         attackSpeed: 1.0,     // 1 attack per second
-        moveSpeed: 1.7,       // Move speed
-        targetX: 130,         // Close melee range near the slimes
-        loot_value: 10,
+        moveSpeed: 2,       // Move speed
+        targetX: 160,         // Close melee range near the slimes
         loot_name: 'Backpack',
-        loot_effect: { stat: 'regen', value: 1, text: '+1 HP Regen' }
+        loot_effect: { stat: 'regen', value: 1 }
     },
     assassin: {
         id: 'assassin',
         type: 'melee',        // Melee attacker
         projectile: 'slash1',
         tier: 2,
-        hp: 14,                // 4 HP
-        maxHp: 14,
+        hp: 20,                // 4 HP
+        maxHp: 20,
         damage: 1,            // 3 Damage per attack
-        attackSpeed: 0.5,     // 1 attack per second
-        moveSpeed: 10,       // Move speed
-        targetX: 130,         // Close melee range near the slimes
-        loot_value: 20,
+        attackSpeed: 1.5,     // 1 attack per second
+        moveSpeed: 12,       // Move speed
+        targetX: 160,         // Close melee range near the slimes
         loot_name: 'Poison Dagger',
-        loot_effect: { stat: 'effect', effectType: 'poison', value: 1, text: '🧪 Poison' }
+        loot_effect: { stat: 'effect', effectType: 'poison', value: 1 }
     },
     lancer: {
         id: 'lancer',
         type: 'melee',        // Melee attacker
         projectile: 'slash1',
         tier: 2,
-        hp: 15,                // 4 HP
-        maxHp: 15,
+        hp: 25,                // 4 HP
+        maxHp: 25,
         damage: 1,            // 3 Damage per attack
-        attackSpeed: 0.8,     // 1 attack per second
-        moveSpeed: 2,       // Move speed
-        targetX: 150,         // Close melee range near the slimes
-        loot_value: 10,
+        attackSpeed: 1,     // 1 attack per second
+        moveSpeed: 2.5,       // Move speed
+        targetX: 180,         // Close melee range near the slimes
         loot_name: 'Lance Tip',
-        loot_effect: [{ stat: 'crit', value: 2, text: '+2% Crit' },
-        { stat: 'damage', value: 1, text: '+1 Damage' }]
+        loot_effect: [{ stat: 'crit', value: 2 },
+        { stat: 'damage', value: 1 }]
     },
     lumberjack: {
         id: 'lumberjack',
         type: 'melee',        // Melee attacker
         projectile: 'slash1',
         tier: 2,
-        hp: 20,                // 4 HP
-        maxHp: 20,
+        hp: 35,                // 4 HP
+        maxHp: 35,
         damage: 10,            // 3 Damage per attack
         attackSpeed: 1,     // 1 attack per second
         moveSpeed: 2,       // Move speed
-        targetX: 100,         // Close melee range near the slimes
-        loot_value: 6,
+        targetX: 160,         // Close melee range near the slimes
         loot_name: 'Woodcutter Axe',
-        loot_effect: [{ stat: 'hp', value: 1, text: '+1 Max HP' },
-        { stat: 'damage', value: 2, text: '+2 Damage' }]
+        loot_effect: [{ stat: 'hp', value: 1 },
+        { stat: 'damage', value: 2 }]
     },
 
 
@@ -275,11 +334,10 @@ export const ENEMY_TYPES = {
         damage: 4,
         attackSpeed: 1.5,     // attack per second
         moveSpeed: 3,       // Move speed
-        targetX: 130,         // Close melee range near the slimes
-        loot_value: 20,
+        targetX: 160,         // Close melee range near the slimes
         loot_name: 'Swag Helmet',
-        loot_effect: [{ stat: 'hp', value: 3, text: '+3 Max HP' },
-        { stat: 'crit', value: 2, text: '+2% Crit' }]
+        loot_effect: [{ stat: 'hp', value: 3 },
+        { stat: 'crit', value: 2 }]
     },
     soldier2h: {
         id: 'soldier2h',
@@ -291,11 +349,10 @@ export const ENEMY_TYPES = {
         damage: 5,            // 4 Damage per attack
         attackSpeed: 1,     // 1 attack per second
         moveSpeed: 3.5,       // Move speed
-        targetX: 130,         // Close melee range near the slimes
-        loot_value: 30,
+        targetX: 160,         // Close melee range near the slimes
         loot_name: 'Greatsword',
-        loot_effect: [{ stat: 'crit', value: 5, text: '+5% Crit' },
-        { stat: 'damage', value: 2, text: '+2 Damage' }]
+        loot_effect: [{ stat: 'crit', value: 5 },
+        { stat: 'damage', value: 2 }]
     },
     archer: {
         id: 'archer',
@@ -308,9 +365,8 @@ export const ENEMY_TYPES = {
         attackSpeed: 1.5,     // 0.8 attacks per second
         moveSpeed: 2,
         targetX: 380,         // Right boundary
-        loot_value: 30,
         loot_name: 'Long Bow',
-        loot_effect: { stat: 'crit', value: 5, text: '+10% Crit' }
+        loot_effect: { stat: 'crit', value: 5 }
     },
     tank: {
         id: 'tank',
@@ -323,9 +379,8 @@ export const ENEMY_TYPES = {
         attackSpeed: 0,     // Attacks per second
         moveSpeed: 5,
         targetX: 250,         // Center of battlefield
-        loot_value: 20,
         loot_name: 'Knight Shield',
-        loot_effect: { stat: 'hp', value: 3, text: '+10 Max HP' }
+        loot_effect: { stat: 'hp', value: 3 }
     },
     halberdier: {
         id: 'halberdier',
@@ -337,44 +392,133 @@ export const ENEMY_TYPES = {
         damage: 10,            // 4 Damage per attack
         attackSpeed: 1,     // 1 attack per second
         moveSpeed: 4,       // Move speed
-        targetX: 130,         // Close melee range near the slimes
-        loot_value: 30,
+        targetX: 180,         // Close melee range near the slimes
         loot_name: 'Halberd',
-        loot_effect: [{ stat: 'crit', value: 10, text: '+10% Crit' },
-        { stat: 'damage', value: 1, text: '+1 Damage' }]
+        loot_effect: [{ stat: 'crit', value: 10 },
+        { stat: 'damage', value: 1 }]
     },
 
+
+    // Tier 4 - Forest Enemies ---------------------
+    redfairy: {
+        id: 'redfairy',
+        type: 'range',
+        projectile: 'fireball',
+        tier: 4,
+        hp: 50,
+        maxHp: 50,
+        damage: 5,
+        attackSpeed: 1.2,
+        moveSpeed: 4,
+        targetX: 370,
+        loot_name: 'Red Fairy Core',
+        loot_effect: { stat: 'effect', effectType: 'burn', value: 3 }
+    },
+    elf: {
+        id: 'elf',
+        type: 'ranged',
+        projectile: 'arrow',
+        tier: 4,
+        hp: 50,
+        maxHp: 50,
+        damage: 10,
+        attackSpeed: 1.2,
+        moveSpeed: 4,
+        targetX: 400,
+        loot_name: 'Elf Bandana',
+        loot_effect: [{ stat: 'crit', value: 2 },
+        { stat: 'damage', value: 1 },
+        { stat: 'hp', value: 2 }]
+    },
+    wolf: {
+        id: 'wolf',
+        type: 'melee',
+        projectile: 'slash1',
+        tier: 4,
+        hp: 500,
+        maxHp: 500,
+        damage: 20,
+        attackSpeed: 1.4,
+        moveSpeed: 7,
+        targetX: 160,
+        loot_name: 'Wolf Tail',
+        loot_effect: { stat: 'crit', value: 3 }
+    },
+    bear: {
+        id: 'bear',
+        type: 'melee',
+        projectile: 'slash1',
+        tier: 4,
+        hp: 3000,
+        maxHp: 3000,
+        damage: 18,
+        attackSpeed: 0.65,
+        moveSpeed: 1.5,
+        targetX: 160,
+        loot_name: 'Bear Paw',
+        loot_effect: [{ stat: 'hp', value: 1 },
+        { stat: 'damage', value: 2 }]
+    },
+    ent: {
+        id: 'ent',
+        type: 'tank',
+        projectile: 'none',
+        tier: 4,
+        hp: 4000,
+        maxHp: 4000,
+        damage: 0,
+        attackSpeed: 0,
+        moveSpeed: 6,
+        targetX: 260,
+        loot_name: 'Ent Branch',
+        loot_effect: [{ stat: 'hp', value: 5 },
+        { stat: 'damage', value: 1 }]
+    },
+    rabbit: {
+        id: 'rabbit',
+        type: 'melee',
+        projectile: 'slash1',
+        tier: 4,
+        hp: 1,
+        maxHp: 1,
+        damage: 3,
+        attackSpeed: 2,
+        moveSpeed: 12,
+        targetX: 135,
+        loot_name: 'Carrot',
+        loot_effect: { stat: 'regen', value: 1 }
+    },
+    fairy: {
+        id: 'fairy',
+        // Support enemies heal allies instead of firing at the slime army.
+        type: 'support',
+        projectile: 'heal1',
+        tier: 4,
+        hp: 140,
+        maxHp: 140,
+        damage: 10,
+        attackSpeed: 1.15,
+        moveSpeed: 2,
+        targetX: 370,
+        loot_name: 'Fairy Core',
+        loot_effect: { stat: 'regen', value: 2 }
+    },
     // Tests ------------------------------------
     testtank: {
         id: 'tank',
         type: 'melee',        // Melee attacker
         projectile: 'slash1',
         tier: -1,
-        hp: 99999,
-        maxHp: 99999,
+        hp: 10,
+        maxHp: 10,
         damage: 1,
         attackSpeed: 0,     // 0.5 attacks per second
         moveSpeed: 0.6,       // Slow move speed
         targetX: 250,         // Center of battlefield
-        loot_value: 1,
         loot_name: 'Test Knight Shield',
-        loot_effect: { stat: 'hp', value: 1, text: '+1 Max HP' }
+        loot_effect: { stat: 'hp', value: 1 }
     },
-    testmoney: {
-        id: 'thief',
-        type: 'melee',        // Melee attacker
-        projectile: 'slash1',
-        tier: -1,
-        hp: 1,
-        maxHp: 1,
-        damage: 1,
-        attackSpeed: 0,     // Attacks per second
-        moveSpeed: 5,
-        targetX: 250,         // 250 = Center of battlefield, 100 = Slimes, 400 = long range
-        loot_value: 1000,
-        loot_name: 'Test Money Shield',
-        loot_effect: { stat: 'hp', value: 1, text: '+1 Max HP' }
-    }, testrange: {
+    testrange: {
         id: 'catapult',
         type: 'ranged',
         projectile: 'boulder',
@@ -385,9 +529,8 @@ export const ENEMY_TYPES = {
         attackSpeed: 0.5,   // Attacks per second
         moveSpeed: 0.3,
         targetX: 400,       // 250 = Center of battlefield, 100 = Slimes, 400 = long range
-        loot_value: 1,
         loot_name: 'Test Range Shield',
-        loot_effect: { stat: 'hp', value: 1, text: '+1 Max HP' }
+        loot_effect: { stat: 'hp', value: 1 }
     },
 };
 
@@ -416,7 +559,14 @@ export const PROJECTILE_TYPES = {
         duration: 1.0, // 50% slower flight speed (1.0s vs 0.5s)
         rotationMode: 'spin' // Rotates on itself continuously during flight
     },
-    boulder: {
+    heal1: {
+        id: 'heal1',
+        sprite: 'images/projectiles/heal1.png',
+        fallbackIcon: '*',
+        arcHeight: 20,
+        duration: 0.55,
+        rotationMode: 'tangent'
+    }, boulder: {
         id: 'boulder',
         sprite: 'images/projectiles/boulder.png',
         fallbackIcon: '🪨',
@@ -562,8 +712,7 @@ export function parseEnemyList(rawList) {
  */
 function generateWaveComposition(waveNum) {
     // Tests
-    //if (waveNum === 1) return [0, 'testmoney:1'];
-    //if (waveNum === 2) return [0, 'testrange:1'];
+    //if (waveNum === 1) return [0, 'testtank:1', 'fairy:1'];
 
     // 1-10, Manual play, Villagers
     if (waveNum === 1) return [0, 'beggar:1'];
@@ -601,6 +750,18 @@ function generateWaveComposition(waveNum) {
     if (waveNum === 29) return [0.1, 'tank:5', 'archer:10'];
     if (waveNum === 30) return [0, 'catapult:1', 'tank:6', 'berserker:1'];
 
+    // 31-40 Forest Enemies: deliberately light introductory compositions.
+    if (waveNum === 31) return [0.1, 'wolf:5'];
+    if (waveNum === 32) return [0.1, 'wolf:5', 'bear:2'];
+    if (waveNum === 33) return [0.2, 'ent:2', 'elf:4', 'rabbit:10'];
+    if (waveNum === 34) return [0.1, 'wolf:10', 'rabbit:10'];
+    if (waveNum === 35) return [0.1, 'ent:3', 'alchemist:1', 'fairy:2'];
+    if (waveNum === 36) return [0.1, 'berserker:5', 'elf:5', 'fairy:3'];
+    if (waveNum === 37) return [0.1, 'ent:3', 'redfairy:5', 'fairy:4'];
+    if (waveNum === 38) return [0.1, 'bear:2', 'berserker:2', 'fairy:5'];
+    if (waveNum === 39) return [0.1, 'bear:5', 'ent:3', 'redfairy:10'];
+    if (waveNum === 40) return [2, 'ent:1', 'stonegolem:1', 'fairy:5'];
+
     // Infinite mode: Soft HP % Multiplier scaling (+10% per wave beyond wave 11: +10% wave 12, +20% wave 13, +30% wave 14...)
     else {
         // Infinite scaling waves
@@ -637,7 +798,7 @@ export function startNextWave() {
     activeProjectiles = [];
 
     isWaveActive = true;
-    showBattlefieldWaveBanner(`⚔️ WAVE ${gameState.currentWave}`);
+    showBattlefieldWaveBanner(`${String.fromCodePoint(0x26A1, 0xFE0F)} WAVE ${gameState.currentWave}`);
     const waveData = generateWaveComposition(gameState.currentWave);
 
     let spawnIntervalSec = 1.2;
@@ -839,8 +1000,7 @@ function checkWaveCompletion() {
                     saveWaveSnapshot(clearedWaveNum, finalUncollectedLootValue);
                     saveStateToLocal();
                     updateUI();
-
-                    showBattlefieldWaveBanner(`🎉 WAVE ${clearedWaveNum} CLEARED!<br><span style="font-size: 0.9rem; color: #cbd5e1; font-weight: 600;">🛒 Merchant Arriving...</span>`);
+                    showBattlefieldWaveBanner(`${String.fromCodePoint(0x1F389)} WAVE ${clearedWaveNum} CLEARED!<br><span style="font-size: 0.9rem; color: #cbd5e1; font-weight: 600;">${String.fromCodePoint(0x1F6D2)} Merchant Arriving...</span>`);
 
                     setTimeout(() => {
                         openShopModal(clearedWaveNum);
@@ -862,7 +1022,8 @@ export function triggerLootDrop(enemy) {
     enemy.hasDroppedLoot = true;
 
     const lootKey = (enemy.typeId || 'beggar').toLowerCase();
-    const lootValue = enemy.loot_value || 1;
+    const enemyDef = ENEMY_TYPES[enemy.typeId] || {};
+    const lootValue = calculateLootValue(enemyDef.loot_effect);
 
     const overlay = document.querySelector('.battlefield-overlay');
     if (overlay) {
@@ -904,8 +1065,6 @@ export function triggerLootDrop(enemy) {
         } else {
             imgEl.addEventListener('load', adaptDimensions);
         }
-
-        const enemyDef = ENEMY_TYPES[enemy.typeId] || {};
         const lootName = enemyDef.loot_name || enemy.typeId || 'Loot';
         const lootEffect = enemyDef.loot_effect || { hpBonus: 1 };
 
@@ -956,7 +1115,6 @@ export function spawnEnemy(typeId = 'beggar', hpMultiplier = 1.0) {
         attackSpeed: def.attackSpeed,
         state: 'walking',
         attackTimer: 0,
-        loot_value: def.loot_value || 1,
         hasDroppedLoot: false,
         el: null
     };
@@ -1141,6 +1299,8 @@ export function updateEnemies(deltaSeconds) {
                     enemy.state = 'tanking';
                 } else if (enemy.type === 'ranged') {
                     enemy.state = 'ranged_attack';
+                } else if (enemy.type === 'support') {
+                    enemy.state = 'support_attack';
                 }
             }
         }
@@ -1166,6 +1326,12 @@ export function updateEnemies(deltaSeconds) {
                 if (enemy.attackTimer >= (1 / enemy.attackSpeed)) {
                     enemy.attackTimer = 0;
                     fireProjectiles(enemy);
+                }
+            } else if (enemy.state === 'support_attack') {
+                enemy.attackTimer += deltaSeconds;
+                if (enemy.attackTimer >= (1 / enemy.attackSpeed)) {
+                    enemy.attackTimer = 0;
+                    healFrontmostEnemy(enemy);
                 }
             }
         }
@@ -1201,11 +1367,12 @@ export function updateEnemies(deltaSeconds) {
             const isAttacking = enemy.state === 'attacking';
             const isTanking = enemy.state === 'tanking';
             const isRanged = enemy.state === 'ranged_attack';
+            const isSupport = enemy.state === 'support_attack';
 
             enemy.el.classList.toggle('enemy-attacking', isAttacking);
             enemy.el.classList.toggle('enemy-tanking', isTanking);
-            enemy.el.classList.toggle('enemy-ranged', isRanged);
-            enemy.el.classList.toggle('enemy-walking', !isAttacking && !isTanking && !isRanged);
+            enemy.el.classList.toggle('enemy-ranged', isRanged || isSupport);
+            enemy.el.classList.toggle('enemy-walking', !isAttacking && !isTanking && !isRanged && !isSupport);
         }
     }
 
@@ -1307,6 +1474,71 @@ export function updateEnemies(deltaSeconds) {
     updateProjectiles(deltaSeconds);
 }
 
+/**
+ * Heal the ally furthest along the battlefield (the lowest targetX).
+ * Supports never target themselves; target priority is always the lowest targetX.
+ */
+function healFrontmostEnemy(support) {
+    const target = activeEnemies
+        .filter(enemy => enemy !== support && enemy.hp > 0)
+        .sort((a, b) => (a.targetX - b.targetX) || (a.x - b.x))[0];
+
+    if (!target) return;
+
+    const healedAmount = Math.min(target.maxHp - target.hp, Math.max(0, support.damage || 0));
+    target.hp += healedAmount;
+    playSupportCastRay(support);
+    playSupportHealAnimation(target);
+    if (healedAmount > 0) showFloatingHealingNumber(target.x + 8, target.y - 14, healedAmount);
+
+    if (support.el) {
+        support.el.classList.remove('enemy-shoot-recoil');
+        void support.el.offsetWidth;
+        support.el.classList.add('enemy-shoot-recoil');
+        setTimeout(() => support.el?.classList.remove('enemy-shoot-recoil'), 200);
+    }
+}
+
+/** Brief vertical light ray emitted by a support at the moment of its cast. */
+function playSupportCastRay(support) {
+    const overlay = document.querySelector('.battlefield-overlay');
+    if (!overlay) return;
+
+    const rayEl = document.createElement('div');
+    rayEl.className = 'enemy-support-cast-ray';
+    rayEl.style.left = `${support.x + 10}px`;
+    rayEl.style.top = `${support.y - 24}px`;
+    overlay.appendChild(rayEl);
+    setTimeout(() => rayEl.remove(), 200);
+}
+/** Play the 12-frame, 50px-per-frame heal1 spritesheet directly over an ally. */
+function playSupportHealAnimation(target) {
+    const overlay = document.querySelector('.battlefield-overlay');
+    if (!overlay) return;
+
+    const healEl = document.createElement('div');
+    healEl.className = 'enemy-support-heal';
+    healEl.style.left = `${target.x - 10}px`;
+    healEl.style.top = `${target.y - 18}px`;
+    healEl.style.width = '50px';
+    healEl.style.height = '50px';
+    healEl.style.backgroundImage = "url('images/projectiles/heal1.png')";
+    healEl.style.backgroundRepeat = 'no-repeat';
+    healEl.style.backgroundSize = '600px 50px';
+    healEl.style.imageRendering = 'pixelated';
+    healEl.style.pointerEvents = 'none';
+    healEl.style.position = 'absolute';
+    healEl.style.zIndex = '900';
+    overlay.appendChild(healEl);
+
+    const frameDurationMs = 400 / 12;
+    for (let frame = 0; frame < 12; frame++) {
+        setTimeout(() => {
+            if (healEl.isConnected) healEl.style.backgroundPosition = `-${frame * 50}px 0`;
+        }, frame * frameDurationMs);
+    }
+    setTimeout(() => healEl.remove(), 12 * frameDurationMs);
+}
 /**
  * Fire Ranged Projectiles using sprite images from images/projectiles/${id}.png
  * with parabolic arc trajectory & dynamic flight rotation / spinning
@@ -1790,6 +2022,7 @@ export function spawnSlashEffect(enemy) {
         }
     }, 50);
 }
+
 
 
 

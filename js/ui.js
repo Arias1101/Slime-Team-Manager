@@ -2,9 +2,9 @@
  * User Interface & Authentication Screen Renderer
  */
 
-import { gameState, SLIME_TYPES, killSlime, syncSlimesArray, rerollSlimeType } from './state.js';
+import { gameState, SLIME_TYPES, killSlime, syncSlimesArray, rerollSlimeType, calculateSlimeDamage } from './state.js';
 import { updateUpgradesUI } from './upgrades.js';
-import { activeGroundLoots } from './enemies.js';
+import { activeGroundLoots, formatLootEffects } from './enemies.js';
 import { setGamePaused, isGamePaused } from './engine.js';
 
 const scrapsCountEl = document.getElementById('scrapsCount');
@@ -149,6 +149,13 @@ function updateSlimeRoster() {
                 // Only update HP bar fill style and title without resetting innerHTML!
                 existingNode.title = `[Slot #${s + 1}] ${displayName} (${slimeConfig.name})${isAscended ? ' ✨' : ''}: ${slime.hp}/${slime.maxHp} HP`;
                 existingNode.classList.toggle('ascended', isAscended);
+
+                const rosterIcon = existingNode.querySelector('.roster-grid-icon');
+                const iconSrc = `${slimeConfig.folder}/jump.png`;
+                if (rosterIcon && rosterIcon.getAttribute('src') !== iconSrc) {
+                    rosterIcon.src = iconSrc;
+                    rosterIcon.alt = displayName;
+                }
 
                 const hpFill = existingNode.querySelector('.roster-hp-fill');
                 if (hpFill) {
@@ -664,7 +671,7 @@ export function openSlimeInspectorModal(slime) {
         else hpBarEl.style.background = '#10b981';
     }
 
-    const baseDmg = slime.damage !== undefined ? slime.damage : ((gameState.slimeDamage || 1) + (slimeConfig.attackDamage > 1 ? (slimeConfig.attackDamage - 1) : 0));
+    const baseDmg = calculateSlimeDamage(slime);
     if (damageEl) damageEl.textContent = `${baseDmg} ⚔️`;
 
     const critEl = document.getElementById('slimeModalCrit');
@@ -715,14 +722,15 @@ export function openSlimeInspectorModal(slime) {
             slime.equipment.forEach(item => {
                 const badge = document.createElement('div');
                 badge.className = 'equipment-item-card';
-                badge.title = `${item.name}: ${item.effectText || '+1 Max HP'}`;
+                const effectText = formatLootEffects(item.effects || item);
+                badge.title = item.name + ': ' + effectText;
 
                 badge.innerHTML = `
                     <img src="${item.sprite}" alt="${item.name}" class="equipment-icon-img"
                          onerror="this.onerror=null; this.src='images/loots/boot.png';">
                     <div class="equipment-item-info">
                         <span class="equipment-item-name">${item.name}</span>
-                        <span class="equipment-item-effect">${item.effectText || '+1 Max HP'}</span>
+                        <span class="equipment-item-effect">${effectText}</span>
                     </div>
                 `;
                 grid.appendChild(badge);

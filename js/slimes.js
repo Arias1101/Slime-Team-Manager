@@ -2,8 +2,8 @@
  * Slime Types & Dynamic Enemy-Targeting 60 FPS Jump Attack System
  */
 
-import { activeEnemies, triggerLootDrop, activeGroundLoots } from './enemies.js';
-import { gameState, SLIME_TYPES, addScraps, updateBestRoster, saveStateToLocal } from './state.js';
+import { activeEnemies, triggerLootDrop, activeGroundLoots, formatLootEffects } from './enemies.js';
+import { gameState, SLIME_TYPES, addScraps, updateBestRoster, saveStateToLocal, calculateSlimeDamage } from './state.js';
 import { updateUI } from './ui.js';
 
 /**
@@ -46,6 +46,8 @@ export function showFloatingDamageNumber(x, y, damageVal, type = 'enemy-dmg') {
         floatEl.textContent = `🧪 ${damageVal}`;
     } else if (type === 'crit-dmg') {
         floatEl.textContent = `💥 ${damageVal}`;
+    } else if (type === 'heal') {
+        floatEl.textContent = '+' + damageVal;
     } else {
         floatEl.textContent = `-${damageVal}`;
     }
@@ -58,6 +60,10 @@ export function showFloatingDamageNumber(x, y, damageVal, type = 'enemy-dmg') {
     }, durationMs);
 }
 
+/** Show a green floating healing amount. Reusable for enemies and slimes. */
+export function showFloatingHealingNumber(x, y, healingAmount) {
+    if (healingAmount > 0) showFloatingDamageNumber(x, y, healingAmount, 'heal');
+}
 /**
  * Display a centered battlefield banner message (e.g. "🎉 WAVE 10 CLEARED!")
  */
@@ -207,7 +213,7 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
 
         if (progress >= 0.90 && !hasDealtDamage) {
             hasDealtDamage = true;
-            let currentDamage = slimeObj ? (slimeObj.damage || (gameState.slimeDamage || 1)) : (gameState.slimeDamage || 1);
+            let currentDamage = slimeObj ? calculateSlimeDamage(slimeObj) : (gameState.slimeDamage || 1);
             let isCrit = false;
 
             const critChance = slimeObj ? (slimeObj.critChance || 0) : 0;
@@ -534,44 +540,25 @@ function dispatchSingleSlimeToEat() {
             const alreadyHasLoot = slimeObj.equipment.some(eq => eq.id === lootKey);
 
             if (!alreadyHasLoot) {
-                const rawLootEffect = targetLoot.effect || { stat: 'hp', value: 1, text: '+1 Max HP' };
+                const rawLootEffect = targetLoot.effect || { stat: 'hp', value: 1 };
                 const effectsList = Array.isArray(rawLootEffect)
                     ? rawLootEffect
                     : (rawLootEffect.effects ? rawLootEffect.effects : [rawLootEffect]);
-
-                const textParts = [];
-
                 effectsList.forEach(eff => {
                     const effectStat = eff.stat || 'hp';
-                    const effectValue = eff.value || 1;
-                    const effectType = eff.effectType || null;
-                    let singleText = eff.text || '';
+                    const effectValue = Number(eff.value ?? 1);
 
                     if (effectStat === 'hp') {
                         slimeObj.maxHp = Math.max(1, (slimeObj.maxHp || 10) + effectValue);
                         slimeObj.hp = Math.max(1, Math.min(slimeObj.hp !== undefined ? slimeObj.hp : 10, slimeObj.maxHp));
-                        if (!singleText) singleText = `${effectValue >= 0 ? '+' : ''}${effectValue} Max HP`;
-                    } else if (effectStat === 'damage') {
-                        slimeObj.damage = Math.max(1, (slimeObj.damage || 1) + effectValue);
-                        if (!singleText) singleText = `${effectValue >= 0 ? '+' : ''}${effectValue} Damage`;
                     } else if (effectStat === 'regen') {
                         slimeObj.regen = Math.max(0, (slimeObj.regen || 0) + effectValue);
-                        if (!singleText) singleText = `${effectValue >= 0 ? '+' : ''}${effectValue} HP Regen`;
                     } else if (effectStat === 'crit') {
                         slimeObj.critChance = Math.max(0, (slimeObj.critChance || 0) + effectValue);
-                        if (!singleText) singleText = `${effectValue >= 0 ? '+' : ''}${effectValue}% Crit`;
-                    } else if (effectStat === 'effect') {
-                        if (!singleText) {
-                            if (effectType === 'burn') singleText = effectValue > 1 ? `🔥 Burn x${effectValue}` : '🔥 Burn';
-                            else if (effectType === 'poison') singleText = effectValue > 1 ? `🧪 Poison x${effectValue}` : '🧪 Poison';
-                            else if (effectType === 'freeze') singleText = '❄️ Freeze';
-                            else if (effectType === 'stun') singleText = '💫 Stun';
-                        }
                     }
-                    if (singleText) textParts.push(singleText);
                 });
 
-                const combinedText = textParts.join(', ');
+                const combinedText = formatLootEffects(effectsList);
 
                 slimeObj.equipment.push({
                     id: lootKey,
@@ -581,6 +568,7 @@ function dispatchSingleSlimeToEat() {
                     effects: effectsList
                 });
 
+                slimeObj.damage = calculateSlimeDamage(slimeObj);
                 updateBestRoster();
                 saveStateToLocal();
 

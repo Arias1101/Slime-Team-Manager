@@ -9,7 +9,6 @@ export const SLIME_TYPES = {
         folder: 'images/slimes/base',
         prefix: 'slime',
         frameCount: 8,
-        attackDamage: 1,
         effect: null
     },
     fire: {
@@ -18,7 +17,6 @@ export const SLIME_TYPES = {
         folder: 'images/slimes/fire',
         prefix: 'slime',
         frameCount: 8,
-        attackDamage: 1,
         effect: 'burn',
         burnDamagePerSec: 1,
         burnDuration: 3.0 // 3 seconds DoT (1 damage per second)
@@ -29,7 +27,6 @@ export const SLIME_TYPES = {
         folder: 'images/slimes/ice',
         prefix: 'slime',
         frameCount: 8,
-        attackDamage: 1,
         effect: 'freeze',
         freezeDuration: 1.0 // Freezes/immobilizes enemy for 1 second
     },
@@ -39,7 +36,6 @@ export const SLIME_TYPES = {
         folder: 'images/slimes/stone',
         prefix: 'slime',
         frameCount: 8,
-        attackDamage: 2, // Heavy stone impact damage
         effect: 'stun',
         stunDuration: 0.8 // Stuns/dazes enemy for 0.8 seconds
     },
@@ -49,7 +45,6 @@ export const SLIME_TYPES = {
         folder: 'images/slimes/poison',
         prefix: 'slime',
         frameCount: 8,
-        attackDamage: 1,
         effect: 'poison',
         poisonDamagePerSec: 2,
         poisonDuration: 3.0 // 3 seconds DoT (2 damage per stack per 1.0s tick)
@@ -197,6 +192,26 @@ export function addScraps(amount = 1) {
     saveStateToLocal();
 }
 
+/** Damage is always Augmentation's displayed value plus equipped damage bonuses. */
+export function calculateSlimeDamage(slime) {
+    const equipmentDamage = (slime?.equipment || []).reduce((total, item) => {
+        const effects = Array.isArray(item?.effects) ? item.effects : [item];
+        return total + effects.reduce((sum, effect) => (
+            effect?.stat === 'damage' ? sum + (Number(effect.value) || 0) : sum
+        ), 0);
+    }, 0);
+    return Math.max(1, (gameState.slimeDamage || 1) + equipmentDamage);
+}
+
+export function refreshSlimeDamage(slime) {
+    if (slime) slime.damage = calculateSlimeDamage(slime);
+    return slime?.damage || getSlimeDamage();
+}
+
+export function refreshAllSlimeDamage() {
+    (gameState.slimes || []).forEach(refreshSlimeDamage);
+    (gameState.bestRoster || []).forEach(refreshSlimeDamage);
+}
 /**
  * Ensures gameState.slimes contains array of slimes with unique slotIndex values
  */
@@ -216,8 +231,7 @@ export function syncSlimesArray() {
             s.name = generateUniqueSlimeName();
         }
         if (!s.id) s.id = s.name;
-        const slimeConfig = SLIME_TYPES[s.type || 'base'] || SLIME_TYPES.base;
-        if (!s.damage) s.damage = (slimeConfig.attackDamage || 1) + ((gameState.slimeDamage || 1) - 1);
+        s.damage = calculateSlimeDamage(s);
         if (s.critChance === undefined) s.critChance = 0;
         if (s.regen === undefined) s.regen = 0;
         if (s.wavesClearedSinceDeath === undefined) s.wavesClearedSinceDeath = 0;
@@ -245,15 +259,20 @@ export function getArmySizeUpgradeCost() {
  */
 export function getNextAvailableSlotIndex() {
     syncSlimesArray();
-    if (!gameState.slimes || gameState.slimes.length === 0) return 0;
-    const usedSlots = new Set(gameState.slimes.map(s => s.slotIndex).filter(idx => idx !== undefined && idx !== null));
+
+    // Historical roster slots are reserved too, so a new Division can never replace a fallen Slime.
+    const usedSlots = new Set();
+    (gameState.slimes || []).forEach(slime => {
+        if (slime.slotIndex !== undefined && slime.slotIndex !== null) usedSlots.add(slime.slotIndex);
+    });
+    (gameState.bestRoster || []).forEach(slime => {
+        if (slime.slotIndex !== undefined && slime.slotIndex !== null) usedSlots.add(slime.slotIndex);
+    });
+
     let slot = 0;
-    while (usedSlots.has(slot)) {
-        slot++;
-    }
+    while (usedSlots.has(slot)) slot++;
     return slot;
 }
-
 /**
  * Helper to calculate random Slime Type based on elemental upgrade levels
  */
@@ -280,76 +299,47 @@ export function getRandomSlimeType() {
  * Purchase Army Size Upgrade: deducts scraps & adds 1 Slime into the lowest vacant slot
  */
 export function buyArmySizeUpgrade() {
-    const currentSlimes = (gameState.slimes && gameState.slimes.length) ? gameState.slimes.length : (gameState.armySize || 1);
-    if (currentSlimes >= 60) return false;
+    if (!gameState.slimes) gameState.slimes = [];
+
+    // Every known roster slot, alive or dead, remains reserved for its original Slime.
+    const reservedSlots = new Set();
+    (gameState.slimes || []).forEach(slime => { if (slime.slotIndex !== undefined && slime.slotIndex !== null) reservedSlots.add(slime.slotIndex); });
+    (gameState.bestRoster || []).forEach(slime => { if (slime.slotIndex !== undefined && slime.slotIndex !== null) reservedSlots.add(slime.slotIndex); });
+    if (reservedSlots.size >= 60) return false;
 
     const cost = getArmySizeUpgradeCost();
     if ((gameState.scraps || 0) < cost) return false;
 
     gameState.scraps -= cost;
-    if (!gameState.slimes) gameState.slimes = [];
 
-    // Check for fallen (dead) slimes in bestRoster that need revival
-    const activeIds = new Set(gameState.slimes.map(s => s.id || s.name));
-    const fallenSlimes = (gameState.bestRoster || [])
-        .filter(b => !activeIds.has(b.id || b.name))
-        .sort((a, b) => (a.slotIndex || 0) - (b.slotIndex || 0));
+    // Division only creates new Slimes. Resurrection is reserved for full wipes and future mechanics.
+    const newSlimeType = getRandomSlimeType();
+    const uniqueName = generateUniqueSlimeName();
+    const slotIndex = getNextAvailableSlotIndex();
+    const fortificationBonus = gameState.fortificationLevel || 0;
 
-    if (fallenSlimes.length > 0) {
-        // REVIVAL: Revive the fallen slime, preserving all its stats, slotIndex & equipment!
-        const template = fallenSlimes[0];
-        const revivedSlime = {
-            id: template.id || template.name,
-            name: template.name || template.id,
-            type: template.type || 'base',
-            hp: template.maxHp || 10,
-            maxHp: template.maxHp || 10,
-            damage: template.damage || 1,
-            critChance: template.critChance || 0,
-            regen: template.regen || 0,
-            ascended: template.ascended || false,
-            slotIndex: template.slotIndex !== undefined ? template.slotIndex : getNextAvailableSlotIndex(),
-            equipment: Array.isArray(template.equipment) ? JSON.parse(JSON.stringify(template.equipment)) : []
-        };
-
-        gameState.slimes.push(revivedSlime);
-        console.log(`[DIVISION REVIVAL] Revived fallen Slime "${revivedSlime.name}" with ${revivedSlime.equipment.length} equipment!`);
-    } else {
-        // NEW SLIME CREATION: No dead slimes to revive -> create a new Slime normally
-        const newSlimeType = getRandomSlimeType();
-
-        const uniqueName = generateUniqueSlimeName();
-        const slimeConfig = SLIME_TYPES[newSlimeType] || SLIME_TYPES.base;
-        const baseDamage = (slimeConfig.attackDamage || 1) + ((gameState.slimeDamage || 1) - 1);
-        const slotIndex = getNextAvailableSlotIndex();
-        const fortificationBonus = gameState.fortificationLevel || 0;
-
-        const newSlime = {
-            id: uniqueName,
-            name: uniqueName,
-            type: newSlimeType,
-            hp: 10 + fortificationBonus,
-            maxHp: 10 + fortificationBonus,
-            damage: baseDamage,
-            critChance: 0,
-            regen: 0,
-            ascended: false,
-            slotIndex: slotIndex,
-            equipment: []
-        };
-
-        gameState.slimes.push(newSlime);
-    }
+    gameState.slimes.push({
+        id: uniqueName,
+        name: uniqueName,
+        type: newSlimeType,
+        hp: 10 + fortificationBonus,
+        maxHp: 10 + fortificationBonus,
+        damage: getSlimeDamage(),
+        critChance: 0,
+        regen: 0,
+        ascended: false,
+        slotIndex: slotIndex,
+        equipment: []
+    });
 
     updateBestRoster();
     gameState.armySize = gameState.slimes.length;
-    gameState.maxSlimesReached = Math.max(gameState.maxSlimesReached || 1, gameState.bestRoster.length);
+    gameState.maxSlimesReached = Math.max(gameState.maxSlimesReached || 1, (gameState.bestRoster || []).length);
     gameState.hasUsedDivision = true;
 
     saveStateToLocal();
     return true;
 }
-
 /**
  * Get current cost for Ascension Upgrade (10 + 3 * AscendedSlimes)
  */
@@ -420,12 +410,7 @@ export function buyAugmentationUpgrade() {
     gameState.scraps -= cost;
     gameState.slimeDamage = (gameState.slimeDamage || 1) + 1;
 
-    // Increment individual attack damage of all active slimes
-    if (gameState.slimes) {
-        gameState.slimes.forEach(s => {
-            s.damage = (s.damage || 1) + 1;
-        });
-    }
+    refreshAllSlimeDamage();
 
     updateBestRoster();
     saveStateToLocal();
@@ -701,7 +686,7 @@ export function saveWaveSnapshot(waveNum, uncollectedLootValue = 0) {
             type: s.type || 'base',
             hp: s.hp !== undefined ? s.hp : 10,
             maxHp: s.maxHp || 10,
-            damage: s.damage || (SLIME_TYPES[s.type || 'base']?.attackDamage || 1),
+            damage: calculateSlimeDamage(s),
             critChance: s.critChance || 0,
             regen: s.regen || 0,
             ascended: !!s.ascended,
@@ -721,44 +706,33 @@ export function saveWaveSnapshot(waveNum, uncollectedLootValue = 0) {
  */
 export function updateBestRoster() {
     if (!gameState.slimes || gameState.slimes.length === 0) return;
-
     if (!gameState.bestRoster) gameState.bestRoster = [];
 
-    // If current slimes in active army exceeds or equals bestRoster length, update bestRoster blueprint!
-    if (gameState.slimes.length >= gameState.bestRoster.length) {
-        gameState.bestRoster = gameState.slimes.map(s => ({
-            id: s.id || s.name,
-            name: s.name || String(s.id || 'Gooey'),
-            type: s.type || 'base',
-            hp: s.maxHp || 10,
-            maxHp: s.maxHp || 10,
-            damage: s.damage || (SLIME_TYPES[s.type || 'base']?.attackDamage || 1),
-            critChance: s.critChance || 0,
-            regen: s.regen || 0,
-            ascended: !!s.ascended,
-            slotIndex: s.slotIndex !== undefined ? s.slotIndex : 0,
-            equipment: s.equipment ? JSON.parse(JSON.stringify(s.equipment)) : []
-        }));
-    } else {
-        // Also sync any newly ascended or upgraded slimes into the bestRoster blueprint by unique name
-        gameState.slimes.forEach(activeSlime => {
-            const activeKey = activeSlime.name || activeSlime.id;
-            const bestMatch = gameState.bestRoster.find(b => (b.name || b.id) === activeKey);
-            if (bestMatch) {
-                bestMatch.ascended = activeSlime.ascended || bestMatch.ascended;
-                if (activeSlime.slotIndex !== undefined) bestMatch.slotIndex = activeSlime.slotIndex;
-                if (activeSlime.damage) bestMatch.damage = activeSlime.damage;
-                if (activeSlime.maxHp) bestMatch.maxHp = activeSlime.maxHp;
-                if (activeSlime.critChance) bestMatch.critChance = activeSlime.critChance;
-                if (activeSlime.regen) bestMatch.regen = activeSlime.regen;
-                if (activeSlime.equipment) bestMatch.equipment = JSON.parse(JSON.stringify(activeSlime.equipment));
-            }
-        });
-    }
+    // Preserve every historical slot. Active Slimes update their own blueprint entry or append a new one.
+    gameState.slimes.forEach(activeSlime => {
+        const activeKey = activeSlime.id || activeSlime.name;
+        const snapshot = {
+            id: activeKey,
+            name: activeSlime.name || String(activeKey),
+            type: activeSlime.type || 'base',
+            hp: activeSlime.maxHp || 10,
+            maxHp: activeSlime.maxHp || 10,
+            damage: calculateSlimeDamage(activeSlime),
+            critChance: activeSlime.critChance || 0,
+            regen: activeSlime.regen || 0,
+            ascended: !!activeSlime.ascended,
+            slotIndex: activeSlime.slotIndex !== undefined ? activeSlime.slotIndex : getNextAvailableSlotIndex(),
+            equipment: activeSlime.equipment ? JSON.parse(JSON.stringify(activeSlime.equipment)) : []
+        };
 
+        const index = gameState.bestRoster.findIndex(saved => (saved.id || saved.name) === activeKey);
+        if (index >= 0) gameState.bestRoster[index] = snapshot;
+        else gameState.bestRoster.push(snapshot);
+    });
+
+    gameState.bestRoster.sort((a, b) => (a.slotIndex || 0) - (b.slotIndex || 0));
     saveStateToLocal();
 }
-
 /**
  * Respawns/Restores the "Best Roster" (highest amount of slimes ever obtained) at 100% full HP!
  * Preserves all scraps, score, and upgrade levels!
@@ -782,7 +756,7 @@ export function restoreBestRoster() {
         type: s.type || 'base',
         hp: s.maxHp || 10,
         maxHp: s.maxHp || 10,
-        damage: s.damage || (SLIME_TYPES[s.type || 'base']?.attackDamage || 1),
+        damage: calculateSlimeDamage(s),
         critChance: s.critChance || 0,
         regen: s.regen || 0,
         ascended: !!s.ascended,
@@ -847,16 +821,13 @@ export function rerollSlimeType(targetId) {
 
     const newType = getRandomSlimeType();
     slime.type = newType;
-
-    const slimeConfig = SLIME_TYPES[newType] || SLIME_TYPES.base;
-    const damageBonus = (gameState.slimeDamage || 1) - 1;
-    slime.damage = (slimeConfig.attackDamage || 1) + damageBonus;
+    refreshSlimeDamage(slime);
 
     if (gameState.bestRoster) {
         const match = gameState.bestRoster.find(b => (b.id === targetId || b.name === targetId));
         if (match) {
             match.type = newType;
-            match.damage = slime.damage;
+            refreshSlimeDamage(match);
         }
     }
 
@@ -889,6 +860,8 @@ export function loadStateFromLocal() {
         gameState = { ...defaultState };
         syncSlimesArray();
     }
+    syncSlimesArray();
+    refreshAllSlimeDamage();
     saveStateToLocal();
 }
 

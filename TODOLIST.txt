@@ -1,5 +1,5 @@
 --------------- TODO NOW -----------------
-- Fix Slime jump distance that accomodates ennemies moving speed even if they are near their arrival point (same -10/+10 px offset of their arrival point than they use to stop). When an ennemy is stopped, the movement prediction should stop applying.
+
 
 ------------------ LATER ------------------
 

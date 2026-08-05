@@ -109,6 +109,9 @@ export function updateUpgradesUI() {
     if ((gameState.maxWaveCleared || 0) >= 20) {
         gameState.unlockedUpgrades.intoxication = true;
     }
+    if ((gameState.maxWaveCleared || 0) >= 40) {
+        gameState.unlockedUpgrades.petrification = true;
+    }
 
     // Render upgrade card visibility based on permanent unlock flags
     if (upgradeArmySizeCardEl) {
@@ -194,11 +197,14 @@ export function updateUpgradesUI() {
     if (upgradeSlimeCountEl && upgradeArmySizeCostEl && btnUpgradeArmySizeEl) {
         const currentSlimes = gameState.slimes ? gameState.slimes.length : (gameState.armySize || 1);
         const cost1 = getArmySizeUpgradeCost();
+        const reservedSlots = new Set();
+        (gameState.slimes || []).forEach(slime => { if (slime.slotIndex !== undefined && slime.slotIndex !== null) reservedSlots.add(slime.slotIndex); });
+        (gameState.bestRoster || []).forEach(slime => { if (slime.slotIndex !== undefined && slime.slotIndex !== null) reservedSlots.add(slime.slotIndex); });
 
         upgradeSlimeCountEl.textContent = currentSlimes;
         setUpgradeLevelZero(upgradeArmySizeCardEl, gameState.hasUsedDivision !== true);
 
-        if (currentSlimes >= 60) {
+        if (reservedSlots.size >= 60) {
             upgradeArmySizeCostEl.textContent = 'MAX';
             btnUpgradeArmySizeEl.setAttribute('disabled', 'disabled');
             btnUpgradeArmySizeEl.classList.add('disabled');
@@ -513,10 +519,43 @@ export function updateUpgradesUI() {
         }
     }
 
-    // Upgrade 9: Petrification (Hidden until further notice)
+    // Upgrade 9: Petrification
     const upgradePetrificationCardEl = document.getElementById('upgradePetrificationCard');
-    if (upgradePetrificationCardEl) upgradePetrificationCardEl.style.display = 'none';
+    if (upgradePetrificationCardEl) {
+        if (gameState.unlockedUpgrades.petrification) upgradePetrificationCardEl.classList.remove('hidden');
+        else upgradePetrificationCardEl.classList.add('hidden');
+    }
 
+    const upgradePetrificationValueEl = document.getElementById('upgradePetrificationValue');
+    const upgradePetrificationCostEl = document.getElementById('upgradePetrificationCost');
+    const btnUpgradePetrificationEl = document.getElementById('btnUpgradePetrification');
+
+    if (upgradePetrificationValueEl && upgradePetrificationCostEl && btnUpgradePetrificationEl) {
+        const petrificationLvl = getPetrificationLevel();
+        const petrificationChancePct = petrificationLvl * 2;
+        upgradePetrificationValueEl.textContent = String(petrificationChancePct) + '%';
+        setUpgradeLevelZero(upgradePetrificationCardEl, petrificationLvl <= 0);
+
+        if (petrificationLvl >= 10) {
+            upgradePetrificationCostEl.textContent = 'MAX';
+            btnUpgradePetrificationEl.setAttribute('disabled', 'disabled');
+            btnUpgradePetrificationEl.classList.add('disabled');
+            btnUpgradePetrificationEl.classList.remove('affordable');
+        } else {
+            const cost7 = getPetrificationUpgradeCost();
+            upgradePetrificationCostEl.textContent = String(cost7) + ' ' + String.fromCodePoint(0x1F356);
+            const canAfford7 = (gameState.scraps || 0) >= cost7;
+            if (canAfford7) {
+                btnUpgradePetrificationEl.removeAttribute('disabled');
+                btnUpgradePetrificationEl.classList.remove('disabled');
+                btnUpgradePetrificationEl.classList.add('affordable');
+            } else {
+                btnUpgradePetrificationEl.setAttribute('disabled', 'disabled');
+                btnUpgradePetrificationEl.classList.add('disabled');
+                btnUpgradePetrificationEl.classList.remove('affordable');
+            }
+        }
+    }
     // Upgrade 10: Intoxication
     const upgradeIntoxicationValueEl = document.getElementById('upgradeIntoxicationValue');
     const upgradeIntoxicationCostEl = document.getElementById('upgradeIntoxicationCost');

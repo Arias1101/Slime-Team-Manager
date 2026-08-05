@@ -2,8 +2,8 @@
  * Shop Module - Mid-Game Merchant Market (Appears every 10 waves)
  */
 
-import { gameState, saveStateToLocal, updateBestRoster, addScraps } from './state.js';
-import { ENEMY_TYPES } from './enemies.js';
+import { gameState, saveStateToLocal, updateBestRoster, addScraps, calculateSlimeDamage } from './state.js';
+import { ENEMY_TYPES, calculateLootValue, formatLootEffects } from './enemies.js';
 import { SLIME_TYPES } from './state.js';
 import { updateUI } from './ui.js';
 import { startNextWave } from './enemies.js';
@@ -40,37 +40,21 @@ function generateShopStock() {
 
     selectedKeys.forEach((key, index) => {
         const def = ENEMY_TYPES[key];
-        const lootVal = def.loot_value || 2;
+        const lootVal = calculateLootValue(def.loot_effect);
         const buyPrice = lootVal * 2;
 
-        const rawLootEffect = def.loot_effect || { stat: 'hp', value: 1, text: '+1 Max HP' };
+        const rawLootEffect = def.loot_effect || { stat: 'hp', value: 1 };
         const effectsList = Array.isArray(rawLootEffect)
             ? rawLootEffect
             : (rawLootEffect.effects ? rawLootEffect.effects : [rawLootEffect]);
-
-        const textParts = [];
-        effectsList.forEach(eff => {
-            if (eff.text) {
-                textParts.push(eff.text);
-            } else if (eff.stat === 'hp') {
-                textParts.push(`${eff.value >= 0 ? '+' : ''}${eff.value} Max HP`);
-            } else if (eff.stat === 'damage') {
-                textParts.push(`${eff.value >= 0 ? '+' : ''}${eff.value} Damage`);
-            } else if (eff.stat === 'regen') {
-                textParts.push(`${eff.value >= 0 ? '+' : ''}${eff.value} HP Regen`);
-            } else if (eff.stat === 'crit') {
-                textParts.push(`${eff.value >= 0 ? '+' : ''}${eff.value}% Crit`);
-            } else if (eff.stat === 'effect') {
-                textParts.push(eff.effectType ? `✨ ${eff.effectType}` : '✨ Effect');
-            }
-        });
+        const effectText = formatLootEffects(effectsList);
 
         shopInventory.push({
             shopItemId: `shop_item_${Date.now()}_${index}`,
             enemyKey: key,
             name: def.loot_name || key,
             sprite: `images/loots/${key}.png`,
-            effectText: textParts.join(', ') || '+1 Max HP',
+            effectText: effectText,
             effectsList: effectsList,
             price: buyPrice,
             lootValue: lootVal,
@@ -215,8 +199,8 @@ function renderSelectedSlimeSheet() {
         selectedSlime.equipment.forEach((eq, index) => {
             const enemyKey = eq.id;
             const enemyDef = ENEMY_TYPES[enemyKey];
-            const lootVal = eq.lootValue || (enemyDef ? enemyDef.loot_value : 2) || 2;
-            const sellPrice = Math.max(1, Math.floor(lootVal * 0.5));
+            const lootVal = eq.lootValue || calculateLootValue(enemyDef?.loot_effect);
+            const sellPrice = lootVal;
 
             html += `
                 <div class="shop-equipment-row">
@@ -224,7 +208,7 @@ function renderSelectedSlimeSheet() {
                         <img src="${eq.sprite || `images/loots/${eq.id}.png`}" class="shop-eq-icon" alt="${eq.name}">
                         <div class="shop-eq-details">
                             <span class="shop-eq-name">${eq.name}</span>
-                            <span class="shop-eq-effect">${eq.effectText || '+1 Max HP'}</span>
+                            <span class="shop-eq-effect">${formatLootEffects(eq.effects || eq)}</span>
                         </div>
                     </div>
                     <button class="btn-sell-equipment" data-eq-index="${index}">
@@ -258,7 +242,7 @@ function sellSlimeEquipment(slime, eqIndex) {
     const itemToSell = slime.equipment[eqIndex];
     const enemyKey = itemToSell.id;
     const enemyDef = ENEMY_TYPES[enemyKey];
-    const lootVal = itemToSell.lootValue || (enemyDef ? enemyDef.loot_value : 2) || 2;
+    const lootVal = itemToSell.lootValue || calculateLootValue(enemyDef?.loot_effect);
     const sellPrice = Math.max(1, Math.floor(lootVal * 0.5));
 
     // Remove item from slime equipment array
@@ -274,13 +258,15 @@ function sellSlimeEquipment(slime, eqIndex) {
             slime.maxHp = Math.max(1, slime.maxHp - effectValue);
             slime.hp = Math.max(1, Math.min(slime.hp, slime.maxHp));
         } else if (effectStat === 'damage') {
-            slime.damage = Math.max(1, slime.damage - effectValue);
+            // Damage is derived from Augmentation and current equipment below.
         } else if (effectStat === 'regen') {
             slime.regen = Math.max(0, (slime.regen || 0) - effectValue);
         } else if (effectStat === 'crit') {
             slime.critChance = Math.max(0, (slime.critChance || 0) - effectValue);
         }
     });
+
+    slime.damage = calculateSlimeDamage(slime);
 
     // Add scraps refund
     addScraps(sellPrice);
@@ -371,7 +357,7 @@ function buyShopItem(item) {
             selectedSlime.maxHp = Math.max(1, (selectedSlime.maxHp || 10) + effectValue);
             selectedSlime.hp = Math.max(1, Math.min(selectedSlime.hp !== undefined ? selectedSlime.hp : 10, selectedSlime.maxHp));
         } else if (effectStat === 'damage') {
-            selectedSlime.damage = Math.max(1, (selectedSlime.damage || 1) + effectValue);
+            // Damage is derived after the item is added below.
         } else if (effectStat === 'regen') {
             selectedSlime.regen = Math.max(0, (selectedSlime.regen || 0) + effectValue);
         } else if (effectStat === 'crit') {
@@ -389,6 +375,7 @@ function buyShopItem(item) {
         lootValue: item.lootValue
     });
 
+    selectedSlime.damage = calculateSlimeDamage(selectedSlime);
     updateBestRoster();
     saveStateToLocal();
     updateUI();

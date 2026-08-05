@@ -1,6 +1,15 @@
 Patch Notes:
 v0.3
-- To complete
+- Added Tier4 ennemy types in game: wolf, ent, rabbit, bear, fairy, redfairy, elf, stonegolem.
+- Implemented dynamic loot value calculation based on loot attribute ponderations.
+- Implemented new "Support" ennemy type that heal ennemies closest to slimes.
+- Raised scrap gained by selling items in shop (now equals to loot value).
+- Added waves 31 to 40.
+- Fixed issues with Slime damage calculation.
+- Fixed display issues with Slime Type reroll.
+- Improved backend ennemy handling.
+- Implemented Stone Slime new type and Upgrade.
+- Reworked Division to only be a creation mechanic (resurection will come later, for now, wiping is the only way to resurect the whole roster).
 
 v0.2
 - Upgrade cards now show their current value beside the title.
@@ -11,7 +20,7 @@ v0.2
 - Auto Eat now triggers one Eat action when the last enemy of a wave dies.
 - Ascended roster slimes use a pink border while status effects color their backgrounds.
 - Ascension now reaches MAX when the full roster is ascended.
-- Fortification unlocks after wave 30 and raises every Slime's maximum HP.
+- Fortification unlocks after wave 30 and raises every Slime's base HP.
 - Regeneration is capped at 5 by default and gains +1 maximum every two Fortification levels.
 - Medium screens use one upgrades column below 1260px, while narrow screens keep the upgrades tab below 900px.
 - Slime jumps only predict enemy movement while targets are still walking away from their stop position.
