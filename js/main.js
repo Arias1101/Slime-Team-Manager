@@ -2,10 +2,10 @@
  * Application Main Initializer
  */
 
-import { loadStateFromLocal } from './state.js';
+import { loadStateFromLocal, addScraps, gameState } from './state.js';
 import { initAuth, loginWithGoogle, logoutUser } from './auth.js';
 import { startEngine, setGamePaused, isGamePaused } from './engine.js';
-import { updateUI, setAuthScreenState, showFirebaseNotice, playSlimeRainRespawnAnimation, initSlimeModalListeners, initMainTabsListeners } from './ui.js';
+import { updateUI, setAuthScreenState, showFirebaseNotice, playSlimeRainRespawnAnimation, initSlimeModalListeners, initMainTabsListeners, openSlimeInspectorModal } from './ui.js';
 import { initEnemiesModule, startNextWave, setAutoPlay, resetGameFull, rewindWaveState } from './enemies.js';
 import { triggerRandomSlimeAttack, triggerSlimeEatLoot, initAscendedAutoAttacks } from './slimes.js';
 import { initUpgradesModule } from './upgrades.js';
@@ -22,6 +22,91 @@ document.addEventListener('DOMContentLoaded', () => {
     initAscendedAutoAttacks();
     initSlimeModalListeners();
     initMainTabsListeners();
+    let isApplyingAscensionMax = false;
+    const moveMaxedUpgradesToBottom = () => {
+        const container = document.getElementById('upgradesContainer');
+        if (!container) return;
+        const upgrades = Array.from(container.querySelectorAll(':scope > .upgrade-card'));
+        const orderedUpgrades = [
+            ...upgrades.filter(card => card.querySelector('.upgrade-cost')?.textContent.trim() !== 'MAX'),
+            ...upgrades.filter(card => card.querySelector('.upgrade-cost')?.textContent.trim() === 'MAX')
+        ];
+        if (upgrades.some((card, index) => card !== orderedUpgrades[index])) {
+            orderedUpgrades.forEach(card => container.appendChild(card));
+        }
+    };
+
+    const updateAscensionMaxState = () => {
+        if (isApplyingAscensionMax) return;
+        const currentAscendedCount = (gameState.slimes || []).filter(slime => slime.ascended === true).length;
+        gameState.maxAscendedSlimesReached = Math.max(gameState.maxAscendedSlimesReached || 0, currentAscendedCount);
+        const ascendedCountEl = document.getElementById('upgradeAscendedCount');
+        if (ascendedCountEl && ascendedCountEl.textContent !== String(gameState.maxAscendedSlimesReached)) {
+            ascendedCountEl.textContent = String(gameState.maxAscendedSlimesReached);
+        }
+
+        const rosterSlimes = (gameState.bestRoster && gameState.bestRoster.length > 0) ? gameState.bestRoster : (gameState.slimes || []);
+        const allRosterSlimesAscended = rosterSlimes.length > 0 && rosterSlimes.every(slime => slime.ascended === true);
+        moveMaxedUpgradesToBottom();
+        if (!allRosterSlimesAscended) return;
+
+        isApplyingAscensionMax = true;
+        const costEl = document.getElementById('upgradeAscensionCost');
+        const buttonEl = document.getElementById('btnUpgradeAscension');
+        if (costEl && costEl.textContent !== 'MAX') costEl.textContent = 'MAX';
+        if (buttonEl) {
+            if (!buttonEl.hasAttribute('disabled')) buttonEl.setAttribute('disabled', 'disabled');
+            if (!buttonEl.classList.contains('disabled')) buttonEl.classList.add('disabled');
+            if (buttonEl.classList.contains('affordable')) buttonEl.classList.remove('affordable');
+        }
+        moveMaxedUpgradesToBottom();
+        isApplyingAscensionMax = false;
+    };
+
+    const upgradesContainerEl = document.getElementById('upgradesContainer');
+    if (upgradesContainerEl) {
+        new MutationObserver(updateAscensionMaxState).observe(upgradesContainerEl, {
+            childList: true,
+            subtree: true,
+            characterData: true,
+            attributes: true
+        });
+        updateAscensionMaxState();
+    }
+
+    document.addEventListener('click', (event) => {
+        const ripSlot = event.target.closest('.roster-grid-item.empty-slot');
+        const rosterSlot = event.target.closest('.roster-grid-item');
+        if (!rosterSlot) return;
+        if (!ripSlot) {
+            const portraitEl = document.getElementById('slimeModalPortrait');
+            if (portraitEl) {
+                portraitEl.classList.remove('is-dead');
+                portraitEl.style.animation = '';
+            }
+            return;
+        }
+
+        const slotMatch = ripSlot.id.match(/roster_item_empty_(\d+)/);
+        const slotIndex = slotMatch ? Number(slotMatch[1]) : -1;
+        const fallenSlime = (gameState.bestRoster || []).find(slime => (slime.slotIndex || 0) === slotIndex);
+        if (!fallenSlime) return;
+
+        openSlimeInspectorModal({ ...fallenSlime, hp: 0, isDead: true });
+        const portraitEl = document.getElementById('slimeModalPortrait');
+        const type = fallenSlime.type || 'base';
+        const folder = `images/slimes/${type === 'toxic' ? 'poison' : type}`;
+        if (portraitEl) {
+            portraitEl.src = `${folder}/die.png`;
+            portraitEl.style.objectPosition = '-19px 0px';
+            portraitEl.classList.add('is-dead');
+            portraitEl.style.animation = 'none';
+        }
+        const rerollEl = document.getElementById('slimeModalRerollType');
+        const killEl = document.getElementById('slimeModalKill');
+        if (rerollEl) rerollEl.style.display = 'none';
+        if (killEl) killEl.style.display = 'none';
+    });
 
     let hasStartedGameAnimation = false;
 
@@ -42,6 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const btnEat = document.getElementById('btnEat');
     const btnRewindWave = document.getElementById('btnRewindWave');
+    const btnFeedCheat = document.getElementById('btnFeedCheat');
     const btnNextWave = document.getElementById('btnNextWave');
     const battlefieldCard = document.querySelector('.battlefield-card');
 
@@ -75,6 +161,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnEat) {
         btnEat.addEventListener('click', () => {
             triggerSlimeEatLoot();
+        });
+    }
+
+    if (btnFeedCheat) {
+        btnFeedCheat.addEventListener('click', () => {
+            addScraps(1000);
+            updateUI();
         });
     }
 
@@ -132,3 +225,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // 5. Start Engine Loop
     startEngine();
 });
+
+
+
+
+
+

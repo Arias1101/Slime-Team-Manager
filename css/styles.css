@@ -3255,3 +3255,78 @@ body.modal-open {
 .upgrades-container { padding-right: 10px; }
 
 
+
+/* Compact character sheet layout with a future Talent Tree tab. */
+.slime-inspector-modal {
+    max-width: 500px;
+    padding: 18px;
+}
+
+.slime-modal-header {
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+}
+
+.slime-sheet-tabs {
+    display: flex;
+    gap: 6px;
+    margin: 0 0 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.slime-sheet-tab {
+    padding: 6px 10px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: var(--color-text-muted);
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: default;
+}
+
+.slime-sheet-tab.active {
+    color: var(--color-accent-amber);
+    border-bottom-color: var(--color-accent-amber);
+}
+
+.slime-sheet-tab.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.slime-stats-grid {
+    grid-template-columns: 1fr;
+    gap: 5px;
+    margin-bottom: 12px;
+}
+
+.slime-stat-card {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 7px 10px;
+}
+
+.slime-stat-card .stat-label {
+    font-size: 0.68rem;
+    white-space: nowrap;
+}
+
+.slime-stat-card .stat-value {
+    font-size: 0.82rem;
+    text-align: right;
+}
+
+.slime-stat-card .stat-bar-container {
+    display: none;
+}
+
+.slime-modal-section {
+    padding: 10px;
+}
+
+.slime-modal-portrait.is-dead { animation: none; transform: scale(2.5); }
+

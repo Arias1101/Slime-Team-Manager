@@ -86,6 +86,7 @@
                 <div class="user-profile-section" id="authSection">
                     <div class="test-controls-corner">
                         <button id="btnRewindWave" class="btn-test-action" title="Go back 1 wave">⏮️ Rewind</button>
+                        <button id="btnFeedCheat" class="btn-test-action" title="Add 1000 scraps for testing">&#127830; Feed</button>
                         <button id="btnNextWave" class="btn-test-action" title="Full game restart">🔄 Reset</button>
                     </div>
                     <div id="userProfile" class="user-profile">
@@ -171,8 +172,11 @@
                                 <div class="upgrade-info">
                                     <img src="images/upgrades/division.png" alt="Division" class="upgrade-icon-img">
                                     <div class="upgrade-details">
-                                        <h4 class="upgrade-card-title">Division <span class="upgrade-current">(Current: <strong id="upgradeSlimeCount" class="upgrade-value">1</strong>)</span></h4>
-                                        <span class="upgrade-text">A random Slime divides itself, creating a new one.</span>
+                                        <h4 class="upgrade-card-title">Division <span class="upgrade-current">(Current:
+                                                <strong id="upgradeSlimeCount" class="upgrade-value">1</strong>)</span>
+                                        </h4>
+                                        <span class="upgrade-text">A random Slime divides itself, creating a new
+                                            one.</span>
                                     </div>
                                 </div>
                                 <div class="upgrade-action">
@@ -187,7 +191,7 @@
                                     <img src="images/upgrades/selection.png" alt="Selection" class="upgrade-icon-img"
                                         onerror="this.onerror=null; this.src='images/upgrades/division.png';">
                                     <div class="upgrade-details">
-                                        <h4 class="upgrade-card-title">Selection</h4>
+                                        <h4 class="upgrade-card-title">Selection <span class="upgrade-current">(Current: <strong id="upgradeSelectionValue" class="upgrade-value">ON</strong>)</span></h4>
                                         <span class="upgrade-text">Unlock the ability to kill a Slime.</span>
                                     </div>
                                 </div>
@@ -204,7 +208,9 @@
                                         class="upgrade-icon-img"
                                         onerror="this.onerror=null; this.src='images/upgrades/augmentation.png';">
                                     <div class="upgrade-details">
-                                        <h4 class="upgrade-card-title">Augmentation <span class="upgrade-current">(Current: <strong id="upgradeDamageValue" class="upgrade-value">1</strong>)</span></h4>
+                                        <h4 class="upgrade-card-title">Augmentation <span
+                                                class="upgrade-current">(Current: <strong id="upgradeDamageValue"
+                                                    class="upgrade-value">1</strong>)</span></h4>
                                         <span class="upgrade-text">Slimes do more damage.</span>
                                     </div>
                                 </div>
@@ -220,8 +226,11 @@
                                     <img src="images/upgrades/ascention.png" alt="Ascension" class="upgrade-icon-img"
                                         onerror="this.onerror=null; this.src='images/upgrades/ascension.png';">
                                     <div class="upgrade-details">
-                                        <h4 class="upgrade-card-title">Ascension <span class="upgrade-current">(Current: <strong id="upgradeAscendedCount" class="upgrade-value">0</strong>)</span></h4>
-                                        <span class="upgrade-text">A random Slime ascends to a new level of consciousness.</span>
+                                        <h4 class="upgrade-card-title">Ascension <span class="upgrade-current">(Current:
+                                                <strong id="upgradeAscendedCount"
+                                                    class="upgrade-value">0</strong>)</span></h4>
+                                        <span class="upgrade-text">A random Slime ascends to a new level of
+                                            consciousness.</span>
                                     </div>
                                 </div>
                                 <div class="upgrade-action">
@@ -237,7 +246,9 @@
                                         class="upgrade-icon-img"
                                         onerror="this.onerror=null; this.src='images/upgrades/regeneration.png';">
                                     <div class="upgrade-details">
-                                        <h4 class="upgrade-card-title">Regeneration <span class="upgrade-current">(Current: <strong id="upgradeRegenValue" class="upgrade-value">0</strong>)</span></h4>
+                                        <h4 class="upgrade-card-title">Regeneration <span
+                                                class="upgrade-current">(Current: <strong id="upgradeRegenValue"
+                                                    class="upgrade-value">0</strong>)</span></h4>
                                         <span class="upgrade-text">Your Slimes regenerate HP over time.</span>
                                     </div>
                                 </div>
@@ -253,7 +264,9 @@
                                     <img src="images/upgrades/digestion.png" alt="Digestion" class="upgrade-icon-img"
                                         onerror="this.onerror=null; this.src='images/upgrades/digestion.png';">
                                     <div class="upgrade-details">
-                                        <h4 class="upgrade-card-title">Digestion <span class="upgrade-current">(Current: <strong id="upgradeDigestionValue" class="upgrade-value">1</strong>)</span></h4>
+                                        <h4 class="upgrade-card-title">Digestion <span class="upgrade-current">(Current:
+                                                <strong id="upgradeDigestionValue"
+                                                    class="upgrade-value">1</strong>)</span></h4>
                                         <span class="upgrade-text">Multiple Slimes Eat when you tell them to.</span>
                                     </div>
                                 </div>
@@ -266,11 +279,13 @@
                             <!-- Upgrade: Auto Eat -->
                             <div class="upgrade-card level-zero" id="upgradeIncubationCard">
                                 <div class="upgrade-info">
-                                    <img src="images/upgrades/incubation.png" alt="Auto Eat" class="upgrade-icon-img"
+                                    <img src="images/upgrades/provision.png" alt="Provision" class="upgrade-icon-img"
                                         onerror="this.onerror=null; this.src='images/upgrades/digestion.png';">
                                     <div class="upgrade-details">
-                                        <h4 class="upgrade-card-title">Auto Eat <span class="upgrade-current">(Current: <strong id="upgradeIncubationValue" class="upgrade-value">OFF</strong>)</span></h4>
-                                        <span class="upgrade-text">Automatically Eat once when the last enemy of each wave dies.</span>
+                                        <h4 class="upgrade-card-title">Provision <span class="upgrade-current">(Current:
+                                                <strong id="upgradeIncubationValue"
+                                                    class="upgrade-value">OFF</strong>)</span></h4>
+                                        <span class="upgrade-text">Automatically Eat once at the end of waves.</span>
                                     </div>
                                 </div>
                                 <div class="upgrade-action">
@@ -285,7 +300,9 @@
                                     <img src="images/upgrades/ignition.png" alt="Ignition" class="upgrade-icon-img"
                                         onerror="this.onerror=null; this.src='images/upgrades/ignition.png';">
                                     <div class="upgrade-details">
-                                        <h4 class="upgrade-card-title">Ignition <span class="upgrade-current">(Current: <strong id="upgradeIgnitionValue" class="upgrade-value">0%</strong>)</span></h4>
+                                        <h4 class="upgrade-card-title">Ignition <span class="upgrade-current">(Current:
+                                                <strong id="upgradeIgnitionValue"
+                                                    class="upgrade-value">0%</strong>)</span></h4>
                                         <span class="upgrade-text">Division can spawn a Fire Slime.</span>
                                     </div>
                                 </div>
@@ -301,7 +318,9 @@
                                     <img src="images/upgrades/glaciation.png" alt="Glaciation" class="upgrade-icon-img"
                                         onerror="this.onerror=null; this.src='images/upgrades/glaciation.png';">
                                     <div class="upgrade-details">
-                                        <h4 class="upgrade-card-title">Glaciation <span class="upgrade-current">(Current: <strong id="upgradeGlaciationValue" class="upgrade-value">0%</strong>)</span></h4>
+                                        <h4 class="upgrade-card-title">Glaciation <span
+                                                class="upgrade-current">(Current: <strong id="upgradeGlaciationValue"
+                                                    class="upgrade-value">0%</strong>)</span></h4>
                                         <span class="upgrade-text">Division can spawn an Ice Slime.</span>
                                     </div>
                                 </div>
@@ -318,7 +337,9 @@
                                         class="upgrade-icon-img"
                                         onerror="this.onerror=null; this.src='images/upgrades/division.png';">
                                     <div class="upgrade-details">
-                                        <h4 class="upgrade-card-title">Petrification <span class="upgrade-current">(Current: <strong id="upgradePetrificationValue" class="upgrade-value">0%</strong>)</span></h4>
+                                        <h4 class="upgrade-card-title">Petrification <span
+                                                class="upgrade-current">(Current: <strong id="upgradePetrificationValue"
+                                                    class="upgrade-value">0%</strong>)</span></h4>
                                         <span class="upgrade-text">Division can spawn a Stone Slime.</span>
                                     </div>
                                 </div>
@@ -335,7 +356,9 @@
                                         class="upgrade-icon-img"
                                         onerror="this.onerror=null; this.src='images/upgrades/division.png';">
                                     <div class="upgrade-details">
-                                        <h4 class="upgrade-card-title">Intoxication <span class="upgrade-current">(Current: <strong id="upgradeIntoxicationValue" class="upgrade-value">0%</strong>)</span></h4>
+                                        <h4 class="upgrade-card-title">Intoxication <span
+                                                class="upgrade-current">(Current: <strong id="upgradeIntoxicationValue"
+                                                    class="upgrade-value">0%</strong>)</span></h4>
                                         <span class="upgrade-text">Division can spawn a Toxic Slime.</span>
                                     </div>
                                 </div>
@@ -361,7 +384,7 @@
                                 </div>
                             </div>
 
-                            <!-- Upgrade: Exaltation -->
+                            <!-- Upgrade: Exaltation 
                             <div class="upgrade-card level-zero" id="upgradeExaltationCard">
                                 <div class="upgrade-info">
                                     <img src="images/upgrades/exaltation.png" alt="Exaltation" class="upgrade-icon-img"
@@ -375,7 +398,8 @@
                                     <button id="btnUpgradeExaltation" class="btn-plus" disabled>+</button>
                                     <span class="upgrade-cost" id="upgradeExaltationCost">100 🍖</span>
                                 </div>
-                            </div>                        </div>
+                            </div>-->
+                        </div>
                     </section>
                 </div>
 
@@ -400,24 +424,27 @@
                             <div id="slimeModalBadge" class="slime-modal-type-badge">Base Slime</div>
                         </div>
                     </div>
-                    <div class="slime-modal-body">
+                    <nav class="slime-sheet-tabs" aria-label="Character sheet tabs">
+                        <button type="button" class="slime-sheet-tab active" aria-selected="true">Stats</button>
+                        <button type="button" class="slime-sheet-tab disabled" disabled title="Talent Tree is coming later">Talent Tree</button>
+                    </nav>                    <div class="slime-modal-body">
                         <div class="slime-stats-grid">
                             <div class="slime-stat-card" title="Health Points (HP) - The slime dies if this hits 0.">
                                 <span class="stat-label">Health</span>
                                 <span id="slimeModalHp" class="stat-value">10 / 10 HP</span>
-                                <div class="stat-bar-container">
-                                    <div id="slimeModalHpBar" class="stat-bar-fill" style="width: 100%;"></div>
-                                </div>
                             </div>
-                            <div class="slime-stat-card" title="Damage - Base power dealt to enemies during collisions.">
+                            <div class="slime-stat-card"
+                                title="Damage - Base power dealt to enemies during collisions.">
                                 <span class="stat-label">Base Attack</span>
                                 <span id="slimeModalDamage" class="stat-value">1 ⚔️</span>
                             </div>
-                            <div class="slime-stat-card" title="Critical Chance - Probability to deal double damage on hits.">
+                            <div class="slime-stat-card"
+                                title="Critical Chance - Probability to deal double damage on hits.">
                                 <span class="stat-label">Crit Chance</span>
                                 <span id="slimeModalCrit" class="stat-value">0% ⚡</span>
                             </div>
-                            <div class="slime-stat-card" title="HP Regen - Health restored automatically at the end of each wave.">
+                            <div class="slime-stat-card"
+                                title="HP Regen - Health restored automatically at the end of each wave.">
                                 <span class="stat-label">HP Regen</span>
                                 <span id="slimeModalRegen" class="stat-value">0 💚</span>
                             </div>
@@ -428,6 +455,9 @@
                             <div class="slime-stat-card">
                                 <span class="stat-label">Status</span>
                                 <span id="slimeModalAscended" class="stat-value">Standard Slime</span>
+                            </div>                            <div class="slime-stat-card" title="Waves cleared since this Slime last died.">
+                                <span class="stat-label">XP Points</span>
+                                <span id="slimeModalXp" class="stat-value">0</span>
                             </div>
                         </div>
 
@@ -502,5 +532,8 @@
 </body>
 
 </html>
+
+
+
 
 

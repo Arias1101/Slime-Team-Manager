@@ -1,24 +1,16 @@
 --------------- TODO NOW -----------------
-1) Put the "variable" number from each upgrade text next to the title of the upgrade like so "(Current: X)" to prevent the intempesting resizing of upgrade cards when the number changes in size.
-2) Move the price of upgrades under the button to gain width, reduce font size of the price and width of the price box.
-3) Add a yellow / orange border for upgrades at lvl 0 (until they are upgraded for the first time)
-4) Rework the Slime Character Sheet layout. Add a tab (disabled for now) in the sheet with "Talent Tree" as title, wich will be unlocked and developped later. Reduce size of the stats of the slime to only one liners to make room for buttons. Move buttons next to the exit cross inside the sheet instead of above.
-5) Add a counter for each slime, counting how many wave it cleared since last time it died. When a slime dies, reset this counter. Add this counter as "XP points" on the slime character sheet.
-6) Replace the Incubation Upgrade with a unique upgrade that auto clic Eat ONCE when the last ennemy of each wave dies.
-7) Change the style of the Ascension in the Roster (its currently pink with pink glowing background). Instead, only use a pink border. However, when a Slime is Burning / Poisoned / Frozen / Stunned, its background in the roster should reflect it by changing color.
-8) Remove "Exaltation" from the game for now.
-9) When 60 Slimes are Ascended for the first time, set the price label of the upgrade to MAX
-10) Add an Upgrade "Fortification" to the game wich increases the max hp of slimes by 1. Base price and increase rate are the same as the damage upgrade, this upgrade is unlocked when finishing the wave 30.
-11) Set a maximum for the "Regeneration" Upgrade (5 hp/s max by default), this maximum increases by half the lvl of the new Max Hp Upgrade.
-12) When the boss (catapult) of wave 30 dies, the shop appears although I did not pick up its loot (the boulder). Additionaly, if I wait 10 second without picking the loot of a boss, a popup saying the shop is arriving appears. After that, nothing happens if I pick up the loot. This popup should absolutly wait for all loot to be gone from the battlefield to appear.
-13) Use the same pixel art font as the one used for damage numbers everywhere on the App, from numbers to titles and descriptions.
 
-
-
+------------------ LATER ------------------
+- When screen window width goes under 1260px, switch to a "medium width" with only one Upgrades column. Keep the "Narrow screen layout" wich triggers at 900px where upgrades goes in a separeted tab.
+- Change the style of the Ascension in the Roster (its currently pink with pink glowing background). Instead, only use a pink border. However, when a Slime is Burning / Poisoned / Frozen / Stunned, its background in the roster should reflect it by changing color.
+- Add an Upgrade "Fortification" to the game wich increases the max hp of slimes by 1. Base price and increase rate are the same as the damage upgrade, this upgrade is unlocked when finishing the wave 30.
+- Set a maximum for the "Regeneration" Upgrade (5 hp/s max by default), this maximum increases by half the lvl of the new Max Hp Upgrade.
+- When the boss (catapult) of wave 30 dies, the shop appears although I did not pick up its loot (the boulder). Additionaly, if I wait 10 second without picking the loot of a boss, a popup saying the shop is arriving appears. After that, nothing happens if I pick up the loot. This popup should absolutly wait for all loot to be gone from the battlefield to appear.
+- Fix Slime jump distance that accomodates ennemies moving speed even if they are near their arrival point (same -10/+10 px offset of their arrival point than they use to stop). When an ennemy is stopped, the movement prediction should stop applying.
 
 ------- IDEAS FOR LATER, DO NOT DO THIS ---------------
-1) NewGame+ when reaching wave 100
-2) Buildings when NG+ starts for permanent upgrades (building ideas: keep X% xp on death, +X base damage, +X base hp, +X base crit)
-3) Frontlane, Midlane, Backlane and assigned classes for Slimes to unlock (Tank / Damage / Support) with talent tree
-4) Handle combo beetween Slime Type and Slime Specialization (Stonetank Slime, Firetank Slime...)
-5) NG+ Bench to store Slimes for later runs.
+- NewGame+ when reaching wave 100
+- Buildings when NG+ starts for permanent upgrades (building ideas: keep X% xp on death, +X base damage, +X base hp, +X base crit)
+- Frontlane, Midlane, Backlane and assigned classes for Slimes to unlock (Tank / Damage / Support) with talent tree
+- Handle combo beetween Slime Type and Slime Specialization (Stonetank Slime, Firetank Slime...)
+- NG+ Bench to store Slimes for later runs.

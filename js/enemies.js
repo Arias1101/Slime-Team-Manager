@@ -715,8 +715,6 @@ export function resetGameFull() {
         selection: false,
         evolutionCard: false,
         evolution: false,
-        exaltationCard: false,
-        exaltation: false,
         ignition: false,
         glaciation: false,
         petrification: false,
@@ -1264,8 +1262,9 @@ export function updateEnemies(deltaSeconds) {
 
             // 4. Update Slime Status Row Icons (🔥 🧪 💫) & CSS Filters
             if (armyContainer) {
-                if (!slime.el) {
+                if (!slime.el || typeof slime.el.querySelector !== 'function') {
                     slime.el = armyContainer.querySelector(`[data-slime-id="${slime.id}"]`);
+                    slime.statusRowEl = null;
                 }
                 const unit = slime.el;
                 if (unit) {
@@ -1783,6 +1782,9 @@ export function spawnSlashEffect(enemy) {
         }
     }, 50);
 }
+
+
+
 
 
 
