@@ -1,0 +1,17 @@
+Patch Notes:
+v0.3
+- To complete
+
+v0.2
+- Upgrade cards now show their current value beside the title.
+- Upgrade prices are compact and displayed below their purchase buttons.
+- Unpurchased upgrades are highlighted with a yellow/orange border.
+- The Slime Character Sheet has compact stat rows, in-sheet controls, and a disabled Talent Tree tab.
+- Slimes now earn XP Points for waves cleared since their last death.
+- Auto Eat now triggers one Eat action when the last enemy of a wave dies.
+- Ascended roster slimes use a pink border while status effects color their backgrounds.
+- Ascension now reaches MAX when the full roster is ascended.
+- Fortification unlocks after wave 30 and raises every Slime's maximum HP.
+- Regeneration is capped at 5 by default and gains +1 maximum every two Fortification levels.
+- Medium screens use one upgrades column below 1260px, while narrow screens keep the upgrades tab below 900px.
+- Slime jumps only predict enemy movement while targets are still walking away from their stop position.

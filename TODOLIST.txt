@@ -1,12 +1,8 @@
 --------------- TODO NOW -----------------
-- When screen window width goes under 1260px, switch to a "medium width" with only one Upgrades column. Keep the "Narrow screen layout" wich triggers at 900px where upgrades goes in a separeted tab.
+- Fix Slime jump distance that accomodates ennemies moving speed even if they are near their arrival point (same -10/+10 px offset of their arrival point than they use to stop). When an ennemy is stopped, the movement prediction should stop applying.
 
 ------------------ LATER ------------------
-- Change the style of the Ascension in the Roster (its currently pink with pink glowing background). Instead, only use a pink border. However, when a Slime is Burning / Poisoned / Frozen / Stunned, its background in the roster should reflect it by changing color.
-- Add an Upgrade "Fortification" to the game wich increases the max hp of slimes by 1. Base price and increase rate are the same as the damage upgrade, this upgrade is unlocked when finishing the wave 30.
-- Set a maximum for the "Regeneration" Upgrade (5 hp/s max by default), this maximum increases by half the lvl of the new Max Hp Upgrade.
-- When the boss (catapult) of wave 30 dies, the shop appears although I did not pick up its loot (the boulder). Additionaly, if I wait 10 second without picking the loot of a boss, a popup saying the shop is arriving appears. After that, nothing happens if I pick up the loot. This popup should absolutly wait for all loot to be gone from the battlefield to appear.
-- Fix Slime jump distance that accomodates ennemies moving speed even if they are near their arrival point (same -10/+10 px offset of their arrival point than they use to stop). When an ennemy is stopped, the movement prediction should stop applying.
+
 
 ------- IDEAS FOR LATER, DO NOT DO THIS ---------------
 - NewGame+ when reaching wave 100

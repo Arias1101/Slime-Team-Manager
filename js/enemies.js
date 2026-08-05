@@ -935,9 +935,9 @@ export function spawnEnemy(typeId = 'beggar', hpMultiplier = 1.0) {
     const baseHp = def.hp || 2;
     const scaledHp = Math.max(1, Math.round(baseHp * hpMultiplier));
 
-    // Add random stop position offset between -25 and +25 to reduce overlapping
+    // Add a small -10 to +10 stop offset to reduce overlapping.
     const baseTargetX = def.targetX !== undefined ? def.targetX : 300;
-    const randomOffset = (Math.random() * 50) - 25;
+    const randomOffset = (Math.random() * 20) - 10;
     const finalTargetX = Math.round(baseTargetX + randomOffset);
 
     const enemyInstance = {
@@ -1291,6 +1291,14 @@ export function updateEnemies(deltaSeconds) {
                     unit.classList.toggle('is-burning', slime.effects.burnTimer > 0);
                     unit.classList.toggle('is-poisoned', slime.effects.poisonTimer > 0);
                     unit.classList.toggle('is-stunned', slime.effects.stunTimer > 0);
+
+                    const rosterItem = document.getElementById(`roster_item_${slime.id}`);
+                    if (rosterItem) {
+                        rosterItem.classList.toggle('is-burning', slime.effects.burnTimer > 0);
+                        rosterItem.classList.toggle('is-poisoned', slime.effects.poisonTimer > 0);
+                        rosterItem.classList.toggle('is-frozen', (slime.effects.freezeTimer || 0) > 0);
+                        rosterItem.classList.toggle('is-stunned', slime.effects.stunTimer > 0);
+                    }
                 }
             }
         });
@@ -1782,6 +1790,8 @@ export function spawnSlashEffect(enemy) {
         }
     }, 50);
 }
+
+
 
 
 

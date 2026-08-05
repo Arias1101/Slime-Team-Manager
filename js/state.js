@@ -322,13 +322,14 @@ export function buyArmySizeUpgrade() {
         const slimeConfig = SLIME_TYPES[newSlimeType] || SLIME_TYPES.base;
         const baseDamage = (slimeConfig.attackDamage || 1) + ((gameState.slimeDamage || 1) - 1);
         const slotIndex = getNextAvailableSlotIndex();
+        const fortificationBonus = gameState.fortificationLevel || 0;
 
         const newSlime = {
             id: uniqueName,
             name: uniqueName,
             type: newSlimeType,
-            hp: 10,
-            maxHp: 10,
+            hp: 10 + fortificationBonus,
+            maxHp: 10 + fortificationBonus,
             damage: baseDamage,
             critChance: 0,
             regen: 0,
@@ -897,6 +898,7 @@ export function getRegenMax() { return 5 + Math.floor((gameState.fortificationLe
 export function getFortificationLevel() { return gameState.fortificationLevel || 0; }
 export function getFortificationUpgradeCost() { return Math.floor(10 * Math.pow(1.45, getFortificationLevel())); }
 export function buyFortificationUpgrade() { const cost = getFortificationUpgradeCost(); if ((gameState.scraps || 0) < cost) return false; gameState.scraps -= cost; gameState.fortificationLevel = getFortificationLevel() + 1; (gameState.slimes || []).forEach(s => { s.maxHp = (s.maxHp || 10) + 1; s.hp = Math.min(s.maxHp, (s.hp || 0) + 1); }); updateBestRoster(); saveStateToLocal(); return true; }
+
 
 
 

@@ -3337,3 +3337,28 @@ body.modal-open {
         grid-template-columns: 1fr;
     }
 }
+
+/* Ascension is a border-only roster distinction; active status effects own the background. */
+.roster-grid-item.ascended {
+    background: rgba(18, 19, 22, 0.65) !important;
+    border-color: #f472b6 !important;
+    box-shadow: none !important;
+}
+
+.roster-grid-item.ascended .roster-grid-icon {
+    filter: none;
+}
+
+@keyframes ascendedRosterBorderPulse {
+    0%, 100% { border-color: #f472b6; }
+    50% { border-color: #ef4444; }
+}
+
+.roster-grid-item.ascended {
+    animation: ascendedRosterBorderPulse 0.8s ease-in-out infinite;
+}
+
+.roster-grid-item.ascended.is-burning { background: rgba(239, 68, 68, .42) !important; }
+.roster-grid-item.ascended.is-poisoned { background: rgba(168, 85, 247, .42) !important; }
+.roster-grid-item.ascended.is-frozen { background: rgba(56, 189, 248, .42) !important; }
+.roster-grid-item.ascended.is-stunned { background: rgba(250, 204, 21, .42) !important; }

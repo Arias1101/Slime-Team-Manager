@@ -154,12 +154,17 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
     let targetImpactX = startX + 160;
     if (targetEnemy) {
         const estDurationSec = 0.5;
-        const enemySpeed = targetEnemy.speed || 40;
-        let predictedX = targetEnemy.x - enemySpeed * estDurationSec;
+        const stopBufferPx = 10;
+        const targetX = targetEnemy.targetX || 100;
+        const remainingDistance = targetEnemy.x - targetX;
+        const isFrozen = (targetEnemy.effects?.freezeTimer || 0) > 0;
+        const isStillWalking = targetEnemy.state === 'walking' && !isFrozen && remainingDistance > stopBufferPx;
+        let predictedX = targetEnemy.x;
 
-        if (targetEnemy.x > (targetEnemy.targetX || 100)) {
-            const enemyTravel = enemySpeed * estDurationSec;
-            predictedX = Math.max(targetEnemy.targetX || 100, targetEnemy.x - enemyTravel);
+        // Only lead targets that are still moving and not already within their stop buffer.
+        if (isStillWalking) {
+            const enemyTravel = (targetEnemy.speed || 0) * estDurationSec;
+            predictedX = Math.max(targetX, targetEnemy.x - enemyTravel);
         }
 
         targetImpactX = Math.min(450, Math.max(startX + 20, predictedX - 4));
@@ -733,3 +738,4 @@ function attemptAscendedSlimeAttack(slimeObj) {
         executeSlimeJumpAttack(unitEl, slimeType, slimeObj);
     }
 }
+

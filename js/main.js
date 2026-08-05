@@ -2,7 +2,7 @@
  * Application Main Initializer
  */
 
-import { loadStateFromLocal, addScraps, gameState } from './state.js';
+import { loadStateFromLocal, addScraps, gameState, getFortificationLevel, getFortificationUpgradeCost, buyFortificationUpgrade, getSlimeRegen, getRegenMax } from './state.js';
 import { initAuth, loginWithGoogle, logoutUser } from './auth.js';
 import { startEngine, setGamePaused, isGamePaused } from './engine.js';
 import { updateUI, setAuthScreenState, showFirebaseNotice, playSlimeRainRespawnAnimation, initSlimeModalListeners, initMainTabsListeners, openSlimeInspectorModal } from './ui.js';
@@ -22,6 +22,57 @@ document.addEventListener('DOMContentLoaded', () => {
     initAscendedAutoAttacks();
     initSlimeModalListeners();
     initMainTabsListeners();
+    const updateSelectionStateUI = () => {
+        const valueEl = document.getElementById('upgradeSelectionValue');
+        const selectionValue = gameState.unlockedUpgrades?.selection ? 'ON' : 'OFF';
+        if (valueEl && valueEl.textContent !== selectionValue) valueEl.textContent = selectionValue;
+    };
+
+    const updateRegenCapUI = () => {
+        const currentRegen = getSlimeRegen();
+        const maxRegen = getRegenMax();
+        if (currentRegen < maxRegen) return;
+
+        const costEl = document.getElementById('upgradeRegenCost');
+        const buttonEl = document.getElementById('btnUpgradeRegen');
+        if (costEl && costEl.textContent !== 'MAX') costEl.textContent = 'MAX';
+        if (buttonEl) {
+            if (!buttonEl.hasAttribute('disabled')) buttonEl.setAttribute('disabled', 'disabled');
+            if (!buttonEl.classList.contains('disabled')) buttonEl.classList.add('disabled');
+            if (buttonEl.classList.contains('affordable')) buttonEl.classList.remove('affordable');
+        }
+    };
+    const updateFortificationUI = () => {
+        const cardEl = document.getElementById('upgradeFortificationCard');
+        const valueEl = document.getElementById('upgradeFortificationValue');
+        const costEl = document.getElementById('upgradeFortificationCost');
+        const buttonEl = document.getElementById('btnUpgradeFortification');
+        if (!cardEl || !valueEl || !costEl || !buttonEl) return;
+
+        const isUnlocked = (gameState.maxWaveCleared || 0) >= 30;
+        cardEl.classList.toggle('hidden', !isUnlocked);
+        if (!isUnlocked) return;
+
+        const level = getFortificationLevel();
+        const cost = getFortificationUpgradeCost();
+        const canAfford = (gameState.scraps || 0) >= cost;
+        const valueText = `+${level} HP`;
+        const costText = `${cost} ${String.fromCodePoint(0x1F356)}`;
+        if (valueEl.textContent !== valueText) valueEl.textContent = valueText;
+        if (costEl.textContent !== costText) costEl.textContent = costText;
+        cardEl.classList.toggle('level-zero', level === 0);
+        buttonEl.classList.toggle('disabled', !canAfford);
+        buttonEl.classList.toggle('affordable', canAfford);
+        if (canAfford && buttonEl.hasAttribute('disabled')) buttonEl.removeAttribute('disabled');
+        else if (!canAfford && !buttonEl.hasAttribute('disabled')) buttonEl.setAttribute('disabled', 'disabled');
+    };
+
+    const fortificationButtonEl = document.getElementById('btnUpgradeFortification');
+    if (fortificationButtonEl) {
+        fortificationButtonEl.addEventListener('click', () => {
+            if (buyFortificationUpgrade()) updateUI();
+        });
+    }
     let isApplyingAscensionMax = false;
     const moveMaxedUpgradesToBottom = () => {
         const container = document.getElementById('upgradesContainer');
@@ -65,12 +116,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const upgradesContainerEl = document.getElementById('upgradesContainer');
     if (upgradesContainerEl) {
-        new MutationObserver(updateAscensionMaxState).observe(upgradesContainerEl, {
+        new MutationObserver(() => { updateFortificationUI(); updateSelectionStateUI(); updateRegenCapUI(); updateAscensionMaxState(); }).observe(upgradesContainerEl, {
             childList: true,
             subtree: true,
             characterData: true,
             attributes: true
         });
+        updateFortificationUI();
+        updateSelectionStateUI();
+        updateRegenCapUI();
         updateAscensionMaxState();
     }
 
@@ -225,6 +279,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // 5. Start Engine Loop
     startEngine();
 });
+
+
+
+
+
+
 
 
 

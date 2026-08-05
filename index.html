@@ -86,7 +86,8 @@
                 <div class="user-profile-section" id="authSection">
                     <div class="test-controls-corner">
                         <button id="btnRewindWave" class="btn-test-action" title="Go back 1 wave">⏮️ Rewind</button>
-                        <button id="btnFeedCheat" class="btn-test-action" title="Add 1000 scraps for testing">&#127830; Feed</button>
+                        <button id="btnFeedCheat" class="btn-test-action" title="Add 1000 scraps for testing">&#127830;
+                            Feed</button>
                         <button id="btnNextWave" class="btn-test-action" title="Full game restart">🔄 Reset</button>
                     </div>
                     <div id="userProfile" class="user-profile">
@@ -175,8 +176,7 @@
                                         <h4 class="upgrade-card-title">Division <span class="upgrade-current">(Current:
                                                 <strong id="upgradeSlimeCount" class="upgrade-value">1</strong>)</span>
                                         </h4>
-                                        <span class="upgrade-text">A random Slime divides itself, creating a new
-                                            one.</span>
+                                        <span class="upgrade-text">Resurect a Slime, or create a new.</span>
                                     </div>
                                 </div>
                                 <div class="upgrade-action">
@@ -191,7 +191,9 @@
                                     <img src="images/upgrades/selection.png" alt="Selection" class="upgrade-icon-img"
                                         onerror="this.onerror=null; this.src='images/upgrades/division.png';">
                                     <div class="upgrade-details">
-                                        <h4 class="upgrade-card-title">Selection <span class="upgrade-current">(Current: <strong id="upgradeSelectionValue" class="upgrade-value">ON</strong>)</span></h4>
+                                        <h4 class="upgrade-card-title">Selection <span class="upgrade-current">(Current:
+                                                <strong id="upgradeSelectionValue"
+                                                    class="upgrade-value">OFF</strong>)</span></h4>
                                         <span class="upgrade-text">Unlock the ability to kill a Slime.</span>
                                     </div>
                                 </div>
@@ -229,7 +231,7 @@
                                         <h4 class="upgrade-card-title">Ascension <span class="upgrade-current">(Current:
                                                 <strong id="upgradeAscendedCount"
                                                     class="upgrade-value">0</strong>)</span></h4>
-                                        <span class="upgrade-text">A random Slime ascends to a new level of
+                                        <span class="upgrade-text">A Slime ascends to a new level of
                                             consciousness.</span>
                                     </div>
                                 </div>
@@ -249,7 +251,7 @@
                                         <h4 class="upgrade-card-title">Regeneration <span
                                                 class="upgrade-current">(Current: <strong id="upgradeRegenValue"
                                                     class="upgrade-value">0</strong>)</span></h4>
-                                        <span class="upgrade-text">Your Slimes regenerate HP over time.</span>
+                                        <span class="upgrade-text">Slimes regenerate HP at end of waves.</span>
                                     </div>
                                 </div>
                                 <div class="upgrade-action">
@@ -258,6 +260,23 @@
                                 </div>
                             </div>
 
+                            <!-- Upgrade: Fortification -->
+                            <div class="upgrade-card level-zero hidden" id="upgradeFortificationCard">
+                                <div class="upgrade-info">
+                                    <img src="images/upgrades/fortification.png" alt="Fortification"
+                                        class="upgrade-icon-img">
+                                    <div class="upgrade-details">
+                                        <h4 class="upgrade-card-title">Fortification <span
+                                                class="upgrade-current">(Current: <strong id="upgradeFortificationValue"
+                                                    class="upgrade-value">+0 HP</strong>)</span></h4>
+                                        <span class="upgrade-text">Increase Slime's maximum HP.</span>
+                                    </div>
+                                </div>
+                                <div class="upgrade-action">
+                                    <button id="btnUpgradeFortification" class="btn-plus" disabled>+</button>
+                                    <span class="upgrade-cost" id="upgradeFortificationCost">10 &#127830;</span>
+                                </div>
+                            </div>
                             <!-- Upgrade: Digestion -->
                             <div class="upgrade-card level-zero" id="upgradeDigestionCard">
                                 <div class="upgrade-info">
@@ -426,8 +445,10 @@
                     </div>
                     <nav class="slime-sheet-tabs" aria-label="Character sheet tabs">
                         <button type="button" class="slime-sheet-tab active" aria-selected="true">Stats</button>
-                        <button type="button" class="slime-sheet-tab disabled" disabled title="Talent Tree is coming later">Talent Tree</button>
-                    </nav>                    <div class="slime-modal-body">
+                        <button type="button" class="slime-sheet-tab disabled" disabled
+                            title="Talent Tree is coming later">Talent Tree</button>
+                    </nav>
+                    <div class="slime-modal-body">
                         <div class="slime-stats-grid">
                             <div class="slime-stat-card" title="Health Points (HP) - The slime dies if this hits 0.">
                                 <span class="stat-label">Health</span>
@@ -455,7 +476,8 @@
                             <div class="slime-stat-card">
                                 <span class="stat-label">Status</span>
                                 <span id="slimeModalAscended" class="stat-value">Standard Slime</span>
-                            </div>                            <div class="slime-stat-card" title="Waves cleared since this Slime last died.">
+                            </div>
+                            <div class="slime-stat-card" title="Waves cleared since this Slime last died.">
                                 <span class="stat-label">XP Points</span>
                                 <span id="slimeModalXp" class="stat-value">0</span>
                             </div>
@@ -532,8 +554,3 @@
 </body>
 
 </html>
-
-
-
-
-
