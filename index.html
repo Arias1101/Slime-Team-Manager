@@ -115,16 +115,6 @@
             <div class="responsive-layout-grid">
                 <!-- Left Column (66% on Desktop): Roster Top + Battlefield Bottom -->
                 <div id="tabContentBattlefield" class="main-tab-content active desktop-left-col">
-                    <!-- Slime Status Roster Panel -->
-                    <aside class="slime-status-panel">
-                        <div class="panel-header">
-                            <h3><img src="images/slimes/army.png" class="badge-icon-img" alt="Army"> Slime Roster</h3>
-                            <span class="roster-count" id="rosterCount">2 Slimes</span>
-                        </div>
-                        <div class="slime-roster-list" id="slimeRosterList">
-                            <!-- Dynamic list of slimes with 10 HP health bars -->
-                        </div>
-                    </aside>
 
                     <main class="game-dashboard">
                         <!-- Battlefield Window & Controls -->
@@ -159,6 +149,16 @@
                             </div>
                         </div>
                     </main>
+                    <!-- Slime Status Roster Panel -->
+                    <aside class="slime-status-panel">
+                        <div class="panel-header">
+                            <h3><img src="images/slimes/army.png" class="badge-icon-img" alt="Army"> Slime Roster</h3>
+                            <span class="roster-count" id="rosterCount">2 Slimes</span>
+                        </div>
+                        <div class="slime-roster-list" id="slimeRosterList">
+                            <!-- Dynamic list of slimes with 10 HP health bars -->
+                        </div>
+                    </aside>
                 </div>
 
                 <!-- Right Column (33% on Desktop): Upgrades Section -->
@@ -176,7 +176,7 @@
                                         <h4 class="upgrade-card-title">Division <span class="upgrade-current">(Current:
                                                 <strong id="upgradeSlimeCount" class="upgrade-value">1</strong>)</span>
                                         </h4>
-                                        <span class="upgrade-text">Resurect a Slime, or create a new.</span>
+                                        <span class="upgrade-text">Create a new Slime.</span>
                                     </div>
                                 </div>
                                 <div class="upgrade-action">
@@ -275,6 +275,43 @@
                                 <div class="upgrade-action">
                                     <button id="btnUpgradeFortification" class="btn-plus" disabled>+</button>
                                     <span class="upgrade-cost" id="upgradeFortificationCost">10 &#127830;</span>
+                                </div>
+                            </div>
+                            <!-- Upgrade: AfkScrapCeiling -->
+                            <div class="upgrade-card level-zero hidden" id="upgradeAfkScrapCeilingCard">
+                                <div class="upgrade-info">
+                                    <img src="images/upgrades/anticipation.png" alt="Afk Scrap Ceiling"
+                                        class="upgrade-icon-img">
+                                    <div class="upgrade-details">
+                                        <h4 class="upgrade-card-title">Anticipation <span
+                                                class="upgrade-current">(Current: <strong
+                                                    id="upgradeAfkScrapCeilingValue"
+                                                    class="upgrade-value">0</strong>)</span></h4>
+                                        <span class="upgrade-text">Increase the maximum Scraps that can be stored when
+                                            away from the game.</span>
+                                    </div>
+                                </div>
+                                <div class="upgrade-action">
+                                    <button id="btnUpgradeAfkScrapCeiling" class="btn-plus" disabled>+</button>
+                                    <span class="upgrade-cost" id="upgradeAfkScrapCeilingCost">10 &#127830;</span>
+                                </div>
+                            </div>
+                            <!-- Upgrade: AfkScrap -->
+                            <div class="upgrade-card level-zero hidden" id="upgradeAfkScrapCard">
+                                <div class="upgrade-info">
+                                    <img src="images/upgrades/exploration.png" alt="Afk Scrap" class="upgrade-icon-img">
+                                    <div class="upgrade-details">
+                                        <h4 class="upgrade-card-title">Exploration <span
+                                                class="upgrade-current">(Current:
+                                                <strong id="upgradeAfkScrapValue"
+                                                    class="upgrade-value">0/min</strong>)</span></h4>
+                                        <span class="upgrade-text">Increase scraps gained for each minute
+                                            away from the game.</span>
+                                    </div>
+                                </div>
+                                <div class="upgrade-action">
+                                    <button id="btnUpgradeAfkScrap" class="btn-plus" disabled>+</button>
+                                    <span class="upgrade-cost" id="upgradeAfkScrapCost">10 &#127830;</span>
                                 </div>
                             </div>
                             <!-- Upgrade: Digestion -->
@@ -525,7 +562,7 @@
                         <!-- Left Column: Slime Roster & Selected Slime Management -->
                         <div class="shop-left-col">
                             <div class="shop-section-title">Roster</div>
-                            <div id="shopSlimeRoster" class="shop-slime-roster-grid">
+                            <div id="shopSlimeRoster" class="shop-slime-roster-grid shop-scrollbar">
                                 <!-- Rendered list of slimes -->
                             </div>
 
@@ -535,11 +572,11 @@
                             </div>
                         </div>
 
-                        <!-- Right Column: 3 Random Items for Sale -->
+                        <!-- Right Column: 5 Random Items for Sale -->
                         <div class="shop-right-col">
                             <div class="shop-section-title">Shop</div>
-                            <div id="shopMarketList" class="shop-market-grid">
-                                <!-- Rendered 3 random items -->
+                            <div id="shopMarketList" class="shop-market-grid shop-scrollbar">
+                                <!-- Rendered 5 random items -->
                             </div>
                         </div>
                     </div>

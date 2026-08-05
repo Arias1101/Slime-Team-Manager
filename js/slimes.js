@@ -5,6 +5,16 @@
 import { activeEnemies, triggerLootDrop, activeGroundLoots, formatLootEffects } from './enemies.js';
 import { gameState, SLIME_TYPES, addScraps, updateBestRoster, saveStateToLocal, calculateSlimeDamage } from './state.js';
 import { updateUI } from './ui.js';
+/**
+ * Convert viewport measurements back into the battlefield's native 500px coordinate space.
+ * The wide layout scales the battlefield element as a whole, while gameplay coordinates stay native.
+ */
+function getBattlefieldRenderScale() {
+    const battlefield = document.querySelector('.battlefield-card');
+    if (!battlefield || !battlefield.offsetWidth) return 1;
+    const renderedWidth = battlefield.getBoundingClientRect().width;
+    return renderedWidth > 0 ? renderedWidth / battlefield.offsetWidth : 1;
+}
 
 /**
  * Show floating status effect text over enemy head
@@ -154,7 +164,7 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
     const parentPos = unitEl.parentElement ? unitEl.parentElement.getBoundingClientRect() : null;
     const unitPos = unitEl.getBoundingClientRect();
     if (parentPos && unitPos) {
-        startX = unitPos.left - parentPos.left;
+        startX = (unitPos.left - parentPos.left) / getBattlefieldRenderScale();
     }
 
     let targetImpactX = startX + 160;
@@ -461,8 +471,9 @@ function dispatchSingleSlimeToEat() {
     targetLoot.beingEaten = true;
 
     const lootRect = targetLoot.el.getBoundingClientRect();
-    const dx = lootRect.left - slimeRect.left;
-    const dy = lootRect.top - slimeRect.top;
+    const renderScale = getBattlefieldRenderScale();
+    const dx = (lootRect.left - slimeRect.left) / renderScale;
+    const dy = (lootRect.top - slimeRect.top) / renderScale;
     const distance = Math.sqrt(dx * dx + dy * dy);
 
     imgEl.style.transition = 'none';

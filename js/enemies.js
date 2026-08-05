@@ -94,8 +94,8 @@ export const ENEMY_TYPES = {
         maxHp: 5000,
         damage: 15,            // Damages
         attackSpeed: 1.2,     // attacks per second
-        moveSpeed: 2,
-        targetX: 100,         // 400=right border, 100 = Slime army
+        moveSpeed: 3,
+        targetX: 160,         // 400=right border, 100 = Slime army
         loot_name: 'Berserker Greataxe',
         loot_effect: [{ stat: 'damage', value: 5 },
         { stat: 'hp', value: 5 }]
@@ -138,7 +138,7 @@ export const ENEMY_TYPES = {
         damage: 50,
         attackSpeed: 0.1,
         moveSpeed: 20,
-        targetX: 150,
+        targetX: 100,
         loot_name: 'Shiny Horse Badge',
         loot_effect: [{ stat: 'damage', value: 10 },
         { stat: 'effect', effectType: 'stun' }]
@@ -405,8 +405,8 @@ export const ENEMY_TYPES = {
         type: 'range',
         projectile: 'fireball',
         tier: 4,
-        hp: 50,
-        maxHp: 50,
+        hp: 200,
+        maxHp: 200,
         damage: 5,
         attackSpeed: 1.2,
         moveSpeed: 4,
@@ -419,11 +419,11 @@ export const ENEMY_TYPES = {
         type: 'ranged',
         projectile: 'arrow',
         tier: 4,
-        hp: 50,
-        maxHp: 50,
+        hp: 300,
+        maxHp: 300,
         damage: 10,
         attackSpeed: 1.2,
-        moveSpeed: 4,
+        moveSpeed: 2,
         targetX: 400,
         loot_name: 'Elf Bandana',
         loot_effect: [{ stat: 'crit', value: 2 },
@@ -435,8 +435,8 @@ export const ENEMY_TYPES = {
         type: 'melee',
         projectile: 'slash1',
         tier: 4,
-        hp: 500,
-        maxHp: 500,
+        hp: 400,
+        maxHp: 400,
         damage: 20,
         attackSpeed: 1.4,
         moveSpeed: 7,
@@ -449,8 +449,8 @@ export const ENEMY_TYPES = {
         type: 'melee',
         projectile: 'slash1',
         tier: 4,
-        hp: 3000,
-        maxHp: 3000,
+        hp: 2000,
+        maxHp: 2000,
         damage: 18,
         attackSpeed: 0.65,
         moveSpeed: 1.5,
@@ -464,8 +464,8 @@ export const ENEMY_TYPES = {
         type: 'tank',
         projectile: 'none',
         tier: 4,
-        hp: 4000,
-        maxHp: 4000,
+        hp: 3000,
+        maxHp: 3000,
         damage: 0,
         attackSpeed: 0,
         moveSpeed: 6,
@@ -479,9 +479,9 @@ export const ENEMY_TYPES = {
         type: 'melee',
         projectile: 'slash1',
         tier: 4,
-        hp: 1,
-        maxHp: 1,
-        damage: 3,
+        hp: 50,
+        maxHp: 50,
+        damage: 5,
         attackSpeed: 2,
         moveSpeed: 12,
         targetX: 135,
@@ -494,8 +494,8 @@ export const ENEMY_TYPES = {
         type: 'support',
         projectile: 'heal1',
         tier: 4,
-        hp: 140,
-        maxHp: 140,
+        hp: 200,
+        maxHp: 200,
         damage: 10,
         attackSpeed: 1.15,
         moveSpeed: 2,
@@ -861,6 +861,11 @@ export function resetGameFull() {
     gameState.incubationLevel = 0;
     gameState.autoEatLevel = 0;
     gameState.fortificationLevel = 0;
+    gameState.afkScrapCeilingLevel = 0;
+    gameState.afkScrapLevel = 0;
+    gameState.afkScrapCeilingPurchased = false;
+    gameState.afkScrapPurchased = false;
+    gameState.afkLastAwayAt = Date.now();
     gameState.ignitionLevel = 0;
     gameState.glaciationLevel = 0;
     gameState.petrificationLevel = 0;
@@ -1112,7 +1117,10 @@ export function spawnEnemy(typeId = 'beggar', hpMultiplier = 1.0) {
         hp: scaledHp,
         maxHp: scaledHp,
         damage: def.damage,
-        attackSpeed: def.attackSpeed,
+        // A small per-enemy variance stops ranged/support volleys from staying synchronized.
+        attackSpeed: (def.type === 'ranged' || def.type === 'support')
+            ? Math.max(0.01, def.attackSpeed + (Math.random() * 0.2 - 0.1))
+            : def.attackSpeed,
         state: 'walking',
         attackTimer: 0,
         hasDroppedLoot: false,
@@ -1292,7 +1300,11 @@ export function updateEnemies(deltaSeconds) {
             enemy.x -= enemy.speed * deltaSeconds;
             if (enemy.x <= enemy.targetX) {
                 enemy.x = enemy.targetX;
-                enemy.attackTimer = 1 / enemy.attackSpeed;
+                const attackInterval = enemy.attackSpeed > 0 ? 1 / enemy.attackSpeed : 0;
+                // Ranged/support units also get a short unique opening delay, so their first volley is not synchronized.
+                enemy.attackTimer = (enemy.type === 'ranged' || enemy.type === 'support')
+                    ? Math.max(0, attackInterval - Math.random() * 0.1)
+                    : attackInterval;
                 if (enemy.type === 'melee') {
                     enemy.state = 'attacking';
                 } else if (enemy.type === 'tank') {
@@ -1754,8 +1766,8 @@ export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg') 
     slime.hp = Math.max(0, slime.hp - damageAmount);
 
     const hpPct = Math.max(0, (slime.hp / slime.maxHp) * 100);
-    const hpFill = document.getElementById(`roster_hp_fill_${slime.id}`);
     const rosterItem = document.getElementById(`roster_item_${slime.id}`);
+    const hpFill = rosterItem ? rosterItem.querySelector('.roster-hp-fill') : null;
 
     if (hpFill) {
         hpFill.style.width = `${hpPct}%`;

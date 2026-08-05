@@ -42,52 +42,54 @@ export function updateUI() {
             enemyBadgeEl.textContent = '⚔️ Adventurers';
         } else if (wave <= 30) {
             enemyBadgeEl.textContent = '⚔️ Soldiers';
+        } else if (wave <= 40) {
+            enemyBadgeEl.textContent = '⚔️ Sylvans';
         } else {
-            enemyBadgeEl.textContent = '⚔️ Enemies';
+            enemyBadgeEl.textContent = '⚔️ Ennemies';
         }
     }
 
-    // Update Eat Button loot count & responsive states
-    const eatBtnEl = document.getElementById('btnEat');
-    const eatLootCountEl = document.getElementById('eatLootCount');
-    if (eatBtnEl && eatLootCountEl) {
-        const lootCount = activeGroundLoots ? activeGroundLoots.length : 0;
-        eatLootCountEl.textContent = lootCount;
+// Update Eat Button loot count & responsive states
+const eatBtnEl = document.getElementById('btnEat');
+const eatLootCountEl = document.getElementById('eatLootCount');
+if (eatBtnEl && eatLootCountEl) {
+    const lootCount = activeGroundLoots ? activeGroundLoots.length : 0;
+    eatLootCountEl.textContent = lootCount;
 
-        eatBtnEl.classList.remove('state-empty', 'state-moderate', 'state-abundant', 'pulse-eat-btn');
+    eatBtnEl.classList.remove('state-empty', 'state-moderate', 'state-abundant', 'pulse-eat-btn');
 
-        if (lootCount === 0 || isGamePaused) {
-            eatBtnEl.classList.add('state-empty');
-            eatBtnEl.setAttribute('disabled', 'disabled');
+    if (lootCount === 0 || isGamePaused) {
+        eatBtnEl.classList.add('state-empty');
+        eatBtnEl.setAttribute('disabled', 'disabled');
+    } else {
+        eatBtnEl.removeAttribute('disabled');
+        if (lootCount >= 1 && lootCount <= 9) {
+            eatBtnEl.classList.add('state-moderate');
         } else {
-            eatBtnEl.removeAttribute('disabled');
-            if (lootCount >= 1 && lootCount <= 9) {
-                eatBtnEl.classList.add('state-moderate');
-            } else {
-                eatBtnEl.classList.add('state-abundant');
-                eatBtnEl.classList.add('pulse-eat-btn');
-            }
+            eatBtnEl.classList.add('state-abundant');
+            eatBtnEl.classList.add('pulse-eat-btn');
         }
     }
+}
 
-    const btnRewindWave = document.getElementById('btnRewindWave');
-    if (btnRewindWave) {
-        if ((gameState.currentWave || 1) <= 1) {
-            btnRewindWave.setAttribute('disabled', 'disabled');
-            btnRewindWave.classList.add('disabled');
-        } else {
-            btnRewindWave.removeAttribute('disabled');
-            btnRewindWave.classList.remove('disabled');
-        }
+const btnRewindWave = document.getElementById('btnRewindWave');
+if (btnRewindWave) {
+    if ((gameState.currentWave || 1) <= 1) {
+        btnRewindWave.setAttribute('disabled', 'disabled');
+        btnRewindWave.classList.add('disabled');
+    } else {
+        btnRewindWave.removeAttribute('disabled');
+        btnRewindWave.classList.remove('disabled');
     }
+}
 
-    if (!armyContainerEl || armyContainerEl.children.length === 0 || lastRenderedArmySize !== gameState.armySize) {
-        lastRenderedArmySize = gameState.armySize;
-        renderSlimeArmy();
-    }
+if (!armyContainerEl || armyContainerEl.children.length === 0 || lastRenderedArmySize !== gameState.armySize) {
+    lastRenderedArmySize = gameState.armySize;
+    renderSlimeArmy();
+}
 
-    updateSlimeRoster();
-    updateUpgradesUI();
+updateSlimeRoster();
+updateUpgradesUI();
 }
 
 /**
@@ -836,8 +838,8 @@ export function initSlimeModalListeners() {
                     openSlimeInspectorModal(updatedSlime || currentInspectedSlime);
                     updateUI();
                 } else {
-                        portraitEl.src = `${currentConfig.folder}/jump.png`;
-                        portraitEl.style.objectPosition = '0px 0px';
+                    portraitEl.src = `${currentConfig.folder}/jump.png`;
+                    portraitEl.style.objectPosition = '0px 0px';
                     openSlimeInspectorModal(currentInspectedSlime);
                 }
             }, 1000);

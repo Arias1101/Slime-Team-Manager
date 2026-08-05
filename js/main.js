@@ -2,7 +2,7 @@
  * Application Main Initializer
  */
 
-import { loadStateFromLocal, addScraps, gameState, getFortificationLevel, getFortificationUpgradeCost, buyFortificationUpgrade, getSlimeRegen, getRegenMax } from './state.js';
+import { loadStateFromLocal, addScraps, gameState, getFortificationLevel, getFortificationUpgradeCost, buyFortificationUpgrade, getSlimeRegen, getRegenMax, markAfkStart, claimAfkScraps, previewAfkScraps } from './state.js';
 import { initAuth, loginWithGoogle, logoutUser } from './auth.js';
 import { startEngine, setGamePaused, isGamePaused } from './engine.js';
 import { updateUI, setAuthScreenState, showFirebaseNotice, playSlimeRainRespawnAnimation, initSlimeModalListeners, initMainTabsListeners, openSlimeInspectorModal } from './ui.js';
@@ -22,6 +22,38 @@ document.addEventListener('DOMContentLoaded', () => {
     initAscendedAutoAttacks();
     initSlimeModalListeners();
     initMainTabsListeners();
+    const showAfkRewardPopup = (reward) => {
+        if (!reward || reward.scraps <= 0 || document.getElementById('afkRewardPopup')) return;
+        const backdrop = document.createElement('div');
+        backdrop.id = 'afkRewardPopup';
+        backdrop.className = 'afk-reward-backdrop';
+        const popup = document.createElement('div');
+        popup.className = 'afk-reward-popup';
+        const title = document.createElement('h3');
+        title.textContent = 'Welcome back !';
+        const text = document.createElement('p');
+        text.textContent = 'Slimes struggled without you, but they found some Scraps nonetheless.';
+        const claim = document.createElement('button');
+        claim.className = 'afk-reward-claim';
+        claim.innerHTML = `<span aria-hidden="true">🍖</span> Claim ${reward.scraps} scraps`;
+        claim.addEventListener('click', () => {
+            const claimed = claimAfkScraps();
+            if (claimed.scraps > 0) updateUI();
+            backdrop.remove();
+        });
+        popup.append(title, text, claim);
+        backdrop.appendChild(popup);
+        document.body.appendChild(backdrop);
+    };
+
+    const checkAfkReward = () => showAfkRewardPopup(previewAfkScraps());
+
+    checkAfkReward();
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) markAfkStart();
+        else checkAfkReward();
+    });
+    window.addEventListener('pagehide', () => markAfkStart());
     const updateSelectionStateUI = () => {
         const valueEl = document.getElementById('upgradeSelectionValue');
         const selectionValue = gameState.unlockedUpgrades?.selection ? 'ON' : 'OFF';

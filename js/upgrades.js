@@ -35,6 +35,14 @@ import {
     getIntoxicationLevel,
     getIntoxicationUpgradeCost,
     buyIntoxicationUpgrade,
+    getAfkScrapCeilingLevel,
+    getAfkScrapCeiling,
+    getAfkScrapCeilingUpgradeCost,
+    buyAfkScrapCeilingUpgrade,
+    getAfkScrapLevel,
+    getAfkScrapsPerMinute,
+    getAfkScrapUpgradeCost,
+    buyAfkScrapUpgrade,
     getEvolutionUpgradeCost,
     buyEvolutionUpgrade,
     getExaltationUpgradeCost,
@@ -92,7 +100,8 @@ export function updateUpgradesUI() {
         gameState.unlockedUpgrades.digestion = true;
         gameState.unlockedUpgrades.incubation = true;
     }
-    if (gameState.hasUsedDivision === true || (gameState.maxSlimesReached || 1) >= 2) gameState.unlockedUpgrades.selectionCard = true;
+    // Selection appears permanently once the army has reached its full 60-slime roster for the first time.
+    if ((gameState.maxSlimesReached || 1) >= 60) gameState.unlockedUpgrades.selectionCard = true;
 
     if ((gameState.maxWaveCleared || 0) >= 10) {
         gameState.unlockedUpgrades.ignition = true;
@@ -589,6 +598,25 @@ export function updateUpgradesUI() {
         }
     }
 
+    // AFK reward upgrades
+    const afkUpgrades = [
+        [document.getElementById('upgradeAfkScrapCeilingCard'), document.getElementById('upgradeAfkScrapCeilingValue'), document.getElementById('upgradeAfkScrapCeilingCost'), document.getElementById('btnUpgradeAfkScrapCeiling'), getAfkScrapCeilingLevel(), getAfkScrapCeiling(), getAfkScrapCeilingUpgradeCost(), ''],
+        [document.getElementById('upgradeAfkScrapCard'), document.getElementById('upgradeAfkScrapValue'), document.getElementById('upgradeAfkScrapCost'), document.getElementById('btnUpgradeAfkScrap'), getAfkScrapLevel(), getAfkScrapsPerMinute(), getAfkScrapUpgradeCost(), '/min']
+    ];
+    afkUpgrades.forEach(([card, value, cost, button, level, current, nextCost, suffix]) => {
+        if (!card || !value || !cost || !button) return;
+        const afkUnlocked = getIncubationLevel() > 0;
+        card.classList.toggle('hidden', !afkUnlocked);
+        if (!afkUnlocked) return;
+        value.textContent = String(current) + suffix;
+        cost.textContent = String(nextCost) + ' ' + String.fromCodePoint(0x1F356);
+        setUpgradeLevelZero(card, level === 0);
+        const canAfford = (gameState.scraps || 0) >= nextCost;
+        button.classList.toggle('disabled', !canAfford);
+        button.classList.toggle('affordable', canAfford);
+        if (canAfford) button.removeAttribute('disabled');
+        else button.setAttribute('disabled', 'disabled');
+    });
     // Update Upgrades Tab button label with affordable count badge: "🧪 Upgrades (X)" or "🧪 Upgrades"
     // Only count visible, unlocked upgrade cards!
     const allAffordableButtons = document.querySelectorAll('#upgradesContainer .btn-plus.affordable');
@@ -744,6 +772,10 @@ export function initUpgradesModule() {
         });
     }
 
+    const btnUpgradeAfkScrapCeilingEl = document.getElementById('btnUpgradeAfkScrapCeiling');
+    if (btnUpgradeAfkScrapCeilingEl) btnUpgradeAfkScrapCeilingEl.addEventListener('click', () => { if (buyAfkScrapCeilingUpgrade()) updateUI(); });
+    const btnUpgradeAfkScrapEl = document.getElementById('btnUpgradeAfkScrap');
+    if (btnUpgradeAfkScrapEl) btnUpgradeAfkScrapEl.addEventListener('click', () => { if (buyAfkScrapUpgrade()) updateUI(); });
     updateUpgradesUI();
 }
 

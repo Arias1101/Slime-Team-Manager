@@ -10,7 +10,7 @@ import { startNextWave } from './enemies.js';
 import { setGamePaused } from './engine.js';
 
 let selectedShopSlimeId = null;
-let shopInventory = []; // Array of 3 items: [{ id, enemyKey, name, sprite, effectText, effectsList, price, lootValue, bought }]
+let shopInventory = []; // Array of 5 items: [{ id, enemyKey, name, sprite, effectText, effectsList, price, lootValue, bought }]
 let nextWaveNumber = 11;
 
 /**
@@ -26,7 +26,7 @@ export function initShopModule() {
 }
 
 /**
- * Generate 3 random shop items selected from ENEMY_TYPES
+ * Generate 5 random shop items selected from ENEMY_TYPES
  */
 function generateShopStock() {
     const enemyKeys = Object.keys(ENEMY_TYPES).filter(k => k !== 'test' && ENEMY_TYPES[k].tier !== -1);
@@ -34,9 +34,9 @@ function generateShopStock() {
 
     shopInventory = [];
 
-    // Pick 3 random unique enemy types
+    // Pick 5 random unique enemy types
     const shuffled = [...enemyKeys].sort(() => 0.5 - Math.random());
-    const selectedKeys = shuffled.slice(0, 3);
+    const selectedKeys = shuffled.slice(0, 5);
 
     selectedKeys.forEach((key, index) => {
         const def = ENEMY_TYPES[key];
@@ -137,15 +137,16 @@ function renderSlimeRosterBrowser() {
         const slimeConfig = SLIME_TYPES[slime.type] || SLIME_TYPES.base;
         const isSelected = slime.id === selectedShopSlimeId;
         const isAscended = slime.ascended === true;
+        const hpPct = Math.max(0, Math.min(100, ((slime.hp || 0) / Math.max(1, slime.maxHp || 1)) * 100));
+        const hpColor = hpPct < 35 ? '#ef4444' : hpPct < 65 ? '#f59e0b' : '#10b981';
 
-        const card = document.createElement('div');
-        card.className = `shop-slime-avatar ${isSelected ? 'selected' : ''} ${isAscended ? 'ascended' : ''}`;
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = `roster-grid-item shop-roster-grid-item ${isSelected ? 'selected' : ''} ${isAscended ? 'ascended' : ''}`;
         card.title = `${slime.name} (${slimeConfig.name}): ${slime.hp}/${slime.maxHp} HP`;
-
         card.innerHTML = `
-            <img src="${slimeConfig.folder}/jump.png" class="shop-avatar-img" alt="${slime.name}">
-            <span class="shop-avatar-name">${slime.name}</span>
-            ${isAscended ? '<span class="shop-avatar-sparkle">✨</span>' : ''}
+            <img src="${slimeConfig.folder}/jump.png" class="roster-grid-icon" alt="${slime.name}">
+            <div class="roster-grid-hp-bar"><div class="roster-hp-fill" style="width:${hpPct}%;background:${hpColor};"></div></div>
         `;
 
         card.addEventListener('click', () => {
@@ -278,7 +279,7 @@ function sellSlimeEquipment(slime, eqIndex) {
 }
 
 /**
- * Render Right Column Section 3: Merchant Market (3 Items)
+ * Render Right Column Section 3: Merchant Market (5 Items)
  */
 function renderShopMarketItems() {
     const container = document.getElementById('shopMarketList');

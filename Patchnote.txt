@@ -1,4 +1,11 @@
 Patch Notes:
+v0.4
+- Added an AFK rewards functionnality it's related Upgrades and features.
+- Fixed HP bars not always updating correctly in Roster.
+- Made ranged attacks when multiple ranged ennemies are firing a bit more natural looking.
+- Reworked Shop interface and extended choice to 5 loots.
+- Complete layout rework for bigger battlefield display.
+
 v0.3
 - Added Tier4 ennemy types in game: wolf, ent, rabbit, bear, fairy, redfairy, elf, stonegolem.
 - Implemented dynamic loot value calculation based on loot attribute ponderations.

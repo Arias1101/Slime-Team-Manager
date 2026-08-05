@@ -101,7 +101,8 @@ const SLIME_NAME_POOL = [
     'Inspecteur le Blanco', 'Arpenteur Bolas', 'Jace', 'Judas le Loyal', 'Pine-de-Pomme',
     'Thé Vert', 'Thé à la Pêche', 'MicMac Padiwak', 'Rascar Capac', 'Diabolo Citron',
     'Monaco', 'La Sardine', 'La Bagarre', 'Paul Ichnel', 'Paul le Saumon',
-    'Paradis Yack', 'Incroyable Hulk', 'Iron Blob', 'Godefroy de Montmirail', 'Jackouille la Fripouille'
+    'Paradis Yack', 'Incroyable Hulk', 'Iron Blob', 'Godefroy de Montmirail', 'Jackouille la Fripouille',
+    'Chaussée aux Moines', 'Martingale la Meringuée', 'Caprice des Dieux', 'Le Rock Fort', 'Le Mort Biais'
 ];
 
 /**
@@ -149,6 +150,11 @@ export const defaultState = {
     incubationLevel: 0,   // Legacy save field
     autoEatLevel: 0,
     fortificationLevel: 0,
+    afkScrapCeilingLevel: 0,
+    afkScrapLevel: 0,
+    afkScrapCeilingPurchased: false,
+    afkScrapPurchased: false,
+    afkLastAwayAt: null,
     ignitionLevel: 0,     // Level of Ignition upgrade (0-10, 2% Fire Slime spawn chance per level)
     glaciationLevel: 0,   // Level of Glaciation upgrade (0-10, 2% Ice Slime spawn chance per level)
     petrificationLevel: 0,// Level of Petrification upgrade (0-10, 2% Stone Slime spawn chance per level)
@@ -860,6 +866,9 @@ export function loadStateFromLocal() {
         gameState = { ...defaultState };
         syncSlimesArray();
     }
+    if (!gameState.afkLastAwayAt) {
+        gameState.afkLastAwayAt = saved ? (gameState.lastSavedTimestamp || Date.now()) : Date.now();
+    }
     syncSlimesArray();
     refreshAllSlimeDamage();
     saveStateToLocal();
@@ -867,6 +876,63 @@ export function loadStateFromLocal() {
 
 
 
+export function getAfkScrapCeilingLevel() { return gameState.afkScrapCeilingLevel || 0; }
+export function getAfkScrapLevel() { return gameState.afkScrapLevel || 0; }
+export function getAfkScrapCeiling() { return 0 + (50 * getAfkScrapCeilingLevel()); }
+export function getAfkScrapsPerMinute() { return 0 + (2 * getAfkScrapLevel()); }
+export function getAfkScrapCeilingUpgradeCost() { return Math.floor(10 * Math.pow(1.45, getAfkScrapCeilingLevel())); }
+export function getAfkScrapUpgradeCost() { return Math.floor(10 * Math.pow(1.45, getAfkScrapLevel())); }
+
+export function buyAfkScrapCeilingUpgrade() {
+    const cost = getAfkScrapCeilingUpgradeCost();
+    if ((gameState.scraps || 0) < cost) return false;
+    gameState.scraps -= cost;
+    gameState.afkScrapCeilingLevel = getAfkScrapCeilingLevel() + 1;
+    gameState.afkScrapCeilingPurchased = true;
+    saveStateToLocal();
+    return true;
+}
+
+export function buyAfkScrapUpgrade() {
+    const cost = getAfkScrapUpgradeCost();
+    if ((gameState.scraps || 0) < cost) return false;
+    gameState.scraps -= cost;
+    gameState.afkScrapLevel = getAfkScrapLevel() + 1;
+    gameState.afkScrapPurchased = true;
+    saveStateToLocal();
+    return true;
+}
+
+export function markAfkStart(timestamp = Date.now()) {
+    gameState.afkLastAwayAt = timestamp;
+    saveStateToLocal();
+}
+
+export function previewAfkScraps(timestamp = Date.now()) {
+    // Display levels alone do not activate AFK rewards; both upgrades must be bought.
+    if (gameState.afkScrapCeilingPurchased !== true || gameState.afkScrapPurchased !== true) return { minutes: 0, scraps: 0 };
+    const awaySince = Number(gameState.afkLastAwayAt);
+    if (!Number.isFinite(awaySince) || timestamp <= awaySince) return { minutes: 0, scraps: 0 };
+    const minutes = Math.floor((timestamp - awaySince) / 60000);
+    return { minutes, scraps: minutes > 0 ? Math.min(getAfkScrapCeiling(), minutes * getAfkScrapsPerMinute()) : 0 };
+}
+export function claimAfkScraps(timestamp = Date.now()) {
+    if (gameState.afkScrapCeilingPurchased !== true || gameState.afkScrapPurchased !== true) return { minutes: 0, scraps: 0 };
+    const awaySince = Number(gameState.afkLastAwayAt);
+    if (!Number.isFinite(awaySince) || timestamp <= awaySince) return { minutes: 0, scraps: 0 };
+
+    const minutes = Math.floor((timestamp - awaySince) / 60000);
+    gameState.afkLastAwayAt = timestamp;
+    if (minutes <= 0) {
+        saveStateToLocal();
+        return { minutes: 0, scraps: 0 };
+    }
+
+    const scraps = Math.min(getAfkScrapCeiling(), minutes * getAfkScrapsPerMinute());
+    gameState.scraps = (gameState.scraps || 0) + scraps;
+    saveStateToLocal();
+    return { minutes, scraps };
+}
 export function getRegenMax() { return 5 + Math.floor((gameState.fortificationLevel || 0) / 2); }
 export function getFortificationLevel() { return gameState.fortificationLevel || 0; }
 export function getFortificationUpgradeCost() { return Math.floor(10 * Math.pow(1.45, getFortificationLevel())); }
