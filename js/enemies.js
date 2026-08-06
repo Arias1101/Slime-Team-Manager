@@ -693,7 +693,7 @@ function triggerPostWave50BackgroundTransition() {
     postWave50BackgroundTimerId = setTimeout(() => {
         battlefield.style.backgroundImage = "url('images/backgrounds/black.jpg')";
         postWave50BackgroundTimerId = null;
-    }, 500);
+    }, 250);
 }
 
 function resetBattlefieldBackground() {
