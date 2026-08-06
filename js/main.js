@@ -2,7 +2,7 @@
  * Application Main Initializer
  */
 
-import { loadStateFromLocal, addScraps, gameState, getFortificationLevel, getFortificationUpgradeCost, buyFortificationUpgrade, getSlimeRegen, getRegenMax, markAfkStart, claimAfkScraps, previewAfkScraps, updateBestRoster, calculateSlimeDamage, saveStateToLocal, getScaledEquipmentEffects, getEquipmentQuality, getEquipmentDisplayName, ALCHEMIST_UPGRADES, getAlchemistUpgradeLevel, getAlchemistUpgradeCost, buyAlchemistUpgrade } from './state.js';
+import { loadStateFromLocal, addScraps, gameState, getFortificationLevel, getFortificationUpgradeCost, buyFortificationUpgrade, getSlimeRegen, getRegenMax, markAfkStart, claimAfkScraps, previewAfkScraps, updateBestRoster, calculateSlimeDamage, saveStateToLocal, getScaledEquipmentEffects, getEquipmentQuality, getEquipmentDisplayName, ALCHEMIST_UPGRADES, getAlchemistUpgradeLevel, getAlchemistUpgradeCost, buyAlchemistUpgrade, getSlimeDeathSprite } from './state.js';
 import { initAuth, loginWithGoogle, logoutUser } from './auth.js';
 import { startEngine, setGamePaused, isGamePaused } from './engine.js';
 import { updateUI, setAuthScreenState, showFirebaseNotice, playSlimeRainRespawnAnimation, initSlimeModalListeners, initMainTabsListeners, openSlimeInspectorModal } from './ui.js';
@@ -166,10 +166,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         openSlimeInspectorModal({ ...fallenSlime, hp: 0, isDead: true });
         const portraitEl = document.getElementById('slimeModalPortrait');
-        const type = fallenSlime.type || 'base';
-        const folder = `images/slimes/${type === 'toxic' ? 'poison' : type}`;
         if (portraitEl) {
-            portraitEl.src = `${folder}/die.png`;
+            portraitEl.src = getSlimeDeathSprite(fallenSlime);
             portraitEl.style.objectPosition = '-19px 0px';
             portraitEl.classList.add('is-dead');
             portraitEl.style.animation = 'none';

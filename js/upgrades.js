@@ -683,7 +683,6 @@ export function updateUpgradesUI() {
     document.querySelectorAll('#upgradesContainer .upgrade-card').forEach(card => {
         if (isMaxedUpgradeCard(card)) card.classList.remove('level-zero');
     });
-    stabilizeUpgradeCardOrder();
 }
 
 /**

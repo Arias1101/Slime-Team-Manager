@@ -2,7 +2,7 @@
  * User Interface & Authentication Screen Renderer
  */
 
-import { gameState, SLIME_TYPES, killSlime, syncSlimesArray, rerollSlimeType, calculateSlimeDamage, getScaledEquipmentEffects, getEquipmentDisplayName, saveStateToLocal, getSlimeHitEffects } from './state.js';
+import { gameState, SLIME_TYPES, killSlime, syncSlimesArray, rerollSlimeType, calculateSlimeDamage, getScaledEquipmentEffects, getEquipmentDisplayName, saveStateToLocal, getSlimeHitEffects, getEquipmentQuality, getSlimeTotalRegen, sortRosterBySpecialization, updateBestRoster, getSlimeJumpSprite } from './state.js';
 import { updateUpgradesUI } from './upgrades.js';
 import { activeGroundLoots, formatLootEffects } from './enemies.js';
 import { setGamePaused, isGamePaused } from './engine.js';
@@ -154,6 +154,8 @@ function updateSlimeRoster() {
         if (slime) {
             const isAscended = slime.ascended === true;
             const slimeConfig = SLIME_TYPES[slime.type] || SLIME_TYPES.base;
+            const specialization = String(slime.specialization || slimeConfig.specialization || '').toLowerCase();
+            const specializationClass = ['tank', 'fighter', 'support'].includes(specialization) ? `specialization-${specialization}` : '';
             const displayName = slime.name || slime.id || slimeConfig.name;
             const hpPct = Math.max(0, (slime.hp / slime.maxHp) * 100);
 
@@ -170,9 +172,11 @@ function updateSlimeRoster() {
                 // Only update HP bar fill style and title without resetting innerHTML!
                 existingNode.title = `[Slot #${s + 1}] ${displayName} (${slimeConfig.name})${isAscended ? ' ✨' : ''}: ${slime.hp}/${slime.maxHp} HP`;
                 existingNode.classList.toggle('ascended', isAscended);
+                existingNode.classList.remove('specialization-tank', 'specialization-fighter', 'specialization-support');
+                if (specializationClass) existingNode.classList.add(specializationClass);
 
                 const rosterIcon = existingNode.querySelector('.roster-grid-icon');
-                const iconSrc = `${slimeConfig.folder}/jump.png`;
+                const iconSrc = getSlimeJumpSprite(slime);
                 if (rosterIcon && rosterIcon.getAttribute('src') !== iconSrc) {
                     rosterIcon.src = iconSrc;
                     rosterIcon.alt = displayName;
@@ -185,12 +189,12 @@ function updateSlimeRoster() {
                 }
             } else {
                 const item = document.createElement('div');
-                item.className = isAscended ? 'roster-grid-item ascended' : 'roster-grid-item';
+                item.className = 'roster-grid-item' + (isAscended ? ' ascended' : '') + (specializationClass ? ' ' + specializationClass : '');
                 item.id = `roster_item_${slime.id}`;
                 item.dataset.slimeId = String(slime.id);
                 item.title = `[Slot #${s + 1}] ${displayName} (${slimeConfig.name})${isAscended ? ' ✨' : ''}: ${slime.hp}/${slime.maxHp} HP`;
 
-                const iconSrc = `${slimeConfig.folder}/jump.png`;
+                const iconSrc = getSlimeJumpSprite(slime);
                 item.innerHTML = `
                     <img src="${iconSrc}" alt="${displayName}" class="roster-grid-icon">
                     <div class="roster-grid-hp-bar">
@@ -330,6 +334,68 @@ export function getSlimeSlotCoordinates(slotIndex) {
 }
 
 /**
+ * Returns the horizontal formation offset for a Slime's chosen Talent Tree path.
+ * The battlefield faces right: tanks hold the front, while supports stay behind the pack.
+ */
+function getSlimeSpecialization(slime) {
+    const typeSpecialization = SLIME_TYPES[slime.type]?.specialization || '';
+    return String(slime.specialization || typeSpecialization).toLowerCase();
+}
+
+function getSlimeFormationLane(slime) {
+    const specialization = getSlimeSpecialization(slime);
+    if (specialization === 'tank') return 'front';
+    if (specialization === 'support') return 'back';
+    if (specialization === 'fighter') return 'middle';
+    return 'unassigned';
+}
+
+function getSlimeFormationOffsetX(slime) {
+    const lane = getSlimeFormationLane(slime);
+    if (lane === 'front') return 50;
+    if (lane === 'back') return -50;
+    return 0;
+}
+
+/**
+ * Specialized Slimes occupy two tidy, parallel diagonal lines per zone.
+ * Higher sprites sit slightly right; lower sprites step left for the battlefield perspective.
+ */
+function getSpecializedLaneCoordinates(slime, laneIndex, laneCount) {
+    const lane = laneIndex % 2;
+    const row = Math.floor(laneIndex / 2);
+    const rowCount = Math.ceil(laneCount / 2);
+    const centerRow = (rowCount - 1) / 2;
+    const centerY = 92;
+    const rowSpacing = 5;
+    const diagonalStep = 2;
+    const laneOffsetX = laneCount === 1 ? 0 : (lane === 0 ? -6 : 6);
+    const zoneCenterX = 95 + getSlimeFormationOffsetX(slime);
+    const rowFromCenter = row - centerRow;
+    const posY = Math.round(centerY + rowFromCenter * rowSpacing);
+    const posX = Math.round(zoneCenterX + laneOffsetX - rowFromCenter * diagonalStep);
+    return {
+        slotIndex: slime.slotIndex ?? laneIndex,
+        layer: 0,
+        posX,
+        posY,
+        calculatedZ: Math.floor(posY + 10),
+        isBaseLayer: true
+    };
+}
+
+function getSlimeFormationCoordinates(slime) {
+    const lane = getSlimeFormationLane(slime);
+    // Non-specialized Slimes deliberately keep the loose, shared army formation.
+    if (lane === 'unassigned') return getSlimeSlotCoordinates(slime.slotIndex ?? 0);
+
+    const laneRoster = (gameState.slimes || [])
+        .filter(candidate => getSlimeFormationLane(candidate) === lane)
+        .sort((a, b) => (a.slotIndex ?? 0) - (b.slotIndex ?? 0));
+    const laneIndex = laneRoster.findIndex(candidate => String(candidate.id) === String(slime.id));
+    return getSpecializedLaneCoordinates(slime, laneIndex >= 0 ? laneIndex : 0, laneRoster.length);
+}
+/**
  * Render Slime Army Stack in 3D Perspective with Fixed Slot Indexing
  */
 function renderSlimeArmy() {
@@ -360,7 +426,7 @@ function renderSlimeArmy() {
     gameState.slimes.forEach(slimeObj => {
         const slimeId = String(slimeObj.id);
         const slot = slimeObj.slotIndex !== undefined ? slimeObj.slotIndex : 0;
-        const coords = getSlimeSlotCoordinates(slot);
+        const coords = getSlimeFormationCoordinates(slimeObj);
 
         const existingUnit = armyContainerEl.querySelector(`.slime-unit[data-slime-id="${slimeId}"]`);
         if (existingUnit) {
@@ -376,7 +442,7 @@ function renderSlimeArmy() {
         }
 
         const slimeConfig = SLIME_TYPES[slimeObj.type] || SLIME_TYPES.base;
-        const slimeImgSrc = `${slimeConfig.folder}/jump.png`;
+        const slimeImgSrc = getSlimeJumpSprite(slimeObj);
 
         const unit = document.createElement('div');
         unit.className = 'slime-unit';
@@ -442,7 +508,7 @@ function renderUserProfile(user) {
     if (userProfileEl) userProfileEl.classList.remove('hidden');
     if (userNameEl) userNameEl.textContent = user.displayName || 'Player';
     if (userAvatarEl) {
-        userAvatarEl.src = user.photoURL || 'https://via.placeholder.com/32';
+        userAvatarEl.src = user.photoURL || 'images/slimes/base/jump.png';
     }
 }
 
@@ -475,88 +541,30 @@ export function playSlimeRainRespawnAnimation(onComplete) {
         return;
     }
 
-    const centerX = 95;
-    const centerY = 92;
-
-    const layers = [
-        {
-            maxSlimes: 30,
-            yOffset: 0,
-            zBase: 0,
-            rings: [
-                { count: 1, radiusX: 0, radiusY: 0 },
-                { count: 6, radiusX: 16, radiusY: 9 },
-                { count: 11, radiusX: 30, radiusY: 16 },
-                { count: 12, radiusX: 44, radiusY: 23 }
-            ]
-        },
-        {
-            maxSlimes: 20,
-            yOffset: -2,
-            zBase: 100,
-            rings: [
-                { count: 1, radiusX: 0, radiusY: 0 },
-                { count: 6, radiusX: 14, radiusY: 8 },
-                { count: 13, radiusX: 28, radiusY: 15 }
-            ]
-        },
-        {
-            maxSlimes: 10,
-            yOffset: -14,
-            zBase: 200,
-            rings: [
-                { count: 1, radiusX: 0, radiusY: 0 },
-                { count: 9, radiusX: 16, radiusY: 9 }
-            ]
-        }
-    ];
-
-    const slimePositions = [];
-    let globalSlimeIndex = 0;
-
-    for (let l = 0; l < layers.length && globalSlimeIndex < totalSlimes; l++) {
-        const layer = layers[l];
-        const slimesInThisLayer = Math.min(layer.maxSlimes, totalSlimes - globalSlimeIndex);
-        let layerSlimeCount = 0;
-
-        for (let r = 0; r < layer.rings.length && layerSlimeCount < slimesInThisLayer; r++) {
-            const ring = layer.rings[r];
-            const countInRing = Math.min(ring.count, slimesInThisLayer - layerSlimeCount);
-            for (let k = 0; k < countInRing; k++) {
-                const i = globalSlimeIndex;
-                const slimeObj = gameState.slimes && gameState.slimes[i] ? gameState.slimes[i] : { id: i + 1, type: 'base' };
-                const slimeId = String(slimeObj.id);
-
-                const angleOffset = (r % 2 === 1) ? 0.3 : 0;
-                const angle = (k / ring.count) * 2 * Math.PI + angleOffset;
-
-                const jitterX = pseudoRandom(i, 1) * 2.5;
-                const jitterY = pseudoRandom(i, 2) * 2;
-
-                const posX = Math.floor(centerX + Math.cos(angle) * ring.radiusX + jitterX);
-                const posY = Math.floor(centerY + Math.sin(angle) * ring.radiusY + jitterY + layer.yOffset);
-                const zIndex = Math.floor(posY + 10);
-                const animDelay = (Math.abs(pseudoRandom(i, 3)) * 2.5).toFixed(2);
-                const shadowHTML = (l === 0) ? '<div class="slime-shadow-sm"></div>' : '';
-
-                slimePositions.push({
-                    index: i,
-                    slimeObj,
-                    slimeId,
-                    posX,
-                    posY,
-                    zIndex,
-                    layerIndex: l,
-                    animDelay,
-                    shadowHTML
-                });
-
-                layerSlimeCount++;
-                globalSlimeIndex++;
-            }
-        }
-    }
-
+    // Each Talent Tree lane gets its own spiral around its formation anchor.
+    // The falling order makes the front line arrive first, followed by the middle and back lines.
+    const activeSlimes = (gameState.slimes && gameState.slimes.length > 0)
+        ? [...gameState.slimes]
+        : Array.from({ length: totalSlimes }, (_, index) => ({ id: index + 1, type: 'base', slotIndex: index }));
+    const laneOrder = ['front', 'middle', 'unassigned', 'back'];
+    const respawnOrder = laneOrder.flatMap(lane => activeSlimes
+        .filter(slime => getSlimeFormationLane(slime) === lane)
+        .sort((a, b) => (a.slotIndex ?? 0) - (b.slotIndex ?? 0))
+    );
+    const slimePositions = respawnOrder.map((slimeObj, index) => {
+        const coords = getSlimeFormationCoordinates(slimeObj);
+        return {
+            index,
+            slimeObj,
+            slimeId: String(slimeObj.id),
+            posX: coords.posX,
+            posY: coords.posY,
+            zIndex: coords.calculatedZ,
+            layerIndex: coords.layer,
+            animDelay: (Math.abs(pseudoRandom(index, 3)) * 2.5).toFixed(2),
+            shadowHTML: coords.isBaseLayer ? '<div class="slime-shadow-sm"></div>' : ''
+        };
+    });
     // Drop slimes 1 by 1 every 0.05s (50ms)
     slimePositions.forEach((pos, idx) => {
         const dropDelay = idx * 50;
@@ -565,7 +573,7 @@ export function playSlimeRainRespawnAnimation(onComplete) {
             if (!armyContainerEl) return;
 
             const slimeConfig = SLIME_TYPES[pos.slimeObj.type] || SLIME_TYPES.base;
-            const sheetUrl = `${slimeConfig.folder}/jump.png`;
+            const sheetUrl = getSlimeJumpSprite(pos.slimeObj);
 
             const unit = document.createElement('div');
             unit.className = 'slime-unit';
@@ -663,15 +671,16 @@ function renderSlimeTalentTree(slime) {
     const baseMessage = document.getElementById('slimeTalentBaseMessage');
     const choices = document.getElementById('slimeTalentChoices');
     const chosenMessage = document.getElementById('slimeTalentChosenMessage');
+    const specializationTalents = document.getElementById('slimeSpecializationTalents');
     const unlocked = (gameState.newGamePlusCompletions || 0) > 0;
     const isBase = (slime.type || 'base') === 'base';
-    const specialization = slime.specialization || '';
+    const specialization = slime.specialization || (SLIME_TYPES[slime.type]?.specialization || '').toLowerCase();
 
     if (talentTab) {
         talentTab.disabled = !unlocked;
         talentTab.classList.toggle('disabled', !unlocked);
-        talentTab.textContent = unlocked ? 'Talent Tree' : 'Talent Tree (Available in New Game+)';
-        talentTab.title = unlocked ? 'Talent Tree' : 'Available in New Game+';
+        talentTab.textContent = unlocked ? 'Specialization' : 'Specialization (Available in New Game+)';
+        talentTab.title = unlocked ? 'Specialization' : 'Available in New Game+';
     }
     if (gateMessage) gateMessage.classList.toggle('hidden', unlocked);
     if (baseMessage) baseMessage.classList.toggle('hidden', !unlocked || !isBase);
@@ -685,19 +694,31 @@ function renderSlimeTalentTree(slime) {
         chosenMessage.classList.toggle('hidden', !unlocked || !specialization);
         chosenMessage.textContent = specialization ? `Specialization chosen: ${specialization}` : '';
     }
+    if (specializationTalents) {
+        const normalizedSpecialization = String(specialization).toLowerCase();
+        const icon = normalizedSpecialization ? `images/logos/${normalizedSpecialization === 'fighter' ? 'damage' : normalizedSpecialization}.png` : '';
+        const xp = Number(slime.xp ?? slime.wavesClearedSinceDeath ?? 0);
+        const costs = [10, 20, 30];
+        specializationTalents.classList.toggle('hidden', !unlocked || !specialization);
+        specializationTalents.innerHTML = specialization ? costs.map((cost, index) => `<button type="button" class="slime-specialization-talent ${index === 0 && xp >= cost ? 'available' : ''}" title="Talent${index + 1}" ${index === 0 && xp >= cost ? '' : 'disabled'}><img src="${icon}" alt="Talent${index + 1}"><span>${xp}/${cost}</span></button>`).join('') : '';
+    }
     if (!unlocked) activeSlimeSheetTab = 'stats';
 }
 
 function specializeInspectedSlime(specialization) {
     if (!currentInspectedSlime || (gameState.newGamePlusCompletions || 0) <= 0) return;
     const target = (gameState.slimes || []).find(s => s.id === currentInspectedSlime.id || s.name === currentInspectedSlime.name);
-    if (!target || (target.type || 'base') === 'base' || target.specialization) return;
+    if (!target || (target.type || 'base') === 'base' || target.specialization || SLIME_TYPES[target.type]?.specialization) return;
     const elementalPrefix = { toxic: 'poison', fire: 'fire', ice: 'ice', stone: 'stone' }[target.type];
     const typeId = elementalPrefix ? `${elementalPrefix}${specialization[0].toUpperCase()}${specialization.slice(1)}` : null;
     if (!typeId || !SLIME_TYPES[typeId]) return;
 
     target.type = typeId;
     target.specialization = specialization;
+    sortRosterBySpecialization();
+    updateBestRoster();
+    // Force the existing battlefield units to take their new formation immediately.
+    lastRenderedArmySize = -1;
     currentInspectedSlime = target;
     saveStateToLocal();
     updateUI();
@@ -740,7 +761,7 @@ export function openSlimeInspectorModal(slime) {
     setSlimeSheetTab(activeSlimeSheetTab);
 
     if (portraitEl) {
-        portraitEl.src = `${slimeConfig.folder}/jump.png`;
+        portraitEl.src = getSlimeJumpSprite(slime);
         portraitEl.style.objectPosition = '0px 0px';
     }
     if (nameEl) nameEl.textContent = slime.name || slimeConfig.name || 'Slime';
@@ -770,7 +791,7 @@ export function openSlimeInspectorModal(slime) {
     const critChance = slime.critChance || 0;
     if (critEl) critEl.textContent = `${critChance}%`;
 
-    const regenVal = slime.regen || 0;
+    const regenVal = getSlimeTotalRegen(slime);
     if (regenEl) regenEl.textContent = `${regenVal}`;
     const hitEffects = getSlimeHitEffects(slime);
     const hitEffectElements = {
@@ -828,7 +849,7 @@ export function openSlimeInspectorModal(slime) {
                     <img src="${item.sprite}" alt="${getEquipmentDisplayName(item)}" class="equipment-icon-img"
                          onerror="this.onerror=null; this.src='images/loots/boot.png';">
                     <div class="equipment-item-info">
-                        <span class="equipment-item-name">${getEquipmentDisplayName(item)}</span>
+                        <span class="equipment-item-name equipment-quality-${getEquipmentQuality(item)}">${getEquipmentDisplayName(item)}</span>
                         <span class="equipment-item-effect">${effectText}</span>
                     </div>
                 `;
@@ -941,7 +962,7 @@ export function initSlimeModalListeners() {
                     openSlimeInspectorModal(updatedSlime || currentInspectedSlime);
                     updateUI();
                 } else {
-                    portraitEl.src = `${currentConfig.folder}/jump.png`;
+                    portraitEl.src = getSlimeJumpSprite(currentInspectedSlime);
                     portraitEl.style.objectPosition = '0px 0px';
                     openSlimeInspectorModal(currentInspectedSlime);
                 }

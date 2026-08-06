@@ -3,7 +3,7 @@
  */
 
 import { activeEnemies, triggerLootDrop, activeGroundLoots, formatLootEffects } from './enemies.js';
-import { gameState, SLIME_TYPES, addScraps, updateBestRoster, saveStateToLocal, calculateSlimeDamage, getScaledEquipmentEffects, getSlimeHitEffects } from './state.js';
+import { gameState, SLIME_TYPES, addScraps, updateBestRoster, saveStateToLocal, calculateSlimeDamage, getScaledEquipmentEffects, getSlimeHitEffects, refreshSlimeMaxHp, getSlimeJumpSprite } from './state.js';
 import { updateUI } from './ui.js';
 /**
  * Convert viewport measurements back into the battlefield's native 500px coordinate space.
@@ -153,9 +153,9 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
     imgEl.style.transition = 'none';
     if (shadowEl) shadowEl.style.transition = 'none';
 
-    // Find frontmost candidate enemy in range (lowest X <= 450)
+    // Find frontmost candidate enemy in range (90 <= X <= 450)
     let candidateEnemies = activeEnemies
-        .filter(e => e.hp > 0 && e.x <= 450)
+        .filter(e => e.hp > 0 && e.x >= 90 && e.x <= 450)
         .sort((a, b) => a.x - b.x);
 
     let targetEnemy = candidateEnemies[0] || null;
@@ -174,13 +174,14 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
         const targetX = targetEnemy.targetX || 100;
         const remainingDistance = targetEnemy.x - targetX;
         const isFrozen = (targetEnemy.effects?.freezeTimer || 0) > 0;
-        const isStillWalking = targetEnemy.state === 'walking' && !isFrozen && remainingDistance > stopBufferPx;
+        const isRush = targetEnemy.type === 'rush';
+        const isStillWalking = targetEnemy.state === 'walking' && !isFrozen && (isRush || remainingDistance > stopBufferPx);
         let predictedX = targetEnemy.x;
 
-        // Only lead targets that are still moving and not already within their stop buffer.
+        // Only lead targets that are still moving; Rushs have no stopping point.
         if (isStillWalking) {
             const enemyTravel = (targetEnemy.speed || 0) * estDurationSec;
-            predictedX = Math.max(targetX, targetEnemy.x - enemyTravel);
+            predictedX = isRush ? Math.max(90, targetEnemy.x - enemyTravel) : Math.max(targetX, targetEnemy.x - enemyTravel);
         }
 
         targetImpactX = Math.min(450, Math.max(startX + 20, predictedX - 4));
@@ -218,7 +219,7 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
         else if (progress < 0.90) spriteFrame = 7;
         else spriteFrame = 8;
 
-        imgEl.src = `${slimeConfig.folder}/jump.png`;
+        imgEl.src = getSlimeJumpSprite(slimeObj);
         imgEl.style.objectPosition = `${-(spriteFrame - 1) * 19}px 0px`;
 
         if (progress >= 0.90 && !hasDealtDamage) {
@@ -258,18 +259,20 @@ function dealTargetEnemyDamage(targetEnemy, damageAmount, slimeConfig, isCrit = 
     // If the jump attack was launched without a target in range, deal no damage
     if (!targetEnemy) return;
 
-    // Get sorted list of alive enemies currently in range (closest to slimes first: lowest X <= 450)
+    // Get sorted list of alive enemies currently in range (closest to slimes first: 90 <= X <= 450)
     let candidateEnemies = activeEnemies
-        .filter(e => e.hp > 0 && e.x <= 450)
+        .filter(e => e.hp > 0 && e.x >= 90 && e.x <= 450)
         .sort((a, b) => a.x - b.x);
 
     // If initial target is still alive and in range (x <= 450), start with it;
     // Otherwise (if initial target died mid-air before landing - i.e. slime hit nothing), pick frontmost candidate in range
-    let currentTarget = (targetEnemy.hp > 0 && targetEnemy.x <= 450)
+    // A Rush consumes the attack that targeted it: a dead or escaped Rush never redirects that hit to another enemy.
+    const isRushTarget = targetEnemy.type === 'rush';
+    let currentTarget = (targetEnemy.hp > 0 && targetEnemy.x >= 90 && targetEnemy.x <= 450)
         ? targetEnemy
-        : (candidateEnemies[0] || null);
+        : (isRushTarget ? null : (candidateEnemies[0] || null));
 
-    if (!currentTarget || currentTarget.hp <= 0 || currentTarget.x > 450) return;
+    if (!currentTarget || currentTarget.hp <= 0 || currentTarget.x < 90 || currentTarget.x > 450) return;
 
     // Apply damage to currentTarget (excess damage beyond currentTarget.hp is lost!)
     const damageToApply = Math.min(currentTarget.hp, damageAmount);
@@ -340,7 +343,8 @@ function dealTargetEnemyDamage(targetEnemy, damageAmount, slimeConfig, isCrit = 
  * Smooth walking return from impact landing point back to origin position in horde
  */
 function startSmoothReturnWalk(unitEl, imgEl, shadowEl, slimeConfig, maxDx = 100) {
-    imgEl.src = `${slimeConfig.folder}/jump.png`;
+    const returnSlime = (gameState.slimes || []).find(slime => String(slime.id) === String(unitEl.dataset.slimeId));
+    imgEl.src = getSlimeJumpSprite(returnSlime || { type: slimeConfig.id });
     imgEl.style.objectPosition = '0px 0px';
 
     const returnDuration = Math.round(Math.max(650, 400 + maxDx * 3.6));
@@ -459,7 +463,7 @@ function dispatchSingleSlimeToEat() {
     const slimeConfig = SLIME_TYPES[slimeType] || SLIME_TYPES.base;
 
     // Use sprite 2 of the corresponding slime during the loot animation
-    imgEl.src = `${slimeConfig.folder}/jump.png`;
+    imgEl.src = getSlimeJumpSprite(slimeObj);
     imgEl.style.objectPosition = '-19px 0px';
 
     const slideDuration = Math.round(Math.max(450, distance * 3.8));
@@ -489,7 +493,7 @@ function dispatchSingleSlimeToEat() {
 
     function eatLootAndReturn() {
         // Switch to sprite 4 (eating pose) when stopping on top of the loot!
-        imgEl.src = `${slimeConfig.folder}/jump.png`;
+        imgEl.src = getSlimeJumpSprite(slimeObj);
         imgEl.style.objectPosition = '-57px 0px';
 
         if (targetLoot.el) {
@@ -527,8 +531,8 @@ function dispatchSingleSlimeToEat() {
                     const effectValue = Number(eff.value ?? 1);
 
                     if (effectStat === 'hp') {
-                        slimeObj.maxHp = Math.max(1, (slimeObj.maxHp || 10) + effectValue);
-                        slimeObj.hp = Math.max(1, Math.min(slimeObj.hp !== undefined ? slimeObj.hp : 10, slimeObj.maxHp));
+                        slimeObj.baseMaxHp = Math.max(1, (slimeObj.baseMaxHp ?? slimeObj.maxHp ?? 10) + effectValue);
+                        refreshSlimeMaxHp(slimeObj);
                     } else if (effectStat === 'regen') {
                         slimeObj.regen = Math.max(0, (slimeObj.regen || 0) + effectValue);
                     } else if (effectStat === 'crit') {
@@ -562,7 +566,7 @@ function dispatchSingleSlimeToEat() {
         // Short 200ms eating pose pause before returning
         setTimeout(() => {
             // Switch back to sprite 2 for the return slide
-            imgEl.src = `${slimeConfig.folder}/jump.png`;
+            imgEl.src = getSlimeJumpSprite(slimeObj);
             imgEl.style.objectPosition = '-19px 0px';
 
             // --- PHASE 2: 60 FPS Return Walk back to Pyramid ---
@@ -586,7 +590,7 @@ function dispatchSingleSlimeToEat() {
                     requestAnimationFrame(animateReturnWalk);
                 } else {
                     // Return complete! Clean up & reset idle state with sprite 1
-                    imgEl.src = `${slimeConfig.folder}/jump.png`;
+                    imgEl.src = getSlimeJumpSprite(slimeObj);
                     imgEl.style.objectPosition = '0px 0px';
                     imgEl.style.transform = '';
                     imgEl.style.transition = '';
@@ -691,8 +695,8 @@ function attemptAscendedSlimeAttack(slimeObj) {
     if (slimeObj.effects && slimeObj.effects.stunTimer > 0) return;
     if (!activeEnemies || activeEnemies.length === 0) return;
 
-    // Only attack enemies within visible screen bounds (x <= 450)
-    const hitableEnemies = activeEnemies.filter(e => e.hp > 0 && e.x <= 450);
+    // Only attack enemies within the Slime target zone (90 <= x <= 450)
+    const hitableEnemies = activeEnemies.filter(e => e.hp > 0 && e.x >= 90 && e.x <= 450);
     if (hitableEnemies.length === 0) return;
 
     const armyContainer = document.getElementById('armyContainer');

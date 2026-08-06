@@ -12,6 +12,14 @@ let auth = null;
 let db = null;
 let currentUser = null;
 
+/** Remove runtime-only DOM references before sending game state to Firestore. */
+function getCloudSaveData() {
+    return JSON.parse(JSON.stringify(gameState, (key, value) => {
+        if (key === 'el' || key === 'statusRowEl') return undefined;
+        return value;
+    }));
+}
+
 export function initAuth(onUserStatusChanged, onFirebaseMissing) {
     if (!isFirebaseConfigured()) {
         console.warn('Firebase is not configured in js/config.js');
@@ -28,11 +36,11 @@ export function initAuth(onUserStatusChanged, onFirebaseMissing) {
         onAuthStateChanged(auth, async (user) => {
             currentUser = user;
             if (user) {
-                console.log('User signed in:', user.displayName, user.uid);
+                //console.log('User signed in:', user.displayName, user.uid);
                 await loadCloudSave(user.uid);
                 onUserStatusChanged(true, user);
             } else {
-                console.log('User signed out.');
+                //console.log('User signed out.');
                 onUserStatusChanged(false, null);
             }
         });
@@ -76,7 +84,7 @@ export async function saveCloudSave() {
     try {
         const userRef = doc(db, 'users', currentUser.uid);
         await setDoc(userRef, {
-            saveData: gameState,
+            saveData: getCloudSaveData(),
             lastUpdated: new Date()
         }, { merge: true });
         console.log('Cloud save successful for user:', currentUser.uid);

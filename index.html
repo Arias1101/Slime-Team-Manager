@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Slime Team Manager</title>
     <meta name="description" content="Manage your own Slime Army and make them fight for their life !">
+    <link rel="icon" type="image/png" href="images/slimes/army.png">
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -493,7 +494,7 @@
                     <nav class="slime-sheet-tabs" aria-label="Character sheet tabs">
                         <button id="slimeSheetStatsTab" type="button" class="slime-sheet-tab active" aria-selected="true">Stats</button>
                         <button id="slimeSheetTalentTab" type="button" class="slime-sheet-tab disabled" disabled
-                            title="Available in New Game+">Talent Tree (Available in New Game+)</button>
+                            title="Available in New Game+">Specialization (Available in New Game+)</button>
                     </nav>
                     <div id="slimeSheetStatsContent" class="slime-modal-body">
                         <div class="slime-stats-grid">
@@ -542,7 +543,7 @@
                             <button type="button" class="slime-talent-choice" data-specialization="fighter" title="Damage"><img src="images/logos/damage.png" alt="Damage"></button>
                             <button type="button" class="slime-talent-choice" data-specialization="tank" title="Tank"><img src="images/logos/tank.png" alt="Tank"></button>
                         </div>
-                        <p id="slimeTalentChosenMessage" class="slime-talent-chosen-message hidden"></p>
+                        <p id="slimeTalentChosenMessage" class="slime-talent-chosen-message hidden"></p><div id="slimeSpecializationTalents" class="slime-specialization-talents hidden"></div>
                     </div>
                 </div>
             </div>
@@ -603,7 +604,7 @@
             </div>
 
             <script type="module" src="js/main.js"></script>
-    <span class="game-version-label" aria-label="Game version 0.8">v0.8</span>
+    <span class="game-version-label" aria-label="Game version 0.9">v0.9</span>
 </body>
 
 </html>

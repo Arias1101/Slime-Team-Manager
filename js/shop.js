@@ -2,7 +2,7 @@
  * Shop Module - Mid-Game Merchant Market (Appears every 10 waves)
  */
 
-import { gameState, saveStateToLocal, updateBestRoster, addScraps, calculateSlimeDamage, getScaledEquipmentEffects, getEquipmentDisplayName, getEquipmentSellMultiplier } from './state.js';
+import { gameState, saveStateToLocal, updateBestRoster, addScraps, calculateSlimeDamage, getScaledEquipmentEffects, getEquipmentDisplayName, getEquipmentSellMultiplier, getEquipmentQuality, refreshSlimeMaxHp, getSlimeJumpSprite } from './state.js';
 import { ENEMY_TYPES, calculateLootValue, formatLootEffects } from './enemies.js';
 import { SLIME_TYPES } from './state.js';
 import { updateUI } from './ui.js';
@@ -158,7 +158,7 @@ function renderSlimeRosterBrowser() {
         card.className = `roster-grid-item shop-roster-grid-item ${isSelected ? 'selected' : ''} ${isAscended ? 'ascended' : ''}`;
         card.title = `${slime.name} (${slimeConfig.name}): ${slime.hp}/${slime.maxHp} HP`;
         card.innerHTML = `
-            <img src="${slimeConfig.folder}/jump.png" class="roster-grid-icon" alt="${slime.name}">
+            <img src="${getSlimeJumpSprite(slime)}" class="roster-grid-icon" alt="${slime.name}">
             <div class="roster-grid-hp-bar"><div class="roster-hp-fill" style="width:${hpPct}%;background:${hpColor};"></div></div>
         `;
 
@@ -190,7 +190,7 @@ function renderSelectedSlimeSheet() {
 
     let html = `
         <div class="shop-slime-info-header">
-            <img src="${slimeConfig.folder}/jump.png" class="shop-slime-portrait" alt="${selectedSlime.name}">
+            <img src="${getSlimeJumpSprite(selectedSlime)}" class="shop-slime-portrait" alt="${selectedSlime.name}">
             <div class="shop-slime-info-text">
                 <div class="shop-slime-info-name">
                     ${selectedSlime.name}
@@ -218,12 +218,12 @@ function renderSelectedSlimeSheet() {
             const displayName = getEquipmentDisplayName(eq);
 
             html += `
-                <div class="shop-equipment-row">
+                <div class="shop-equipment-row equipment-item-card">
                     <div class="shop-eq-left">
-                        <img src="${eq.sprite || `images/loots/${eq.id}.png`}" class="shop-eq-icon" alt="${displayName}">
-                        <div class="shop-eq-details">
-                            <span class="shop-eq-name">${displayName}</span>
-                            <span class="shop-eq-effect">${formatLootEffects(getScaledEquipmentEffects(eq))}</span>
+                        <img src="${eq.sprite || `images/loots/${eq.id}.png`}" class="shop-eq-icon equipment-icon-img" alt="${displayName}">
+                        <div class="shop-eq-details equipment-item-info">
+                            <span class="shop-eq-name equipment-item-name equipment-quality-${getEquipmentQuality(eq)}">${displayName}</span>
+                            <span class="shop-eq-effect equipment-item-effect">${formatLootEffects(getScaledEquipmentEffects(eq))}</span>
                         </div>
                     </div>
                     <button class="btn-sell-equipment" data-eq-index="${index}">
@@ -270,8 +270,8 @@ function sellSlimeEquipment(slime, eqIndex) {
         const effectValue = eff.value || 1;
 
         if (effectStat === 'hp') {
-            slime.maxHp = Math.max(1, slime.maxHp - effectValue);
-            slime.hp = Math.max(1, Math.min(slime.hp, slime.maxHp));
+            slime.baseMaxHp = Math.max(1, (slime.baseMaxHp ?? slime.maxHp ?? 10) - effectValue);
+            refreshSlimeMaxHp(slime);
         } else if (effectStat === 'damage') {
             // Damage is derived from Augmentation and current equipment below.
         } else if (effectStat === 'regen') {

@@ -253,8 +253,8 @@ export function buyAlchemistUpgrade(key) {
         if (key === 'luck') slime.critChance = (slime.critChance || 0) + 1;
         if (key === 'rage') refreshSlimeDamage(slime);
         if (key === 'endurance') {
-            slime.maxHp = (slime.maxHp || 10) + 1;
-            slime.hp = Math.min(slime.maxHp, (slime.hp || 0) + 1);
+            slime.baseMaxHp = (slime.baseMaxHp ?? slime.maxHp ?? 10) + 1;
+            refreshSlimeMaxHp(slime);
         }
         if (key === 'regeneration') slime.regen = (slime.regen || 0) + 1;
     };
@@ -305,6 +305,71 @@ export function getSlimeHitEffects(slime) {
     });
     return totals;
 }
+/** Resolve a Slime path from saved data or its specialized type. */
+export function getSlimeSpecialization(slime) {
+    return String(slime?.specialization || SLIME_TYPES[slime?.type]?.specialization || '').toLowerCase();
+}
+
+/** Returns the appropriate jump sheet for a Slime's elemental type and specialization. */
+/** Death sheets remain elemental; specializations only alter jump sheets. */
+export function getSlimeDeathSprite(slime) {
+    const slimeData = typeof slime === 'string' ? { type: slime } : (slime || {});
+    const config = SLIME_TYPES[slimeData.type] || SLIME_TYPES.base;
+    return `${config.folder}/die.png`;
+}
+export function getSlimeJumpSprite(slime) {
+    const slimeData = typeof slime === 'string' ? { type: slime } : (slime || {});
+    const config = SLIME_TYPES[slimeData.type] || SLIME_TYPES.base;
+    const specialization = getSlimeSpecialization(slimeData);
+    const suffix = specialization === 'tank' ? 'tank' : specialization === 'fighter' ? 'fighter' : specialization === 'support' ? 'support' : '';
+    return `${config.folder}/jump${suffix}.png`;
+}
+export function getSlimeMaxHp(slime) {
+    const baseMaxHp = Math.max(1, Number(slime?.baseMaxHp ?? slime?.maxHp ?? 10));
+    return getSlimeSpecialization(slime) === 'tank' ? Math.round(baseMaxHp * 1.2) : baseMaxHp;
+}
+
+/** Refresh derived Tank HP while preserving any newly gained maximum HP as current HP. */
+export function refreshSlimeMaxHp(slime) {
+    if (!slime) return 10;
+    const previousMaxHp = Math.max(1, Number(slime.maxHp || 10));
+    if (slime.baseMaxHp === undefined) slime.baseMaxHp = previousMaxHp;
+    const nextMaxHp = getSlimeMaxHp(slime);
+    slime.maxHp = nextMaxHp;
+    if (slime.hp === undefined) slime.hp = nextMaxHp;
+    else slime.hp = Math.min(nextMaxHp, Math.max(0, slime.hp + Math.max(0, nextMaxHp - previousMaxHp)));
+    return nextMaxHp;
+}
+
+/** Total per-wave regeneration, including the global upgrade and Support bonus. */
+export function getSlimeTotalRegen(slime) {
+    const total = (gameState.slimeRegen || 0) + (slime?.regen || 0);
+    return getSlimeSpecialization(slime) === 'support' ? Math.round(total * 1.2) : total;
+}
+/** Reassign persistent roster slots by battlefield role while preserving order within each role. */
+export function sortRosterBySpecialization() {
+    const active = gameState.slimes || [];
+    const best = gameState.bestRoster || [];
+    const entries = new Map();
+    [...best, ...active].forEach(slime => {
+        if (!slime) return;
+        const key = String(slime.id || slime.name);
+        if (!entries.has(key)) entries.set(key, slime);
+    });
+    const priority = { tank: 0, fighter: 1, support: 2 };
+    const ordered = [...entries.values()].sort((a, b) => {
+        const aPriority = priority[getSlimeSpecialization(a)] ?? 3;
+        const bPriority = priority[getSlimeSpecialization(b)] ?? 3;
+        return aPriority - bPriority || (a.slotIndex ?? 0) - (b.slotIndex ?? 0);
+    });
+    ordered.forEach((slime, index) => {
+        const key = String(slime.id || slime.name);
+        const activeSlime = active.find(candidate => String(candidate.id || candidate.name) === key);
+        const savedSlime = best.find(candidate => String(candidate.id || candidate.name) === key);
+        if (activeSlime) activeSlime.slotIndex = index;
+        if (savedSlime) savedSlime.slotIndex = index;
+    });
+}
 /** Damage is always Augmentation's displayed value plus equipped damage bonuses. */
 export function calculateSlimeDamage(slime) {
     const equipmentDamage = (slime?.equipment || []).reduce((total, item) => (
@@ -312,7 +377,8 @@ export function calculateSlimeDamage(slime) {
             effect?.stat === 'damage' ? sum + (Number(effect.value) || 0) : sum
         ), 0)
     ), 0);
-    return Math.max(1, (gameState.slimeDamage || 1) + (gameState.alchemistRageLevel || 0) + equipmentDamage);
+    const totalDamage = (gameState.slimeDamage || 1) + (gameState.alchemistRageLevel || 0) + equipmentDamage;
+    return Math.max(1, Math.round(totalDamage * (getSlimeSpecialization(slime) === 'fighter' ? 1.2 : 1))); 
 }
 
 export function refreshSlimeDamage(slime) {
@@ -343,6 +409,8 @@ export function syncSlimesArray() {
             s.name = generateUniqueSlimeName();
         }
         if (!s.id) s.id = s.name;
+        if (!s.specialization && SLIME_TYPES[s.type]?.specialization) s.specialization = String(SLIME_TYPES[s.type].specialization).toLowerCase();
+        refreshSlimeMaxHp(s);
         s.damage = calculateSlimeDamage(s);
         if (s.critChance === undefined) s.critChance = 0;
         if (s.regen === undefined) s.regen = 0;
@@ -356,6 +424,7 @@ export function syncSlimesArray() {
         usedSlots.add(s.slotIndex);
     });
     gameState.armySize = gameState.slimes.length;
+    sortRosterBySpecialization();
 }
 
 /**
@@ -437,6 +506,7 @@ export function buyArmySizeUpgrade() {
         type: newSlimeType,
         hp: 10 + fortificationBonus + alchemistEndurance,
         maxHp: 10 + fortificationBonus + alchemistEndurance,
+        baseMaxHp: 10 + fortificationBonus + alchemistEndurance,
         damage: calculateSlimeDamage({ equipment: [] }),
         critChance: gameState.alchemistLuckLevel || 0,
         regen: gameState.alchemistRegenLevel || 0,
@@ -799,6 +869,7 @@ export function saveWaveSnapshot(waveNum, uncollectedLootValue = 0) {
             type: s.type || 'base',
             hp: s.hp !== undefined ? s.hp : 10,
             maxHp: s.maxHp || 10,
+            baseMaxHp: s.baseMaxHp ?? s.maxHp ?? 10,
             damage: calculateSlimeDamage(s),
             critChance: s.critChance || 0,
             regen: s.regen || 0,
@@ -830,6 +901,7 @@ export function updateBestRoster() {
             type: activeSlime.type || 'base',
             hp: activeSlime.maxHp || 10,
             maxHp: activeSlime.maxHp || 10,
+            baseMaxHp: activeSlime.baseMaxHp ?? activeSlime.maxHp ?? 10,
             damage: calculateSlimeDamage(activeSlime),
             critChance: activeSlime.critChance || 0,
             regen: activeSlime.regen || 0,
@@ -869,6 +941,7 @@ export function restoreBestRoster() {
         type: s.type || 'base',
         hp: s.maxHp || 10,
         maxHp: s.maxHp || 10,
+        baseMaxHp: s.baseMaxHp ?? s.maxHp ?? 10,
         damage: calculateSlimeDamage(s),
         critChance: s.critChance || 0,
         regen: s.regen || 0,
@@ -985,7 +1058,7 @@ export function loadStateFromLocal() {
 
 export function getAfkScrapCeilingLevel() { return gameState.afkScrapCeilingLevel || 0; }
 export function getAfkScrapLevel() { return gameState.afkScrapLevel || 0; }
-export function getAfkScrapCeiling() { return 0 + (100 * getAfkScrapCeilingLevel()); }
+export function getAfkScrapCeiling() { return 0 + (500 * getAfkScrapCeilingLevel()); }
 export function getAfkScrapsPerMinute() { return 0 + (5 * getAfkScrapLevel()); }
 export function getAfkScrapCeilingUpgradeCost() { return Math.floor(10 * Math.pow(1.45, getAfkScrapCeilingLevel())); }
 export function getAfkScrapUpgradeCost() { return Math.floor(10 * Math.pow(1.45, getAfkScrapLevel())); }
@@ -1043,7 +1116,7 @@ export function claimAfkScraps(timestamp = Date.now()) {
 export function getRegenMax() { return 5 + Math.floor((gameState.fortificationLevel || 0) / 2); }
 export function getFortificationLevel() { return gameState.fortificationLevel || 0; }
 export function getFortificationUpgradeCost() { return Math.floor(10 * Math.pow(1.45, getFortificationLevel())); }
-export function buyFortificationUpgrade() { const cost = getFortificationUpgradeCost(); if ((gameState.scraps || 0) < cost) return false; gameState.scraps -= cost; gameState.fortificationLevel = getFortificationLevel() + 1; (gameState.slimes || []).forEach(s => { s.maxHp = (s.maxHp || 10) + 1; s.hp = Math.min(s.maxHp, (s.hp || 0) + 1); }); updateBestRoster(); saveStateToLocal(); return true; }
+export function buyFortificationUpgrade() { const cost = getFortificationUpgradeCost(); if ((gameState.scraps || 0) < cost) return false; gameState.scraps -= cost; gameState.fortificationLevel = getFortificationLevel() + 1; (gameState.slimes || []).forEach(s => { s.baseMaxHp = (s.baseMaxHp ?? s.maxHp ?? 10) + 1; refreshSlimeMaxHp(s); }); updateBestRoster(); saveStateToLocal(); return true; }
 
 
 

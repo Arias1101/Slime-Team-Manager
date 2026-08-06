@@ -2046,6 +2046,11 @@ body.modal-open {
     overflow: hidden;
 }
 
+.equipment-item-name.equipment-quality-0 { color: #f4f4f5; }
+.equipment-item-name.equipment-quality-1 { color: #4ade80; }
+.equipment-item-name.equipment-quality-2 { color: #60a5fa; }
+.equipment-item-name.equipment-quality-3 { color: #c084fc; }
+.equipment-item-name.equipment-quality-4 { color: #fb923c; }
 .equipment-item-name {
     font-size: 0.74rem;
     font-weight: 700;
@@ -4273,3 +4278,27 @@ body.new-game-plus .village-buildings { display: block; }
     font-size: 0.52rem;
     pointer-events: none;
 }
+/* Optical alignment refinements. */
+.enemy-badge {
+    position: relative;
+    top: -5px;
+}
+
+.btn-plus {
+    /* Small optical nudge without shifting the button itself. */
+    padding: 0;
+}
+/* Talent Tree specializations replace Ascension's roster frame color. */
+.roster-grid-item.specialization-tank { border-color: #51B6FF !important; box-shadow: 0 0 5px rgba(81, 182, 255, .55); animation: none !important; }
+.roster-grid-item.specialization-fighter { border-color: #FF9047 !important; box-shadow: 0 0 5px rgba(255, 144, 71, .55); animation: none !important; }
+.roster-grid-item.specialization-support { border-color: #ADFF87 !important; box-shadow: 0 0 5px rgba(173, 255, 135, .55); animation: none !important; }
+
+.slime-specialization-talents { display:flex; gap:12px; justify-content:center; margin-top:16px; }
+.slime-specialization-talent { position:relative; width:62px; height:62px; border:1px solid #475569; border-radius:8px; background:rgba(15,23,42,.7); }
+.slime-specialization-talent.available { border-color:#fbbf24; cursor:pointer; }
+.slime-specialization-talent img { width:30px; height:30px; image-rendering:pixelated; }
+.slime-specialization-talent span { position:absolute; right:4px; bottom:3px; font-size:.65rem; color:#e2e8f0; }
+
+.slime-specialization-talent:not(:last-child)::after { content: '>'; position:absolute; left:calc(100% + 5px); top:50%; transform:translateY(-50%); color:#94a3b8; font-weight:800; font-size:1rem; }
+.slime-specialization-talent:disabled img { filter:grayscale(1) brightness(.55); opacity:.65; }
+.slime-specialization-talent:disabled { border-color:#334155; background:rgba(15,23,42,.42); }

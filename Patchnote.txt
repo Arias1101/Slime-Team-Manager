@@ -1,4 +1,19 @@
 Patch Notes:
+v0.9
+- Fixed missing ressources error
+- Fixed equipment colors in Slime Character Sheet.
+- Minor visual tweaks.
+- Added Rush ennemy types that run through Slimes.
+- Buffed Afk rewards upgrades.
+- Implemented Frontlane / Backlane.
+- Solved a Cloud Save that could lead to Slime losses.
+- Implemented focus priority for ennemies: Tanks > MiddleLane > Supports.
+- Implemented frame color depending on Slime Specialization.
+- Implemented 20% total bonus to Regen/Damage/HP for Support/Fighter/Tank specializations respectively.
+- Implemented Roster Sorting depending on Slime Specializations (Tank > Fighter > Support > Basic).
+- Implemented Specialized Slime Sprites.
+- Implemented template for future talents.
+
 v0.8
 - Fixed healers not being able to target themselves.
 - Balance pass on Undead waves.

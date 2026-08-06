@@ -2,7 +2,7 @@
  * Enemy Management & AI Behaviors
  */
 
-import { gameState, addScraps, saveStateToLocal, saveWaveSnapshot, restoreBestRoster, SLIME_TYPES } from './state.js';
+import { gameState, addScraps, saveStateToLocal, saveWaveSnapshot, restoreBestRoster, SLIME_TYPES, getSlimeTotalRegen } from './state.js';
 import { healAllSlimes, initAscendedAutoAttacks, clearAscendedAutoAttacks, showFloatingDamageNumber, showFloatingHealingNumber, showFloatingStatusTextAt, showBattlefieldWaveBanner, triggerSlimeEatLoot } from './slimes.js';
 import { updateUI, playSlimeRainRespawnAnimation } from './ui.js';
 import { openShopModal } from './shop.js';
@@ -195,8 +195,8 @@ export const ENEMY_TYPES = {
         type: 'melee',        // Melee attacker
         projectile: 'slash1',
         tier: 1,
-        hp: 2,                // 2 HP (requires 2 hits from base slime)
-        maxHp: 2,
+        hp: 3,                // 2 HP (requires 2 hits from base slime)
+        maxHp: 3,
         damage: 2,            // 1 Damage per attack
         attackSpeed: 1.0,     // 1 attack per second
         moveSpeed: 1.2,       // Move speed (1 to 100) -> 25 px/sec
@@ -209,8 +209,8 @@ export const ENEMY_TYPES = {
         type: 'melee',        // Melee attacker
         projectile: 'slash1',
         tier: 1,
-        hp: 2,                // 2 HP (requires 2 hits from base slime)
-        maxHp: 2,
+        hp: 4,                // 2 HP (requires 2 hits from base slime)
+        maxHp: 4,
         damage: 3,            // 1 Damage per attack
         attackSpeed: 1.0,     // 1 attack per second
         moveSpeed: 1.2,       // Move speed (1 to 100) -> 25 px/sec
@@ -226,8 +226,8 @@ export const ENEMY_TYPES = {
         type: 'melee',        // Melee attacker
         projectile: 'slash1',
         tier: 1,
-        hp: 2,                // 2 HP (requires 2 hits from base slime)
-        maxHp: 2,
+        hp: 5,                // 2 HP (requires 2 hits from base slime)
+        maxHp: 5,
         damage: 2,            // 1 Damage per attack
         attackSpeed: 1.0,     // 1 attack per second
         moveSpeed: 1.3,       // Move speed (1 to 100) -> 25 px/sec
@@ -240,11 +240,11 @@ export const ENEMY_TYPES = {
         type: 'melee',        // Melee attacker
         projectile: 'slash1',
         tier: 1,
-        hp: 2,                // 2 HP (requires 2 hits from base slime)
-        maxHp: 2,
+        hp: 5,                // 2 HP (requires 2 hits from base slime)
+        maxHp: 5,
         damage: 2,            // 1 Damage per attack
         attackSpeed: 1.0,     // 1 attack per second
-        moveSpeed: 7,         // Move speed (1 to 100) -> 25 px/sec
+        moveSpeed: 10,         // Move speed (1 to 100) -> 25 px/sec
         targetX: 100,         // Close melee range near the slimes
         loot_name: 'Thief Mask',
         loot_effect: { stat: 'crit', value: 10 }
@@ -295,11 +295,11 @@ export const ENEMY_TYPES = {
     },
     assassin: {
         id: 'assassin',
-        type: 'melee',        // Melee attacker
-        projectile: 'slash1',
+        type: 'rush',        // Melee attacker
+        projectile: '',
         tier: 2,
-        hp: 20,                // 4 HP
-        maxHp: 20,
+        hp: 30,                // 4 HP
+        maxHp: 30,
         damage: 1,            // 3 Damage per attack
         attackSpeed: 1.5,     // 1 attack per second
         moveSpeed: 12,       // Move speed
@@ -492,12 +492,12 @@ export const ENEMY_TYPES = {
     },
     rabbit: {
         id: 'rabbit',
-        type: 'melee',
+        type: 'rush',
         projectile: 'slash1',
         tier: 4,
         hp: 50,
         maxHp: 50,
-        damage: 5,
+        damage: 1,
         attackSpeed: 2,
         moveSpeed: 12,
         targetX: 135,
@@ -847,7 +847,7 @@ export function parseEnemyList(rawList) {
  */
 function generateWaveComposition(waveNum) {
     // Tests
-    //return [0.15, 'lich:1', 'skeleton:25', 'skeletonarcher:5']
+    //return [0.15, 'assassin:10'];
 
     // 1-10, Manual play, Villagers
     if (waveNum === 1) return [0, 'beggar:1'];
@@ -888,8 +888,8 @@ function generateWaveComposition(waveNum) {
     // 31-40 Forest Enemies: deliberately light introductory compositions.
     if (waveNum === 31) return [0.1, 'wolf:5'];
     if (waveNum === 32) return [0.1, 'wolf:5', 'bear:2'];
-    if (waveNum === 33) return [0.2, 'ent:2', 'elf:4', 'rabbit:10'];
-    if (waveNum === 34) return [0.1, 'wolf:10', 'rabbit:10'];
+    if (waveNum === 33) return [0.2, 'ent:2', 'elf:4', 'rabbit:3'];
+    if (waveNum === 34) return [0.1, 'wolf:10', 'rabbit:4'];
     if (waveNum === 35) return [0.1, 'ent:3', 'alchemist:2', 'fairy:2'];
     if (waveNum === 36) return [0.1, 'berserker:2', 'elf:5', 'fairy:2'];
     if (waveNum === 37) return [0.1, 'ent:2', 'redfairy:2', 'fairy:2'];
@@ -909,7 +909,7 @@ function generateWaveComposition(waveNum) {
     if (waveNum === 49) return [0.12, 'halfzombi:4', 'skeleton:8', 'skeletonarcher:4'];
     if (waveNum === 50) return [0.2, 'lich:1', 'skeleton:25', 'skeletonarcher:5'];
 
-    // Infinite mode: Soft HP % Multiplier scaling (+10% per wave beyond wave 11: +10% wave 12, +20% wave 13, +30% wave 14...)
+    // Death
     else {
         triggerPostWave50BackgroundTransition();
         return [0, 'death:1'];
@@ -1173,7 +1173,7 @@ function checkWaveCompletion() {
         // Apply run and permanent Slime Regeneration per wave.
         if (gameState.slimes) {
             gameState.slimes.forEach(s => {
-                const regeneration = (gameState.slimeRegen || 0) + (s.regen || 0);
+                const regeneration = getSlimeTotalRegen(s);
                 if (s.hp > 0 && regeneration > 0) {
                     s.hp = Math.min(s.maxHp, s.hp + regeneration);
                 }
@@ -1310,7 +1310,7 @@ export function spawnEnemy(typeId = 'beggar', hpMultiplier = 1.0) {
     // Each completed run raises the next New Game+ tier by 10% from base values.
     const newGamePlusMultiplier = 1 + 0.10 * Math.max(0, gameState.newGamePlusCompletions || 0);
     const scaledHp = Math.max(1, Math.round(baseHp * hpMultiplier * newGamePlusMultiplier));
-    const scaledDamage = Number(((def.damage || 0) * newGamePlusMultiplier).toFixed(2));
+    const scaledDamage = Math.max(0, Math.round((def.damage || 0) * newGamePlusMultiplier));
     const scaledMoveSpeed = (def.moveSpeed || 0) * 25 * newGamePlusMultiplier;
 
     // Add a small -10 to +10 stop offset to reduce overlapping.
@@ -1416,6 +1416,31 @@ function renderNewEnemyDOM(enemy) {
     }
 }
 
+/** Damage each Slime once when a Rush sprite physically runs through it. */
+function damageSlimesTouchedByRush(enemy) {
+    const armyContainer = document.getElementById('armyContainer');
+    const sprite = enemy.spriteEl || enemy.el?.querySelector('.enemy-sprite');
+    if (!armyContainer || !sprite) return;
+
+    const enemyRect = sprite.getBoundingClientRect();
+    if (enemyRect.width <= 0 || enemyRect.height <= 0) return;
+    if (!enemy.RushHitSlimeIds) enemy.RushHitSlimeIds = new Set();
+
+    armyContainer.querySelectorAll('.slime-unit[data-slime-id]').forEach(unit => {
+        const slimeId = unit.dataset.slimeId;
+        if (enemy.RushHitSlimeIds.has(slimeId)) return;
+
+        const slimeRect = unit.getBoundingClientRect();
+        const overlaps = enemyRect.left < slimeRect.right && enemyRect.right > slimeRect.left
+            && enemyRect.top < slimeRect.bottom && enemyRect.bottom > slimeRect.top;
+        if (!overlaps) return;
+
+        const slime = (gameState.slimes || []).find(candidate => String(candidate.id) === String(slimeId));
+        if (!slime || slime.hp <= 0) return;
+        enemy.RushHitSlimeIds.add(slimeId);
+        damageSpecificSlime(slime, enemy.damage, 'slime-dmg', enemy);
+    });
+}
 /**
  * Update Enemy Positions, Attacks & AI State Machine Loop
  */
@@ -1526,8 +1551,17 @@ export function updateEnemies(deltaSeconds) {
             }
         }
 
-        // --- 3. Walking Phase (Moving left towards targetX if NOT disabled) ---
-        if (!isDisabled && enemy.x > enemy.targetX) {
+        // --- 3. Movement Phase ---
+        // Rushs never stop: they run through the battlefield and leave from the left edge.
+        if (!isDisabled && enemy.type === 'rush') {
+            enemy.x -= enemy.speed * deltaSeconds;
+            if (enemy.x < -50) {
+                if (enemy.el) enemy.el.remove();
+                activeEnemies.splice(i, 1);
+                checkWaveCompletion();
+                continue;
+            }
+        } else if (!isDisabled && enemy.x > enemy.targetX) {
             enemy.x -= enemy.speed * deltaSeconds;
             if (enemy.x <= enemy.targetX) {
                 enemy.x = enemy.targetX;
@@ -1620,6 +1654,8 @@ export function updateEnemies(deltaSeconds) {
             enemy.el.classList.toggle('enemy-range', isRanged || isSupport);
             enemy.el.classList.toggle('enemy-walking', !isAttacking && !isTanking && !isRanged && !isSupport);
         }
+
+        if (enemy.type === 'rush') damageSlimesTouchedByRush(enemy);
     }
 
     // --- Process Status Effects (Burn DoT, Poison DoT, Stun) & Status Icons on Slimes ---
@@ -1834,6 +1870,7 @@ function fireProjectiles(enemy) {
         arcHeight: projType.arcHeight || 25,
         rotationMode: projType.rotationMode || 'tangent',
         damage: enemy.damage,
+        sourceEnemy: enemy,
         el: projEl
     });
 
@@ -1906,24 +1943,24 @@ function updateProjectiles(deltaSeconds) {
         if (p.progress >= 1.0) {
             if (p.key === 'boulder' || (p.type && p.type.id === 'boulder')) {
                 // Boulder AoE: Hits up to 3 unique slimes for damage and applies Stun to all 3
-                const hitSlimes = damageMultipleRandomSlimes(3, p.damage);
+                const hitSlimes = damageMultipleRandomSlimes(3, p.damage, p.sourceEnemy);
                 hitSlimes.forEach(slime => {
                     applyStunEffectToSlime(slime, 2.5);
                 });
             } else if (p.key === 'flask' || (p.type && p.type.id === 'flask')) {
                 // Flask AoE: Hits up to 3 unique slimes for 2 damage and applies 2 stacks of Poison each
-                const hitSlimes = damageMultipleRandomSlimes(3, p.damage || 2);
+                const hitSlimes = damageMultipleRandomSlimes(3, p.damage || 2, p.sourceEnemy);
                 hitSlimes.forEach(slime => {
                     applyPoisonEffectToSlime(slime, 3.0, 2);
                 });
             } else if (p.key === 'fireball' || (p.type && p.type.id === 'fireball')) {
                 // Fireball AoE: Hits up to 2 unique slimes for damage and applies Burn DoT to both
-                const hitSlimes = damageMultipleRandomSlimes(2, p.damage);
+                const hitSlimes = damageMultipleRandomSlimes(2, p.damage, p.sourceEnemy);
                 hitSlimes.forEach(slime => {
                     applyBurnEffectToSlime(slime, 3.0);
                 });
             } else {
-                damageRandomSlime(p.damage);
+                damageRandomSlime(p.damage, p.sourceEnemy);
             }
 
             if (p.el) p.el.remove();
@@ -1953,6 +1990,27 @@ function updateProjectiles(deltaSeconds) {
     }
 }
 
+/** Return combat targeting priority: Tank, middle/unassigned, then Support. */
+function getSlimeCombatTargetPriority(slime) {
+    const typeSpecialization = SLIME_TYPES[slime.type]?.specialization || '';
+    const specialization = String(slime.specialization || typeSpecialization).toLowerCase();
+    if (specialization === 'tank') return 0;
+    if (specialization === 'support') return 2;
+    return 1;
+}
+
+function pickPrioritySlimeTargets(aliveSlimes, count) {
+    const targets = [];
+    for (const priority of [0, 1, 2]) {
+        const candidates = aliveSlimes
+            .filter(slime => getSlimeCombatTargetPriority(slime) === priority)
+            .sort(() => Math.random() - 0.5);
+        targets.push(...candidates.slice(0, Math.max(0, count - targets.length)));
+        if (targets.length >= count) break;
+    }
+    return targets;
+}
+
 /**
  * Deals damage to one random alive slime in the army
  */
@@ -1964,14 +2022,17 @@ export function damageRandomSlime(damageAmount, sourceEnemy = null) {
         return null;
     }
 
-    const randomSlime = aliveSlimes[Math.floor(Math.random() * aliveSlimes.length)];
-    return damageSpecificSlime(randomSlime, damageAmount, 'slime-dmg', sourceEnemy);
+    const targetPool = sourceEnemy?.type === 'rush'
+        ? aliveSlimes
+        : pickPrioritySlimeTargets(aliveSlimes, 1);
+    const targetSlime = targetPool[Math.floor(Math.random() * targetPool.length)];
+    return damageSpecificSlime(targetSlime, damageAmount, 'slime-dmg', sourceEnemy);
 }
 
 /**
  * Deals damage to up to `count` unique alive slimes in the army (AoE impact)
  */
-export function damageMultipleRandomSlimes(count = 3, damageAmount = 2) {
+export function damageMultipleRandomSlimes(count = 3, damageAmount = 2, sourceEnemy = null) {
     if (!gameState.slimes) return [];
 
     const aliveSlimes = gameState.slimes.filter(s => s.hp > 0);
@@ -1979,13 +2040,14 @@ export function damageMultipleRandomSlimes(count = 3, damageAmount = 2) {
         return [];
     }
 
-    // Pick up to `count` unique random slimes without duplicates
-    const shuffled = [...aliveSlimes].sort(() => 0.5 - Math.random());
-    const targetSlimes = shuffled.slice(0, Math.min(count, aliveSlimes.length));
+    // Non-rush attacks exhaust the front line before targeting the middle, then supports.
+    const targetSlimes = sourceEnemy?.type === 'rush'
+        ? [...aliveSlimes].sort(() => 0.5 - Math.random()).slice(0, Math.min(count, aliveSlimes.length))
+        : pickPrioritySlimeTargets(aliveSlimes, Math.min(count, aliveSlimes.length));
 
     const hitSlimes = [];
     targetSlimes.forEach(slime => {
-        const hit = damageSpecificSlime(slime, damageAmount);
+        const hit = damageSpecificSlime(slime, damageAmount, 'slime-dmg', sourceEnemy);
         if (hit) hitSlimes.push(hit);
     });
 
