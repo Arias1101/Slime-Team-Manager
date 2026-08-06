@@ -28,7 +28,7 @@ export const SLIME_TYPES = {
         prefix: 'slime',
         frameCount: 8,
         effect: 'freeze',
-        freezeDuration: 1.0 // Freezes/immobilizes enemy for 1 second
+        freezeDuration: 0.5 // Base freeze duration; equipment values multiply this
     },
     stone: {
         id: 'stone',
@@ -37,7 +37,7 @@ export const SLIME_TYPES = {
         prefix: 'slime',
         frameCount: 8,
         effect: 'stun',
-        stunDuration: 0.8 // Stuns/dazes enemy for 0.8 seconds
+        stunDuration: 0.4 // Base stun duration; equipment values multiply this
     },
     toxic: {
         id: 'toxic',
@@ -50,6 +50,24 @@ export const SLIME_TYPES = {
         poisonDuration: 3.0 // 3 seconds DoT (2 damage per stack per 1.0s tick)
     }
 };
+
+// Specializations currently inherit all gameplay values and sprites from their elemental base type.
+[
+    ['toxic', 'poisonSupport', 'PoisonSupport Slime'],
+    ['toxic', 'poisonFighter', 'PoisonFighter Slime'],
+    ['toxic', 'poisonTank', 'PoisonTank Slime'],
+    ['fire', 'fireSupport', 'FireSupport Slime'],
+    ['fire', 'fireFighter', 'FireFighter Slime'],
+    ['fire', 'fireTank', 'FireTank Slime'],
+    ['ice', 'iceSupport', 'IceSupport Slime'],
+    ['ice', 'iceFighter', 'IceFighter Slime'],
+    ['ice', 'iceTank', 'IceTank Slime'],
+    ['stone', 'stoneSupport', 'StoneSupport Slime'],
+    ['stone', 'stoneFighter', 'StoneFighter Slime'],
+    ['stone', 'stoneTank', 'StoneTank Slime']
+].forEach(([baseType, id, name]) => {
+    SLIME_TYPES[id] = { ...SLIME_TYPES[baseType], id, name, specialization: id.replace(/^(poison|fire|ice|stone)/, '') };
+});
 
 const SLIME_NAME_POOL = [
     'Gooey', 'Bloop', 'Splat', 'Pudding', 'Blobby',
@@ -184,6 +202,14 @@ export const defaultState = {
     slimes: [
         { id: 'Gooey', name: 'Gooey', type: 'base', hp: 10, maxHp: 10, damage: 1, critChance: 0, regen: 0, ascended: false, slotIndex: 0, equipment: [] }
     ],
+    newGamePlusCompletions: 0, // Times Death has ended a run
+    villageCoins: 0,            // Permanent currency earned from completed runs
+    villageInventory: [],       // Unequipped equipment stored at the Forge
+    alchemistLuckLevel: 0,
+    alchemistRageLevel: 0,
+    alchemistEnduranceLevel: 0,
+    alchemistRegenLevel: 0,
+    isInNewGamePlus: false,    // Village intermission after defeating/wiping to Death
     lastSavedTimestamp: Date.now()
 };
 
@@ -198,15 +224,80 @@ export function addScraps(amount = 1) {
     saveStateToLocal();
 }
 
+export const ALCHEMIST_UPGRADES = Object.freeze({
+    luck: { key: 'luck', field: 'alchemistLuckLevel', name: 'Philter of Luck', description: '+1% Base Crit per level.' },
+    rage: { key: 'rage', field: 'alchemistRageLevel', name: 'Tincture of Rage', description: '+1 Base Damage per level.' },
+    endurance: { key: 'endurance', field: 'alchemistEnduranceLevel', name: 'Elixir of Endurance', description: '+1 Base HP per level.' },
+    regeneration: { key: 'regeneration', field: 'alchemistRegenLevel', name: 'Potion of Regeneration', description: '+1 Base Regen per level.' }
+});
+
+export function getAlchemistUpgradeLevel(key) {
+    const upgrade = ALCHEMIST_UPGRADES[key];
+    return upgrade ? (gameState[upgrade.field] || 0) : 0;
+}
+
+export function getAlchemistUpgradeCost(key) {
+    return getAlchemistUpgradeLevel(key) + 1;
+}
+
+export function buyAlchemistUpgrade(key) {
+    const upgrade = ALCHEMIST_UPGRADES[key];
+    if (!upgrade) return false;
+    const cost = getAlchemistUpgradeCost(key);
+    if ((gameState.villageCoins || 0) < cost) return false;
+
+    gameState.villageCoins -= cost;
+    gameState[upgrade.field] = getAlchemistUpgradeLevel(key) + 1;
+    const apply = (slime) => {
+        if (!slime) return;
+        if (key === 'luck') slime.critChance = (slime.critChance || 0) + 1;
+        if (key === 'rage') refreshSlimeDamage(slime);
+        if (key === 'endurance') {
+            slime.maxHp = (slime.maxHp || 10) + 1;
+            slime.hp = Math.min(slime.maxHp, (slime.hp || 0) + 1);
+        }
+        if (key === 'regeneration') slime.regen = (slime.regen || 0) + 1;
+    };
+    (gameState.slimes || []).forEach(apply);
+    (gameState.bestRoster || []).forEach(apply);
+    saveStateToLocal();
+    return true;
+}
+/** Equipment quality ranges from base (0) through +4. */
+export function getEquipmentQuality(item) {
+    return Math.max(0, Math.min(4, Math.floor(Number(item?.quality) || 0)));
+}
+
+export function getEquipmentMultiplier(item) {
+    return 1 + getEquipmentQuality(item);
+}
+
+export function getScaledEquipmentEffects(item) {
+    const rawEffects = Array.isArray(item?.effects) ? item.effects : (item?.effects ? [item.effects] : [item]);
+    const multiplier = getEquipmentMultiplier(item);
+    return rawEffects.filter(Boolean).map(effect => ({
+        ...effect,
+        value: effect?.value === undefined ? effect?.value : Number(effect.value) * multiplier
+    }));
+}
+
+export function getEquipmentSellMultiplier(item) {
+    return Math.pow(5, getEquipmentQuality(item));
+}
+
+export function getEquipmentDisplayName(item) {
+    const baseName = item?.name || item?.id || 'Equipment';
+    const quality = getEquipmentQuality(item);
+    return quality > 0 ? `${baseName} +${quality}` : baseName;
+}
 /** Damage is always Augmentation's displayed value plus equipped damage bonuses. */
 export function calculateSlimeDamage(slime) {
-    const equipmentDamage = (slime?.equipment || []).reduce((total, item) => {
-        const effects = Array.isArray(item?.effects) ? item.effects : [item];
-        return total + effects.reduce((sum, effect) => (
+    const equipmentDamage = (slime?.equipment || []).reduce((total, item) => (
+        total + getScaledEquipmentEffects(item).reduce((sum, effect) => (
             effect?.stat === 'damage' ? sum + (Number(effect.value) || 0) : sum
-        ), 0);
-    }, 0);
-    return Math.max(1, (gameState.slimeDamage || 1) + equipmentDamage);
+        ), 0)
+    ), 0);
+    return Math.max(1, (gameState.slimeDamage || 1) + (gameState.alchemistRageLevel || 0) + equipmentDamage);
 }
 
 export function refreshSlimeDamage(slime) {
@@ -323,16 +414,17 @@ export function buyArmySizeUpgrade() {
     const uniqueName = generateUniqueSlimeName();
     const slotIndex = getNextAvailableSlotIndex();
     const fortificationBonus = gameState.fortificationLevel || 0;
+    const alchemistEndurance = gameState.alchemistEnduranceLevel || 0;
 
     gameState.slimes.push({
         id: uniqueName,
         name: uniqueName,
         type: newSlimeType,
-        hp: 10 + fortificationBonus,
-        maxHp: 10 + fortificationBonus,
-        damage: getSlimeDamage(),
-        critChance: 0,
-        regen: 0,
+        hp: 10 + fortificationBonus + alchemistEndurance,
+        maxHp: 10 + fortificationBonus + alchemistEndurance,
+        damage: calculateSlimeDamage({ equipment: [] }),
+        critChance: gameState.alchemistLuckLevel || 0,
+        regen: gameState.alchemistRegenLevel || 0,
         ascended: false,
         slotIndex: slotIndex,
         equipment: []
@@ -878,8 +970,8 @@ export function loadStateFromLocal() {
 
 export function getAfkScrapCeilingLevel() { return gameState.afkScrapCeilingLevel || 0; }
 export function getAfkScrapLevel() { return gameState.afkScrapLevel || 0; }
-export function getAfkScrapCeiling() { return 0 + (50 * getAfkScrapCeilingLevel()); }
-export function getAfkScrapsPerMinute() { return 0 + (2 * getAfkScrapLevel()); }
+export function getAfkScrapCeiling() { return 0 + (100 * getAfkScrapCeilingLevel()); }
+export function getAfkScrapsPerMinute() { return 0 + (5 * getAfkScrapLevel()); }
 export function getAfkScrapCeilingUpgradeCost() { return Math.floor(10 * Math.pow(1.45, getAfkScrapCeilingLevel())); }
 export function getAfkScrapUpgradeCost() { return Math.floor(10 * Math.pow(1.45, getAfkScrapLevel())); }
 

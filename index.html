@@ -80,6 +80,10 @@
                         <span class="stat-icon">⚔️</span>
                         <span class="stat-value" id="waveCount">1</span>
                     </div>
+                    <div class="header-stat hidden" id="villageCoinsStat" title="Village Coins">
+                        <img src="images/logos/coin.png" alt="Village Coin" class="header-coin-icon">
+                        <span class="stat-value" id="villageCoinsCount">0</span>
+                    </div>
                 </div>
 
                 <!-- Auth & Test Utilities Section -->
@@ -138,9 +142,15 @@
                                         <div class="enemies-container" id="enemiesContainer">
                                             <!-- Enemies arriving from right -->
                                         </div>
-                                    </div>
-                                </div>
-                            </section>
+                                    </div>                            </div>
+                            <div id="villageBuildings" class="village-buildings" aria-label="Village buildings">
+                                <button class="village-door village-door-alchemist" data-village-building="Alchemist Shop" title="Alchemist Shop" aria-label="Alchemist Shop"></button>
+                                <button class="village-door village-door-common-house" data-village-building="Common House" title="Common House (Coming soon)" aria-label="Common House (Coming soon)" disabled></button>
+                                <button class="village-door village-door-forge" data-village-building="Forge" title="Forge" aria-label="Forge"></button>
+                                <button class="village-door village-door-tavern" data-village-building="Tavern" title="Tavern (Coming soon)" aria-label="Tavern (Coming soon)" disabled></button>
+
+                            </div>
+                        </section>
 
                             <!-- Battle Wave Action Bar -->
                             <div class="battle-controls-bar">
@@ -481,11 +491,11 @@
                         </div>
                     </div>
                     <nav class="slime-sheet-tabs" aria-label="Character sheet tabs">
-                        <button type="button" class="slime-sheet-tab active" aria-selected="true">Stats</button>
-                        <button type="button" class="slime-sheet-tab disabled" disabled
-                            title="Talent Tree is coming later">Talent Tree</button>
+                        <button id="slimeSheetStatsTab" type="button" class="slime-sheet-tab active" aria-selected="true">Stats</button>
+                        <button id="slimeSheetTalentTab" type="button" class="slime-sheet-tab disabled" disabled
+                            title="Available in New Game+">Talent Tree (Available in New Game+)</button>
                     </nav>
-                    <div class="slime-modal-body">
+                    <div id="slimeSheetStatsContent" class="slime-modal-body">
                         <div class="slime-stats-grid">
                             <div class="slime-stat-card" title="Health Points (HP) - The slime dies if this hits 0.">
                                 <span class="stat-label">Health</span>
@@ -528,6 +538,16 @@
                                     scraps from defeated enemies!</p>
                             </div>
                         </div>
+                    </div>
+                    <div id="slimeSheetTalentContent" class="slime-talent-content hidden">
+                        <p id="slimeTalentGateMessage" class="slime-talent-gate-message">Available in New Game+</p>
+                        <p id="slimeTalentBaseMessage" class="slime-talent-base-message hidden">Only non-Base Slimes can Specialize.</p>
+                        <div id="slimeTalentChoices" class="slime-talent-choices">
+                            <button type="button" class="slime-talent-choice" data-specialization="support" title="Support"><img src="images/logos/support.png" alt="Support"></button>
+                            <button type="button" class="slime-talent-choice" data-specialization="fighter" title="Damage"><img src="images/logos/damage.png" alt="Damage"></button>
+                            <button type="button" class="slime-talent-choice" data-specialization="tank" title="Tank"><img src="images/logos/tank.png" alt="Tank"></button>
+                        </div>
+                        <p id="slimeTalentChosenMessage" class="slime-talent-chosen-message hidden"></p>
                     </div>
                 </div>
             </div>

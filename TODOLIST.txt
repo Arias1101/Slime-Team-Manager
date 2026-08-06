@@ -1,12 +1,14 @@
 --------------- TODO NOW -----------------
-
+- Fix upgrade buttons layouts to never ever move (while the player is playing). When unlocking an upgrade, add it at the end of Upgrades (unless there is maxed upgrade in the end, which should stay under the new upgrade). When reloading the page though, put maxed upgrades at the end. This way, the user never "sees" the upgrade move and never miss clic on an upgrade he didn't want to.
 
 ------------------ LATER ------------------
-
+- Bench to store Slimes for later use.
+- Roster with ways to switch slimes in and out of roster/bench
+- Buildings for permanent upgrades: HP, Damage, Regen, Crit, xp on death.
 
 ------- IDEAS FOR LATER, DO NOT DO THIS ---------------
-- NewGame+ when reaching wave 100
-- Buildings when NG+ starts for permanent upgrades (building ideas: keep X% xp on death, +X base damage, +X base hp, +X base crit)
+- At start of second run, Unlock upgrade "Specialization" wich Unlockes TalentTree tab in Slime Sheet
+- Complete talent tree tab with tree butons to pick from. Those buttons are enabled only if the Slime is Ascended, and not of the base Type. (if disabled explain why with tooltip).
+- Create TypeTalent Combos by hand
+- When clicking a TalentTree Specialization button, change Slime Type to the corresponding TypeTalent Combos, and replace the three button by corresponding talent tree
 - Frontlane, Midlane, Backlane and assigned classes for Slimes to unlock (Tank / Damage / Support) with talent tree
-- Handle combo beetween Slime Type and Slime Specialization (Stonetank Slime, Firetank Slime...)
-- NG+ Bench to store Slimes for later runs.

@@ -2,7 +2,7 @@
  * User Interface & Authentication Screen Renderer
  */
 
-import { gameState, SLIME_TYPES, killSlime, syncSlimesArray, rerollSlimeType, calculateSlimeDamage } from './state.js';
+import { gameState, SLIME_TYPES, killSlime, syncSlimesArray, rerollSlimeType, calculateSlimeDamage, getScaledEquipmentEffects, getEquipmentDisplayName, saveStateToLocal } from './state.js';
 import { updateUpgradesUI } from './upgrades.js';
 import { activeGroundLoots, formatLootEffects } from './enemies.js';
 import { setGamePaused, isGamePaused } from './engine.js';
@@ -22,6 +22,7 @@ const SLIME_FALLBACK_SRC = 'images/slimes/army.png';
 
 let lastRenderedArmySize = -1;
 let currentInspectedSlime = null;
+let activeSlimeSheetTab = 'stats';
 let isRainAnimating = false;
 
 /**
@@ -32,6 +33,11 @@ export function updateUI() {
     if (scoreCountEl) scoreCountEl.textContent = gameState.score || 0;
     if (waveCountEl) waveCountEl.textContent = gameState.currentWave || 1;
     if (armySizeCountEl) armySizeCountEl.textContent = gameState.armySize || 0;
+    const villageCoinsStatEl = document.getElementById('villageCoinsStat');
+    const villageCoinsCountEl = document.getElementById('villageCoinsCount');
+    const hasEndedGame = (gameState.newGamePlusCompletions || 0) > 0;
+    if (villageCoinsStatEl) villageCoinsStatEl.classList.toggle('hidden', !hasEndedGame);
+    if (villageCoinsCountEl) villageCoinsCountEl.textContent = gameState.villageCoins || 0;
 
     const enemyBadgeEl = document.getElementById('enemyBadge');
     if (enemyBadgeEl) {
@@ -53,8 +59,19 @@ export function updateUI() {
 
     // Update Eat Button loot count & responsive states
     const eatBtnEl = document.getElementById('btnEat');
-    const eatLootCountEl = document.getElementById('eatLootCount');
-    if (eatBtnEl && eatLootCountEl) {
+    let eatLootCountEl = document.getElementById('eatLootCount');
+    if (eatBtnEl && gameState.isInNewGamePlus) {
+        eatBtnEl.textContent = 'Start Run';
+        eatBtnEl.classList.add('village-start-action');
+        eatBtnEl.classList.remove('state-empty', 'state-moderate', 'state-abundant', 'pulse-eat-btn');
+        eatBtnEl.removeAttribute('disabled');
+    } else if (eatBtnEl) {
+        if (!eatLootCountEl) {
+            eatBtnEl.innerHTML = `${String.fromCodePoint(0x1F356)} Eat (<span id="eatLootCount">0</span>)`;
+            eatLootCountEl = document.getElementById('eatLootCount');
+        }
+        eatBtnEl.classList.remove('village-start-action');
+        if (!eatLootCountEl) return;
         const lootCount = activeGroundLoots ? activeGroundLoots.length : 0;
         eatLootCountEl.textContent = lootCount;
 
@@ -317,6 +334,10 @@ export function getSlimeSlotCoordinates(slotIndex) {
  */
 function renderSlimeArmy() {
     if (!armyContainerEl || isRainAnimating) return;
+    if (gameState.isInNewGamePlus) {
+        armyContainerEl.innerHTML = '';
+        return;
+    }
     syncSlimesArray();
 
     // Collect set of current valid slime IDs from state
@@ -622,6 +643,67 @@ export function playSlimeRainRespawnAnimation(onComplete) {
 /**
  * Open Slime Inspector Modal Popup
  */
+function setSlimeSheetTab(tabName) {
+    activeSlimeSheetTab = tabName;
+    const statsTab = document.getElementById('slimeSheetStatsTab');
+    const talentTab = document.getElementById('slimeSheetTalentTab');
+    const statsContent = document.getElementById('slimeSheetStatsContent');
+    const talentContent = document.getElementById('slimeSheetTalentContent');
+    const showTalent = tabName === 'talent' && talentTab && !talentTab.disabled;
+
+    if (statsTab) { statsTab.classList.toggle('active', !showTalent); statsTab.setAttribute('aria-selected', String(!showTalent)); }
+    if (talentTab) { talentTab.classList.toggle('active', showTalent); talentTab.setAttribute('aria-selected', String(showTalent)); }
+    if (statsContent) statsContent.classList.toggle('hidden', showTalent);
+    if (talentContent) talentContent.classList.toggle('hidden', !showTalent);
+}
+
+function renderSlimeTalentTree(slime) {
+    const talentTab = document.getElementById('slimeSheetTalentTab');
+    const gateMessage = document.getElementById('slimeTalentGateMessage');
+    const baseMessage = document.getElementById('slimeTalentBaseMessage');
+    const choices = document.getElementById('slimeTalentChoices');
+    const chosenMessage = document.getElementById('slimeTalentChosenMessage');
+    const unlocked = (gameState.newGamePlusCompletions || 0) > 0;
+    const isBase = (slime.type || 'base') === 'base';
+    const specialization = slime.specialization || '';
+
+    if (talentTab) {
+        talentTab.disabled = !unlocked;
+        talentTab.classList.toggle('disabled', !unlocked);
+        talentTab.textContent = unlocked ? 'Talent Tree' : 'Talent Tree (Available in New Game+)';
+        talentTab.title = unlocked ? 'Talent Tree' : 'Available in New Game+';
+    }
+    if (gateMessage) gateMessage.classList.toggle('hidden', unlocked);
+    if (baseMessage) baseMessage.classList.toggle('hidden', !unlocked || !isBase);
+    if (choices) {
+        choices.classList.toggle('hidden', !unlocked || Boolean(specialization));
+        choices.querySelectorAll('.slime-talent-choice').forEach(choice => {
+            choice.disabled = isBase;
+        });
+    }
+    if (chosenMessage) {
+        chosenMessage.classList.toggle('hidden', !unlocked || !specialization);
+        chosenMessage.textContent = specialization ? `Specialization chosen: ${specialization}` : '';
+    }
+    if (!unlocked) activeSlimeSheetTab = 'stats';
+}
+
+function specializeInspectedSlime(specialization) {
+    if (!currentInspectedSlime || (gameState.newGamePlusCompletions || 0) <= 0) return;
+    const target = (gameState.slimes || []).find(s => s.id === currentInspectedSlime.id || s.name === currentInspectedSlime.name);
+    if (!target || (target.type || 'base') === 'base' || target.specialization) return;
+    const elementalPrefix = { toxic: 'poison', fire: 'fire', ice: 'ice', stone: 'stone' }[target.type];
+    const typeId = elementalPrefix ? `${elementalPrefix}${specialization[0].toUpperCase()}${specialization.slice(1)}` : null;
+    if (!typeId || !SLIME_TYPES[typeId]) return;
+
+    target.type = typeId;
+    target.specialization = specialization;
+    currentInspectedSlime = target;
+    saveStateToLocal();
+    updateUI();
+    activeSlimeSheetTab = 'talent';
+    openSlimeInspectorModal(target);
+}
 export function openSlimeInspectorModal(slime) {
     if (!slime) return;
     currentInspectedSlime = slime;
@@ -653,6 +735,9 @@ export function openSlimeInspectorModal(slime) {
 
     const slimeConfig = SLIME_TYPES[slime.type] || SLIME_TYPES.base;
     const isAscended = slime.ascended === true;
+
+    renderSlimeTalentTree(slime);
+    setSlimeSheetTab(activeSlimeSheetTab);
 
     if (portraitEl) {
         portraitEl.src = `${slimeConfig.folder}/jump.png`;
@@ -726,14 +811,14 @@ export function openSlimeInspectorModal(slime) {
             slime.equipment.forEach(item => {
                 const badge = document.createElement('div');
                 badge.className = 'equipment-item-card';
-                const effectText = formatLootEffects(item.effects || item);
-                badge.title = item.name + ': ' + effectText;
+                const effectText = formatLootEffects(getScaledEquipmentEffects(item));
+                badge.title = getEquipmentDisplayName(item) + ': ' + effectText;
 
                 badge.innerHTML = `
-                    <img src="${item.sprite}" alt="${item.name}" class="equipment-icon-img"
+                    <img src="${item.sprite}" alt="${getEquipmentDisplayName(item)}" class="equipment-icon-img"
                          onerror="this.onerror=null; this.src='images/loots/boot.png';">
                     <div class="equipment-item-info">
-                        <span class="equipment-item-name">${item.name}</span>
+                        <span class="equipment-item-name">${getEquipmentDisplayName(item)}</span>
                         <span class="equipment-item-effect">${effectText}</span>
                     </div>
                 `;
@@ -748,7 +833,7 @@ export function openSlimeInspectorModal(slime) {
 
     const rerollBtnEl = document.getElementById('slimeModalRerollType');
     if (rerollBtnEl) {
-        if (gameState.unlockedUpgrades && gameState.unlockedUpgrades.evolution) {
+        if (gameState.unlockedUpgrades && gameState.unlockedUpgrades.evolution && !slime.specialization) {
             rerollBtnEl.style.display = 'inline-flex';
             const canAffordReroll = (gameState.scraps || 0) >= 50;
             if (canAffordReroll) {
@@ -795,6 +880,12 @@ export function initSlimeModalListeners() {
     const confirmTextEl = document.getElementById('slimeKillConfirmText');
     const btnCancelKill = document.getElementById('btnCancelKillSlime');
     const btnConfirmKill = document.getElementById('btnConfirmKillSlime');
+    const statsTabEl = document.getElementById('slimeSheetStatsTab');
+    const talentTabEl = document.getElementById('slimeSheetTalentTab');
+    const talentChoiceEls = document.querySelectorAll('.slime-talent-choice');
+    if (statsTabEl) statsTabEl.addEventListener('click', () => setSlimeSheetTab('stats'));
+    if (talentTabEl) talentTabEl.addEventListener('click', () => setSlimeSheetTab('talent'));
+    talentChoiceEls.forEach(choice => choice.addEventListener('click', () => specializeInspectedSlime(choice.dataset.specialization)));
 
     if (closeBtnEl) {
         closeBtnEl.addEventListener('click', (e) => {

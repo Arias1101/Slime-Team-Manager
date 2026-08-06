@@ -3,7 +3,7 @@
  */
 
 import { activeEnemies, triggerLootDrop, activeGroundLoots, formatLootEffects } from './enemies.js';
-import { gameState, SLIME_TYPES, addScraps, updateBestRoster, saveStateToLocal, calculateSlimeDamage } from './state.js';
+import { gameState, SLIME_TYPES, addScraps, updateBestRoster, saveStateToLocal, calculateSlimeDamage, getScaledEquipmentEffects } from './state.js';
 import { updateUI } from './ui.js';
 /**
  * Convert viewport measurements back into the battlefield's native 500px coordinate space.
@@ -304,17 +304,17 @@ function dealTargetEnemyDamage(targetEnemy, damageAmount, slimeConfig, isCrit = 
         }
         currentTarget.effects.poisonTimer = slimeConfig.poisonDuration || 3.0;
     } else if (slimeConfig && slimeConfig.effect === 'freeze' && !isControlImmune) {
-        currentTarget.effects.freezeTimer = slimeConfig.freezeDuration || 1.0;
+        currentTarget.effects.freezeTimer = slimeConfig.freezeDuration || 0.5;
         showFloatingStatusText(currentTarget, '❄️', 'freeze-text');
     } else if (slimeConfig && slimeConfig.effect === 'stun' && !isControlImmune) {
-        currentTarget.effects.stunTimer = slimeConfig.stunDuration || 0.8;
+        currentTarget.effects.stunTimer = slimeConfig.stunDuration || 0.4;
         showFloatingStatusText(currentTarget, '💫', 'stun-text');
     }
 
     // Apply Equipment Status Effects (Burn, Poison, Freeze, Stun from equipment!)
     if (slimeObj && slimeObj.equipment && slimeObj.equipment.length > 0) {
         slimeObj.equipment.forEach(eq => {
-            const effectsToProcess = eq.effects || [eq];
+            const effectsToProcess = getScaledEquipmentEffects(eq);
             effectsToProcess.forEach(eff => {
                 if (eff.stat === 'effect' || eff.effectType) {
                     const type = eff.effectType;
@@ -335,10 +335,10 @@ function dealTargetEnemyDamage(targetEnemy, damageAmount, slimeConfig, isCrit = 
                         }
                         currentTarget.effects.poisonTimer = 3.0;
                     } else if (type === 'freeze' && !isControlImmune) {
-                        currentTarget.effects.freezeTimer = Math.max(currentTarget.effects.freezeTimer || 0, 1.0);
+                        currentTarget.effects.freezeTimer = 0.5 * Math.max(1, Number(val) || 1);
                         showFloatingStatusText(currentTarget, '❄️', 'freeze-text');
                     } else if (type === 'stun' && !isControlImmune) {
-                        currentTarget.effects.stunTimer = Math.max(currentTarget.effects.stunTimer || 0, 0.8);
+                        currentTarget.effects.stunTimer = 0.4 * Math.max(1, Number(val) || 1);
                         showFloatingStatusText(currentTarget, '💫', 'stun-text');
                     }
                 }

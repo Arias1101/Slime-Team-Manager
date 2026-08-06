@@ -2,7 +2,7 @@
  * Shop Module - Mid-Game Merchant Market (Appears every 10 waves)
  */
 
-import { gameState, saveStateToLocal, updateBestRoster, addScraps, calculateSlimeDamage } from './state.js';
+import { gameState, saveStateToLocal, updateBestRoster, addScraps, calculateSlimeDamage, getScaledEquipmentEffects, getEquipmentDisplayName, getEquipmentSellMultiplier } from './state.js';
 import { ENEMY_TYPES, calculateLootValue, formatLootEffects } from './enemies.js';
 import { SLIME_TYPES } from './state.js';
 import { updateUI } from './ui.js';
@@ -12,6 +12,16 @@ import { setGamePaused } from './engine.js';
 let selectedShopSlimeId = null;
 let shopInventory = []; // Array of 5 items: [{ id, enemyKey, name, sprite, effectText, effectsList, price, lootValue, bought }]
 let nextWaveNumber = 11;
+
+/** Roll the quality for a merchant item: normal through legendary (+4). */
+function rollShopEquipmentQuality() {
+    const roll = Math.random();
+    if (roll < 0.50) return 0;
+    if (roll < 0.75) return 1;
+    if (roll < 0.90) return 2;
+    if (roll < 0.98) return 3;
+    return 4;
+}
 
 /**
  * Initialize shop event listeners
@@ -41,13 +51,15 @@ function generateShopStock() {
     selectedKeys.forEach((key, index) => {
         const def = ENEMY_TYPES[key];
         const lootVal = calculateLootValue(def.loot_effect);
-        const buyPrice = lootVal * 2;
+        const quality = rollShopEquipmentQuality();
+        const buyPrice = lootVal * 2 * Math.pow(5, quality);
 
         const rawLootEffect = def.loot_effect || { stat: 'hp', value: 1 };
         const effectsList = Array.isArray(rawLootEffect)
             ? rawLootEffect
             : (rawLootEffect.effects ? rawLootEffect.effects : [rawLootEffect]);
-        const effectText = formatLootEffects(effectsList);
+        const equipment = { name: def.loot_name || key, effects: effectsList, quality };
+        const effectText = formatLootEffects(getScaledEquipmentEffects(equipment));
 
         shopInventory.push({
             shopItemId: `shop_item_${Date.now()}_${index}`,
@@ -58,6 +70,7 @@ function generateShopStock() {
             effectsList: effectsList,
             price: buyPrice,
             lootValue: lootVal,
+            quality,
             bought: false
         });
     });
@@ -201,15 +214,16 @@ function renderSelectedSlimeSheet() {
             const enemyKey = eq.id;
             const enemyDef = ENEMY_TYPES[enemyKey];
             const lootVal = eq.lootValue || calculateLootValue(enemyDef?.loot_effect);
-            const sellPrice = lootVal;
+            const sellPrice = Math.max(1, Math.floor(lootVal * getEquipmentSellMultiplier(eq) * 0.5));
+            const displayName = getEquipmentDisplayName(eq);
 
             html += `
                 <div class="shop-equipment-row">
                     <div class="shop-eq-left">
-                        <img src="${eq.sprite || `images/loots/${eq.id}.png`}" class="shop-eq-icon" alt="${eq.name}">
+                        <img src="${eq.sprite || `images/loots/${eq.id}.png`}" class="shop-eq-icon" alt="${displayName}">
                         <div class="shop-eq-details">
-                            <span class="shop-eq-name">${eq.name}</span>
-                            <span class="shop-eq-effect">${formatLootEffects(eq.effects || eq)}</span>
+                            <span class="shop-eq-name">${displayName}</span>
+                            <span class="shop-eq-effect">${formatLootEffects(getScaledEquipmentEffects(eq))}</span>
                         </div>
                     </div>
                     <button class="btn-sell-equipment" data-eq-index="${index}">
@@ -244,13 +258,13 @@ function sellSlimeEquipment(slime, eqIndex) {
     const enemyKey = itemToSell.id;
     const enemyDef = ENEMY_TYPES[enemyKey];
     const lootVal = itemToSell.lootValue || calculateLootValue(enemyDef?.loot_effect);
-    const sellPrice = Math.max(1, Math.floor(lootVal * 0.5));
+    const sellPrice = Math.max(1, Math.floor(lootVal * getEquipmentSellMultiplier(itemToSell) * 0.5));
 
     // Remove item from slime equipment array
     slime.equipment.splice(eqIndex, 1);
 
     // Revert stat bonuses granted by item
-    const effectsList = itemToSell.effects || [itemToSell];
+    const effectsList = getScaledEquipmentEffects(itemToSell);
     effectsList.forEach(eff => {
         const effectStat = eff.stat || 'hp';
         const effectValue = eff.value || 1;
@@ -289,20 +303,23 @@ function renderShopMarketItems() {
 
     shopInventory.forEach(item => {
         const selectedSlime = gameState.slimes ? gameState.slimes.find(s => s.id === selectedShopSlimeId) : null;
-        const alreadyHasItem = selectedSlime && selectedSlime.equipment
-            ? selectedSlime.equipment.some(eq => eq.id === item.enemyKey)
-            : false;
+        const ownedItem = selectedSlime && selectedSlime.equipment
+            ? selectedSlime.equipment.find(eq => eq.id === item.enemyKey)
+            : null;
+        const replacesLowerQuality = ownedItem && (item.quality || 0) > (ownedItem.quality || 0);
+        const alreadyHasEqualOrBetterItem = ownedItem && !replacesLowerQuality;
 
         const canAfford = (gameState.scraps || 0) >= item.price;
+        const displayName = getEquipmentDisplayName(item);
 
         const card = document.createElement('div');
-        card.className = `shop-market-card ${item.bought ? 'bought' : ''}`;
+        card.className = `shop-market-card shop-quality-${item.quality || 0} ${item.bought ? 'bought' : ''}`;
 
         card.innerHTML = `
             <div class="shop-market-card-left">
-                <img src="${item.sprite}" class="shop-market-item-icon" alt="${item.name}">
+                <img src="${item.sprite}" class="shop-market-item-icon" alt="${displayName}">
                 <div class="shop-market-item-info">
-                    <div class="shop-market-item-name">${item.name}</div>
+                    <div class="shop-market-item-name">${displayName}</div>
                     <div class="shop-market-item-effect">${item.effectText}</div>
                 </div>
             </div>
@@ -310,17 +327,17 @@ function renderShopMarketItems() {
                 ${item.bought ? `
                     <span class="badge-bought">✓ SOLD OUT</span>
                 ` : `
-                    <button class="btn-buy-shop-item" ${(!canAfford || alreadyHasItem) ? 'disabled' : ''}>
+                    <button class="btn-buy-shop-item" ${(!canAfford || alreadyHasEqualOrBetterItem) ? 'disabled' : ''}>
                         Buy for ${item.price} 🍖
                     </button>
-                    ${alreadyHasItem ? '<span class="shop-owned-text">Already Owned</span>' : ''}
+                    ${alreadyHasEqualOrBetterItem ? '<span class="shop-owned-text">Already Owned</span>' : (replacesLowerQuality ? `<span class="shop-owned-text">Replaces ${getEquipmentDisplayName(ownedItem)}</span>` : '')}
                 `}
             </div>
         `;
 
         if (!item.bought) {
             const buyBtn = card.querySelector('.btn-buy-shop-item');
-            if (buyBtn && canAfford && !alreadyHasItem) {
+            if (buyBtn && canAfford && !alreadyHasEqualOrBetterItem) {
                 buyBtn.addEventListener('click', () => {
                     buyShopItem(item);
                 });
@@ -345,12 +362,34 @@ function buyShopItem(item) {
 
     if (!selectedSlime.equipment) selectedSlime.equipment = [];
 
+    // A better shop item replaces the same equipment; equal or lower quality cannot be bought.
+    const existingIndex = selectedSlime.equipment.findIndex(eq => eq.id === item.enemyKey);
+    const existingItem = existingIndex >= 0 ? selectedSlime.equipment[existingIndex] : null;
+    if (existingItem && (item.quality || 0) <= (existingItem.quality || 0)) return;
+
+    if (existingItem) {
+        getScaledEquipmentEffects(existingItem).forEach(eff => {
+            const effectStat = eff.stat || 'hp';
+            const effectValue = eff.value || 1;
+            if (effectStat === 'hp') {
+                selectedSlime.maxHp = Math.max(1, selectedSlime.maxHp - effectValue);
+                selectedSlime.hp = Math.max(1, Math.min(selectedSlime.hp, selectedSlime.maxHp));
+            } else if (effectStat === 'regen') {
+                selectedSlime.regen = Math.max(0, (selectedSlime.regen || 0) - effectValue);
+            } else if (effectStat === 'crit') {
+                selectedSlime.critChance = Math.max(0, (selectedSlime.critChance || 0) - effectValue);
+            }
+        });
+        selectedSlime.equipment.splice(existingIndex, 1);
+    }
+
     // Deduct scraps cost
     gameState.scraps -= item.price;
     item.bought = true;
 
     // Apply item stat bonuses
-    item.effectsList.forEach(eff => {
+    const scaledEffects = getScaledEquipmentEffects({ effects: item.effectsList, quality: item.quality || 0 });
+    scaledEffects.forEach(eff => {
         const effectStat = eff.stat || 'hp';
         const effectValue = eff.value || 1;
 
@@ -373,7 +412,8 @@ function buyShopItem(item) {
         sprite: item.sprite,
         effectText: item.effectText,
         effects: item.effectsList,
-        lootValue: item.lootValue
+        lootValue: item.lootValue,
+        quality: item.quality || 0
     });
 
     selectedSlime.damage = calculateSlimeDamage(selectedSlime);

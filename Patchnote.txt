@@ -1,4 +1,14 @@
 Patch Notes:
+v0.6
+- Added New Game+
+- Added Forge building, equipment handling, rarity and village storage.
+- Added Alchemist building and permanent upgrades.
+- Added equipments rarity in Shop.
+- Added Slime Specializations first implementation.
+- Fixed intempestive reordering of Upgrades buttons (maxed upgrades now move to bottom on page load).
+- Reworked Freeze and Stun behavior to allow quality upgrades on those values.
+- Multiple small display and bug fixes.
+
 v0.5
 - Centered AFK reward popup.
 - Nerfed Sylvan ennemies.

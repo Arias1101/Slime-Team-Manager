@@ -2360,8 +2360,12 @@ body.modal-open {
 /* Market Items */
 .shop-market-grid {
     display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
     flex-direction: column;
     gap: 10px;
+    overflow-y: auto;
+    padding-right: 8px;
 }
 
 .shop-market-card {
@@ -3259,7 +3263,17 @@ body.modal-open {
 /* Compact character sheet layout with a future Talent Tree tab. */
 .slime-inspector-modal {
     max-width: 500px;
+    height: min(560px, 90vh);
     padding: 18px;
+    display: flex;
+    flex-direction: column;
+}
+
+.slime-modal-body,
+.slime-talent-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
 }
 
 .slime-modal-header {
@@ -3291,6 +3305,62 @@ body.modal-open {
     border-bottom-color: var(--color-accent-amber);
 }
 
+.slime-talent-content {
+    min-height: 220px;
+    padding: 20px 8px;
+    text-align: center;
+}
+
+.slime-talent-gate-message,
+.slime-talent-base-message,
+.slime-talent-chosen-message {
+    margin: 18px 0;
+    font-size: 0.74rem;
+    line-height: 1.6;
+}
+
+.slime-talent-gate-message { color: #fbbf24; }
+.slime-talent-base-message { color: #f87171; }
+.slime-talent-chosen-message { color: #86efac; }
+
+.slime-talent-choices {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 30px;
+}
+
+.slime-talent-choice {
+    width: 66px;
+    height: 66px;
+    padding: 10px;
+    border: 1px solid rgba(16, 185, 129, 0.48);
+    border-radius: 10px;
+    background: rgba(15, 23, 42, 0.74);
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.slime-talent-choice:hover,
+.slime-talent-choice:focus-visible {
+    border-color: #fbbf24;
+    background: rgba(120, 53, 15, 0.48);
+    outline: none;
+    transform: translateY(-3px) scale(1.06);
+}
+
+.slime-talent-choice:disabled {
+    cursor: not-allowed;
+    opacity: 0.35;
+    filter: grayscale(1);
+}
+.slime-talent-choice img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
 .slime-sheet-tab.disabled {
     opacity: 0.4;
     cursor: not-allowed;
@@ -3770,4 +3840,387 @@ body.modal-open {
     50% {
         transform: translateY(-3px);
     }
+}
+/* New Game+ village intermission: roster is safe, but no battle is active. */
+body.new-game-plus .army-side .side-badge,
+body.new-game-plus .enemy-side .side-badge,
+body.new-game-plus .enemy-wave-count,
+body.new-game-plus .header-stat:has(#waveCount),
+body.new-game-plus .battlefield-pause-btn {
+    display: none;
+}
+
+/* New Game+ village buildings */
+body.new-game-plus #tabContentUpgrades,
+body.new-game-plus #tabBtnUpgrades {
+    display: none !important;
+}
+
+.village-buildings {
+    display: none;
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    pointer-events: none;
+}
+
+body.new-game-plus .village-buildings { display: block; }
+
+.village-door,
+.village-start-run {
+    position: absolute;
+    pointer-events: auto;
+    font: inherit;
+    cursor: pointer;
+}
+
+.village-door {
+    width: 28px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid rgba(203, 213, 225, 0.42);
+    border-radius: 5px;
+    background: rgba(39, 42, 48, 0.70);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.30), 0 2px 5px rgba(0, 0, 0, 0.42);
+    color: #f8fafc;
+    opacity: 0.82;
+    transition: opacity 0.15s ease, background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.village-door::before {
+    display: block;
+    font-size: 16px;
+    line-height: 1;
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.75));
+}
+
+.village-door-alchemist::before { content: "\1F9EA"; }
+.village-door-common-house::before { content: "\1F3E0"; }
+.village-door-forge::before { content: "\1F528"; }
+.village-door-tavern::before { content: "\1F37A"; }
+
+.village-door:hover,
+.village-door:focus-visible {
+    opacity: 1;
+    border-color: rgba(253, 230, 138, 0.88);
+    background: rgba(66, 71, 80, 0.88);
+    transform: scale(1.12);
+    outline: none;
+}
+
+.village-door-alchemist { left: calc(31% + 20px); top: 18%; }
+.village-door:disabled {
+    cursor: not-allowed;
+    opacity: 0.32;
+    filter: grayscale(1);
+}
+
+.village-door-common-house { left: calc(65% - 50px); top: 17%; }
+.village-door-forge { left: calc(82% - 40px); top: calc(47% - 20px); }
+.village-door-tavern { left: calc(14% + 90px); top: 54%; }
+
+.village-start-run {
+    left: 70%;
+    top: 75%;
+    padding: 3px 6px;
+    border: 1px solid rgba(251, 191, 36, 0.72);
+    border-radius: 4px;
+    background: rgba(74, 43, 12, 0.64);
+    color: #fde68a;
+    font-family: var(--font-heading);
+    font-size: 0.58rem;
+    letter-spacing: 0.03em;
+    opacity: 0.84;
+}
+
+.village-start-run:hover,
+.village-start-run:focus-visible {
+    background: rgba(180, 83, 9, 0.88);
+    color: #fff7d6;
+    outline: none;
+}
+
+.village-building-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10020;
+    display: grid;
+    place-items: center;
+    padding: 16px;
+    background: rgba(3, 6, 10, 0.70);
+    backdrop-filter: blur(4px);
+}
+
+.village-building-popup {
+    position: relative;
+    width: min(330px, 100%);
+    padding: 22px;
+    border: 1px solid rgba(251, 191, 36, 0.45);
+    border-radius: var(--radius-lg);
+    background: rgba(18, 19, 22, 0.96);
+    box-shadow: 0 16px 42px rgba(0, 0, 0, 0.6);
+    text-align: center;
+}
+
+.village-building-popup h3 {
+    margin: 0 28px 8px 0;
+    color: #fde68a;
+    font-family: var(--font-heading);
+}
+
+.village-building-popup p { margin: 0; color: #cbd5e1; }
+
+.village-popup-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--color-text-muted);
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.village-popup-close:hover {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: rgba(239, 68, 68, 0.6);
+    color: #ef4444;
+    transform: scale(1.1);
+}
+/* The Eat control becomes the village's primary call to action. */
+.btn-eat-main.village-start-action {
+    background: linear-gradient(135deg, #d97706, #b45309);
+    border-color: rgba(253, 230, 138, 0.8);
+    color: #fff7d6;
+}
+
+.btn-eat-main.village-start-action:hover:not([disabled]) {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+/* Forge: roster overview and persistent Village Inventory */
+.forge-building-popup {
+    width: min(740px, 96vw);
+    max-height: min(720px, 88vh);
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    overflow: hidden;
+}
+
+.forge-building-popup > h3 {
+    flex: 0 0 auto;
+    margin-bottom: 14px;
+}
+
+.forge-roster-section {
+    flex: 0 0 auto;
+    padding: 10px;
+    border: 1px solid rgba(148, 163, 184, 0.20);
+    border-radius: 9px;
+    background: rgba(15, 23, 42, 0.45);
+}
+
+.forge-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.forge-section-header h4 {
+    color: #e2e8f0;
+    font-family: var(--font-heading);
+    font-size: 0.66rem;
+}
+
+.forge-section-header button,
+.forge-item-actions button {
+    border: 1px solid rgba(251, 191, 36, 0.45);
+    border-radius: 5px;
+    padding: 5px 7px;
+    background: rgba(120, 53, 15, 0.60);
+    color: #fde68a;
+    font-family: var(--font-heading);
+    font-size: 0.53rem;
+    cursor: pointer;
+}
+
+.forge-section-header button:disabled,
+.forge-item-actions button:disabled {
+    cursor: not-allowed;
+    opacity: 0.40;
+}
+
+.forge-roster-list {
+    display: flex;
+    gap: 7px;
+    min-height: 42px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+}
+
+.forge-roster-slime {
+    position: relative;
+    flex: 0 0 42px;
+    height: 42px;
+    padding: 3px;
+    border: 1px solid rgba(16, 185, 129, 0.30);
+    border-radius: 6px;
+    background: rgba(16, 185, 129, 0.08);
+    text-align: center;
+}
+
+.forge-roster-slime img { width: 24px; height: 24px; image-rendering: pixelated; }
+.forge-roster-slime span { display: none; }
+.forge-roster-slime b {
+    position: absolute;
+    right: -4px;
+    bottom: -4px;
+    min-width: 13px;
+    padding: 1px 3px;
+    border-radius: 8px;
+    background: #0f172a;
+    color: #fbbf24;
+    font-size: 0.48rem;
+}
+
+.forge-inventory-section {
+    min-height: 0;
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    margin-top: 12px;
+}
+
+.forge-inventory-section .forge-section-header { margin: 0 2px 8px; }
+.forge-inventory-section .forge-section-header > div { display: flex; gap: 6px; }
+
+.forge-inventory-list {
+    min-height: 160px;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    align-content: start;
+    gap: 8px;
+    padding: 2px 4px 6px 0;
+}
+
+.forge-inventory-item {
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: center;
+    padding: 8px;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 8px;
+    background: rgba(15, 23, 42, 0.52);
+}
+
+.forge-inventory-item > img { width: 34px; height: 34px; object-fit: contain; image-rendering: pixelated; }
+.forge-item-details { min-width: 0; display: grid; gap: 4px; }
+.forge-item-details strong { overflow: hidden; color: #f8fafc; font-size: 0.58rem; text-overflow: ellipsis; white-space: nowrap; }
+.forge-item-details span { color: #94a3b8; font-size: 0.48rem; line-height: 1.45; }
+.forge-item-count { color: #fbbf24; font-size: 0.61rem; }
+.forge-item-actions { grid-column: 2 / 4; display: flex; gap: 6px; }
+.forge-empty-text { align-self: center; margin: auto; color: #94a3b8; font-size: 0.62rem; text-align: center; }
+
+@media (max-width: 520px) {
+    .forge-building-popup { padding: 16px; }
+    .forge-section-header { align-items: flex-start; flex-direction: column; }
+    .forge-inventory-list { grid-template-columns: 1fr; }
+}
+/* Forge roster mirrors the main roster: no independent scrollbar. */
+.forge-building-popup {
+    height: 90vh;
+    max-height: 90vh;
+}
+
+.forge-roster-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-height: 29px;
+    max-height: 140px;
+    overflow: hidden;
+    align-content: flex-start;
+}
+
+.forge-roster-grid-item {
+    border: 1px solid rgba(16, 185, 129, 0.30);
+}
+
+.forge-inventory-list {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(251, 191, 36, 0.72) rgba(15, 23, 42, 0.72);
+}
+
+.forge-inventory-list::-webkit-scrollbar { width: 9px; }
+.forge-inventory-list::-webkit-scrollbar-track { border-radius: 6px; background: rgba(15, 23, 42, 0.72); }
+.forge-inventory-list::-webkit-scrollbar-thumb { border: 2px solid rgba(15, 23, 42, 0.72); border-radius: 6px; background: rgba(251, 191, 36, 0.72); }
+.forge-inventory-list::-webkit-scrollbar-thumb:hover { background: #fbbf24; }
+/* Clear Forge interaction feedback and newly equipped Slime highlight. */
+.forge-section-header button:not(:disabled):active,
+.forge-item-actions button:not(:disabled):active {
+    background: #fbbf24;
+    border-color: #fff7d6;
+    color: #3f2108;
+    transform: translateY(1px) scale(0.97);
+}
+
+.roster-grid-item.roster-equipment-flash {
+    background: rgba(255, 255, 255, 0.98) !important;
+    border-color: #ffffff !important;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.9) !important;
+}
+/* Forge merging: keep the available action prominent and show item quality. */
+.btn-forge-merge-all:not(:disabled) {
+    border-color: rgba(196, 181, 253, 0.92) !important;
+    background: linear-gradient(135deg, #7c3aed, #5b21b6) !important;
+    color: #f5f3ff !important;
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.52);
+}
+
+.btn-forge-merge-all:not(:disabled):hover {
+    background: linear-gradient(135deg, #8b5cf6, #6d28d9) !important;
+}
+
+.forge-item-details .forge-item-quality-0 { color: #f8fafc; }
+.forge-item-details .forge-item-quality-1 { color: #4ade80; }
+.forge-item-details .forge-item-quality-2 { color: #60a5fa; }
+.forge-item-details .forge-item-quality-3 { color: #c084fc; }
+.forge-item-details .forge-item-quality-4 { color: #fb923c; }
+/* Merchant stock uses the same quality palette as forged equipment. */
+.shop-market-card.shop-quality-1 .shop-market-item-name { color: #4ade80; }
+.shop-market-card.shop-quality-2 .shop-market-item-name { color: #60a5fa; }
+.shop-market-card.shop-quality-3 .shop-market-item-name { color: #c084fc; }
+.shop-market-card.shop-quality-4 .shop-market-item-name { color: #fb923c; }
+/* Alchemist: permanent Village Coin upgrades. */
+.alchemist-building-popup { width: min(820px, 94vw); text-align: left; }
+.alchemist-coins { margin: 4px 0 34px !important; padding-bottom: 4px; color: #fde68a; font-size: 0.62rem; }
+.alchemist-upgrades-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.alchemist-upgrade-card { min-height: 102px; }
+.alchemist-upgrade-card .upgrade-action { flex-direction: column; align-items: center; }
+@media (max-width: 900px) { .alchemist-upgrades-list { grid-template-columns: 1fr; } }
+.header-coin-icon {
+    width: 19px;
+    height: 19px;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
+.village-coin-icon {
+    width: 14px;
+    height: 14px;
+    vertical-align: -2px;
+    object-fit: contain;
+    image-rendering: pixelated;
 }

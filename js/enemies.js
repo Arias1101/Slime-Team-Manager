@@ -82,7 +82,7 @@ export const ENEMY_TYPES = {
         moveSpeed: 2,
         targetX: 380,         // 400=right border, 100 = Slime army
         loot_name: 'Staff of Frostfire',
-        loot_effect: [{ stat: 'effect', effectType: 'freeze' },
+        loot_effect: [{ stat: 'effect', effectType: 'freeze', value: 1 },
         { stat: 'effect', effectType: 'burn', value: 1 }]
     },
     berserker: {
@@ -126,7 +126,7 @@ export const ENEMY_TYPES = {
         moveSpeed: 0.4,
         targetX: 400,
         loot_name: 'Catapult Boulder',
-        loot_effect: { stat: 'effect', effectType: 'stun' }
+        loot_effect: { stat: 'effect', effectType: 'stun', value: 1 }
     },
     car: {
         id: 'car',
@@ -141,7 +141,7 @@ export const ENEMY_TYPES = {
         targetX: 100,
         loot_name: 'Shiny Horse Badge',
         loot_effect: [{ stat: 'damage', value: 10 },
-        { stat: 'effect', effectType: 'stun' }]
+        { stat: 'effect', effectType: 'stun', value: 1 }]
     },
     stonegolem: {
         id: 'stonegolem',
@@ -156,7 +156,7 @@ export const ENEMY_TYPES = {
         targetX: 170,         // 400=right border, 100 = Slime army
         loot_name: 'Stone Golem Head',
         loot_effect: [{ stat: 'hp', value: 5 },
-        { stat: 'effect', effectType: 'stun' }]
+        { stat: 'effect', effectType: 'stun', value: 1 }]
     },
     lich: {
         id: 'lich',
@@ -343,8 +343,8 @@ export const ENEMY_TYPES = {
         type: 'melee',        // Melee attacker
         projectile: 'slash1',
         tier: 3,
-        hp: 60,                // 5 HP
-        maxHp: 60,
+        hp: 100,                // 5 HP
+        maxHp: 100,
         damage: 4,
         attackSpeed: 1.5,     // attack per second
         moveSpeed: 3,       // Move speed
@@ -358,8 +358,8 @@ export const ENEMY_TYPES = {
         type: 'melee',        // Melee attacker
         projectile: 'slash1',
         tier: 3,
-        hp: 50,                // 5 HP
-        maxHp: 50,
+        hp: 80,                // 5 HP
+        maxHp: 80,
         damage: 5,            // 4 Damage per attack
         attackSpeed: 1,     // 1 attack per second
         moveSpeed: 3.5,       // Move speed
@@ -401,8 +401,8 @@ export const ENEMY_TYPES = {
         type: 'melee',        // Melee attacker
         projectile: 'slash1',
         tier: 3,
-        hp: 50,                // 5 HP
-        maxHp: 50,
+        hp: 90,                // 5 HP
+        maxHp: 90,
         damage: 10,            // 4 Damage per attack
         attackSpeed: 1,     // 1 attack per second
         moveSpeed: 4,       // Move speed
@@ -419,8 +419,8 @@ export const ENEMY_TYPES = {
         type: 'ranged',
         projectile: 'fireball',
         tier: 4,
-        hp: 200,
-        maxHp: 200,
+        hp: 100,
+        maxHp: 100,
         damage: 5,
         attackSpeed: 1.2,
         moveSpeed: 4,
@@ -478,8 +478,8 @@ export const ENEMY_TYPES = {
         type: 'tank',
         projectile: 'none',
         tier: 4,
-        hp: 2500,
-        maxHp: 2500,
+        hp: 2400,
+        maxHp: 2400,
         damage: 0,
         attackSpeed: 0,
         moveSpeed: 6,
@@ -748,7 +748,15 @@ let autoWaveTimeoutId = null;
 let countdownTimerId = null;
 let nextWaveCountdownSec = 0;
 
+function applyNewGamePlusPresentation() {
+    const isVillage = gameState.isInNewGamePlus === true;
+    document.body.classList.toggle('new-game-plus', isVillage);
+    const battlefield = document.querySelector('.battlefield-card');
+    if (battlefield) battlefield.style.backgroundImage = isVillage ? "url('images/backgrounds/village.png')" : '';
+}
+
 export function initEnemiesModule() {
+    applyNewGamePlusPresentation();
     updateControlButtonsUI();
 }
 
@@ -910,6 +918,7 @@ function generateWaveComposition(waveNum) {
  * Starts the next wave: Spawns enemies with dynamic wave spawn timing
  */
 export function startNextWave() {
+    if (gameState.isInNewGamePlus) return;
     if (autoWaveTimeoutId) {
         clearTimeout(autoWaveTimeoutId);
         autoWaveTimeoutId = null;
@@ -972,16 +981,25 @@ export function startNextWave() {
 /**
  * Full Reset action: Resets army to 1 base slime (no upgrades), scraps to 0, wave to 1, clears battlefield
  */
-export function resetGameFull() {
+export function resetGameFull({ startWave = true } = {}) {
+    const newGamePlusCompletions = gameState.newGamePlusCompletions || 0;
+    document.body.classList.remove('new-game-plus');
     resetBattlefieldBackground();
     if (countdownTimerId) {
         clearInterval(countdownTimerId);
         countdownTimerId = null;
     }
+    if (autoWaveTimeoutId) {
+        clearTimeout(autoWaveTimeoutId);
+        autoWaveTimeoutId = null;
+    }
+    isWaveActive = false;
     // 1. Reset state: Scraps 0, Score 0, Wave 1, Army back to 1 Base Slime with no upgrades
     gameState.scraps = 0;
     gameState.score = 0;
     gameState.currentWave = 1;
+    gameState.newGamePlusCompletions = newGamePlusCompletions;
+    gameState.isInNewGamePlus = false;
     gameState.maxWaveCleared = 0;
     gameState.armySize = 1;
     gameState.maxSlimesReached = 1;
@@ -1021,11 +1039,15 @@ export function resetGameFull() {
     };
     gameState.waveSnapshots = {};
     const initialName = 'Gooey';
+    const permanentHp = 10 + (gameState.fortificationLevel || 0) + (gameState.alchemistEnduranceLevel || 0);
+    const permanentCrit = gameState.alchemistLuckLevel || 0;
+    const permanentRegen = gameState.alchemistRegenLevel || 0;
+    const permanentDamage = 1 + (gameState.alchemistRageLevel || 0);
     gameState.bestRoster = [
-        { id: initialName, name: initialName, type: 'base', hp: 10, maxHp: 10, damage: 1, ascended: false, equipment: [] }
+        { id: initialName, name: initialName, type: 'base', hp: permanentHp, maxHp: permanentHp, damage: permanentDamage, critChance: permanentCrit, regen: permanentRegen, ascended: false, equipment: [] }
     ];
     gameState.slimes = [
-        { id: initialName, name: initialName, type: 'base', hp: 10, maxHp: 10, damage: 1, ascended: false, equipment: [] }
+        { id: initialName, name: initialName, type: 'base', hp: permanentHp, maxHp: permanentHp, damage: permanentDamage, critChance: permanentCrit, regen: permanentRegen, ascended: false, equipment: [] }
     ];
     saveStateToLocal();
 
@@ -1065,11 +1087,63 @@ export function resetGameFull() {
     waveSpawnedEnemies = 0;
     updateWaveCountdownUI();
 
-    // 5. Update UI & restart Wave 1
+    // 5. Update UI and optionally restart Wave 1
     updateUI();
-    startNextWave();
+    if (startWave) startNextWave();
 }
 
+/**
+ * Ends a run when Death wipes the army. Run progression resets, while the
+ * healed roster remains visible at the village without being deployed.
+ */
+export function enterNewGamePlus() {
+    if (isNewGamePlusTransition || gameState.isInNewGamePlus) return;
+    isNewGamePlusTransition = true;
+
+    const rosterSource = (gameState.bestRoster && gameState.bestRoster.length > 0)
+        ? gameState.bestRoster
+        : (gameState.slimes || []);
+    const healedRoster = rosterSource.map((slime, index) => ({
+        ...JSON.parse(JSON.stringify(slime)),
+        id: slime.id || slime.name || `Slime ${index + 1}`,
+        name: slime.name || slime.id || `Slime ${index + 1}`,
+        hp: slime.maxHp || 10,
+        maxHp: slime.maxHp || 10,
+        slotIndex: slime.slotIndex !== undefined ? slime.slotIndex : index
+    }));
+    const completedRuns = (gameState.newGamePlusCompletions || 0) + 1;
+    const villageCoinReward = completedRuns;
+
+    resetGameFull({ startWave: false });
+    gameState.newGamePlusCompletions = completedRuns;
+    gameState.villageCoins = (gameState.villageCoins || 0) + villageCoinReward;
+    gameState.isInNewGamePlus = true;
+    gameState.bestRoster = healedRoster.length > 0 ? healedRoster : gameState.bestRoster;
+    gameState.slimes = gameState.bestRoster.map((slime, index) => ({
+        ...JSON.parse(JSON.stringify(slime)),
+        hp: slime.maxHp || 10,
+        slotIndex: slime.slotIndex !== undefined ? slime.slotIndex : index
+    }));
+    gameState.armySize = gameState.slimes.length;
+
+    clearAscendedAutoAttacks();
+    const armyContainer = document.getElementById('armyContainer');
+    if (armyContainer) armyContainer.innerHTML = '';
+    applyNewGamePlusPresentation();
+    saveStateToLocal();
+    updateUI();
+    isNewGamePlusTransition = false;
+}
+
+/** Deploy the healed village roster and begin the next run. */
+export function startNewGamePlusRun() {
+    if (!gameState.isInNewGamePlus) return;
+    gameState.isInNewGamePlus = false;
+    applyNewGamePlusPresentation();
+    saveStateToLocal();
+    updateUI();
+    playSlimeRainRespawnAnimation(() => startNextWave());
+}
 /**
  * Check if the last enemy of the current wave died
  */
@@ -1094,11 +1168,12 @@ function checkWaveCompletion() {
             }
         }
 
-        // Apply Slime Regeneration per wave
-        if (gameState.slimeRegen > 0 && gameState.slimes) {
+        // Apply run and permanent Slime Regeneration per wave.
+        if (gameState.slimes) {
             gameState.slimes.forEach(s => {
-                if (s.hp > 0) {
-                    s.hp = Math.min(s.maxHp, s.hp + gameState.slimeRegen);
+                const regeneration = (gameState.slimeRegen || 0) + (s.regen || 0);
+                if (s.hp > 0 && regeneration > 0) {
+                    s.hp = Math.min(s.maxHp, s.hp + regeneration);
                 }
             });
         }
@@ -1473,7 +1548,7 @@ export function updateEnemies(deltaSeconds) {
                 enemy.attackTimer += deltaSeconds;
                 if (enemy.attackTimer >= (1 / enemy.attackSpeed)) {
                     enemy.attackTimer = 0;
-                    damageRandomSlime(enemy.damage);
+                    damageRandomSlime(enemy.damage, enemy);
                     spawnSlashEffect(enemy);
                     if (enemy.spriteEl) {
                         enemy.spriteEl.classList.add('enemy-strike-vibrate');
@@ -1875,7 +1950,7 @@ function updateProjectiles(deltaSeconds) {
 /**
  * Deals damage to one random alive slime in the army
  */
-export function damageRandomSlime(damageAmount) {
+export function damageRandomSlime(damageAmount, sourceEnemy = null) {
     if (!gameState.slimes) return null;
 
     const aliveSlimes = gameState.slimes.filter(s => s.hp > 0);
@@ -1884,7 +1959,7 @@ export function damageRandomSlime(damageAmount) {
     }
 
     const randomSlime = aliveSlimes[Math.floor(Math.random() * aliveSlimes.length)];
-    return damageSpecificSlime(randomSlime, damageAmount);
+    return damageSpecificSlime(randomSlime, damageAmount, 'slime-dmg', sourceEnemy);
 }
 
 /**
@@ -1914,7 +1989,7 @@ export function damageMultipleRandomSlimes(count = 3, damageAmount = 2) {
 /**
  * Applies damage to a specific slime instance
  */
-export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg') {
+export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg', sourceEnemy = null) {
     if (!slime || slime.hp <= 0) return null;
 
     slime.hp = Math.max(0, slime.hp - damageAmount);
@@ -1969,7 +2044,8 @@ export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg') 
                     if (remainingAlive.length === 0) {
                         const remainingDying = document.querySelectorAll('.slime-unit[data-is-dying="true"]');
                         if (remainingDying.length === 0) {
-                            rewindWaveState();
+                            if (sourceEnemy?.typeId === 'death') enterNewGamePlus();
+                            else rewindWaveState();
                         }
                     }
                 });
@@ -1985,7 +2061,8 @@ export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg') 
 
             const remainingAlive = gameState.slimes.filter(s => s.hp > 0);
             if (remainingAlive.length === 0) {
-                rewindWaveState();
+                if (sourceEnemy?.typeId === 'death') enterNewGamePlus();
+                else rewindWaveState();
             }
         }
     }
@@ -2072,6 +2149,7 @@ export function playSlimeDeathAnimation(unit, slime, onDeathComplete = null) {
 }
 
 let isRewinding = false;
+let isNewGamePlusTransition = false;
 
 /**
  * Rewind wave state for farming:

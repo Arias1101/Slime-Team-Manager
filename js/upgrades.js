@@ -50,6 +50,52 @@ import {
 } from './state.js';
 import { updateUI } from './ui.js';
 
+let upgradeCardOrderInitialized = false;
+const seenVisibleUpgradeCards = new Set();
+
+function isVisibleUpgradeCard(card) {
+    return !card.classList.contains('hidden') && card.style.display !== 'none';
+}
+
+function isMaxedUpgradeCard(card) {
+    return Array.from(card.querySelectorAll('.upgrade-cost')).some(cost => cost.textContent.trim() === 'MAX');
+}
+
+// Called once at startup, after every persisted MAX state has been rendered.
+export function sortMaxedUpgradeCardsOnPageLoad() {
+    const container = document.getElementById('upgradesContainer');
+    if (!container) return;
+    const cards = Array.from(container.children).filter(card => card.classList.contains('upgrade-card'));
+    const activeCards = cards.filter(card => !isVisibleUpgradeCard(card) || !isMaxedUpgradeCard(card));
+    const maxedCards = cards.filter(card => isVisibleUpgradeCard(card) && isMaxedUpgradeCard(card));
+    [...activeCards, ...maxedCards].forEach(card => container.appendChild(card));
+}
+// Keep the live upgrade grid stable: only new unlocks are inserted, before the maxed-card tail.
+function stabilizeUpgradeCardOrder() {
+    const container = document.getElementById('upgradesContainer');
+    if (!container) return;
+    const cards = Array.from(container.children).filter(card => card.classList.contains('upgrade-card'));
+    const visibleCards = cards.filter(isVisibleUpgradeCard);
+
+    if (!upgradeCardOrderInitialized) {
+        const activeCards = visibleCards.filter(card => !isMaxedUpgradeCard(card));
+        const maxedCards = visibleCards.filter(isMaxedUpgradeCard);
+        [...activeCards, ...maxedCards].forEach(card => container.appendChild(card));
+        visibleCards.forEach(card => seenVisibleUpgradeCards.add(card.id));
+        upgradeCardOrderInitialized = true;
+        return;
+    }
+
+    visibleCards.filter(card => !seenVisibleUpgradeCards.has(card.id)).forEach(card => {
+        const firstVisibleMaxedCard = Array.from(container.children).find(candidate =>
+            candidate.classList.contains('upgrade-card') && isVisibleUpgradeCard(candidate) && isMaxedUpgradeCard(candidate)
+        );
+        if (firstVisibleMaxedCard) container.insertBefore(card, firstVisibleMaxedCard);
+        else container.appendChild(card);
+        seenVisibleUpgradeCards.add(card.id);
+    });
+}
+
 /**
  * Toggle yellow/orange border for upgrades that have never been purchased (level 0)
  */
@@ -634,6 +680,10 @@ export function updateUpgradesUI() {
     }
 
 
+    document.querySelectorAll('#upgradesContainer .upgrade-card').forEach(card => {
+        if (isMaxedUpgradeCard(card)) card.classList.remove('level-zero');
+    });
+    stabilizeUpgradeCardOrder();
 }
 
 /**
