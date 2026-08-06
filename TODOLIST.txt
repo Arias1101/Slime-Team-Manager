@@ -1,7 +1,21 @@
 --------------- TODO NOW -----------------
-- Fix upgrade buttons layouts to never ever move (while the player is playing). When unlocking an upgrade, add it at the end of Upgrades (unless there is maxed upgrade in the end, which should stay under the new upgrade). When reloading the page though, put maxed upgrades at the end. This way, the user never "sees" the upgrade move and never miss clic on an upgrade he didn't want to.
+- Use a custom scrollbar on the slime's character sheet.
+
+- Lets regroup effects on hit on a slime's character sheet.
+Right now, a fire slime applies burn, then he can apply burn with equipments.
+I don't know how those proks are calculated and handle, here is how it should be to be clean.
+Slimes have a list of stats, we should arange them in two column:
+Left column:
+HP, Regen, Damage, Crit
+Right column:
+Burn X, Freeze X, Poison X, Stun X
+
+When dealing damage, the effects to apply are then summed up by the Slime's attributes.
+If a freeze Slime has a freeze Item, then the value should cumulate, and the sum is the value to apply to the effect.
+
 
 ------------------ LATER ------------------
+- Speed type of ennemies imune to overflow
 - Bench to store Slimes for later use.
 - Roster with ways to switch slimes in and out of roster/bench
 - Buildings for permanent upgrades: HP, Damage, Regen, Crit, xp on death.

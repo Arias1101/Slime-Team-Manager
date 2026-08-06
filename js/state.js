@@ -290,6 +290,21 @@ export function getEquipmentDisplayName(item) {
     const quality = getEquipmentQuality(item);
     return quality > 0 ? `${baseName} +${quality}` : baseName;
 }
+/** Sum innate elemental effects and quality-scaled equipment effects for one hit. */
+export function getSlimeHitEffects(slime) {
+    const totals = { burn: 0, freeze: 0, poison: 0, stun: 0 };
+    const slimeEffect = (SLIME_TYPES[slime?.type] || SLIME_TYPES.base).effect;
+    if (slimeEffect && Object.prototype.hasOwnProperty.call(totals, slimeEffect)) totals[slimeEffect] += 1;
+
+    (slime?.equipment || []).forEach(item => {
+        getScaledEquipmentEffects(item).forEach(effect => {
+            const type = effect?.effectType || (Object.prototype.hasOwnProperty.call(totals, effect?.stat) ? effect.stat : null);
+            if (!type) return;
+            totals[type] += Math.max(1, Number(effect.value) || 1);
+        });
+    });
+    return totals;
+}
 /** Damage is always Augmentation's displayed value plus equipped damage bonuses. */
 export function calculateSlimeDamage(slime) {
     const equipmentDamage = (slime?.equipment || []).reduce((total, item) => (

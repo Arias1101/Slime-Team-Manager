@@ -1,4 +1,8 @@
 Patch Notes:
+v0.7
+- Rework of the Slime Character Sheet.
+- Renerfed those damned Sylvans.
+
 v0.6
 - Added New Game+
 - Added Forge building, equipment handling, rarity and village storage.

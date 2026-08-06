@@ -498,38 +498,33 @@
                     <div id="slimeSheetStatsContent" class="slime-modal-body">
                         <div class="slime-stats-grid">
                             <div class="slime-stat-card" title="Health Points (HP) - The slime dies if this hits 0.">
-                                <span class="stat-label">Health</span>
+                                <span class="stat-label">💗 HP:</span>
                                 <span id="slimeModalHp" class="stat-value">10 / 10 HP</span>
                             </div>
                             <div class="slime-stat-card"
                                 title="Damage - Base power dealt to enemies during collisions.">
-                                <span class="stat-label">Base Attack</span>
+                                <span class="stat-label">⚔️ Damage:</span>
                                 <span id="slimeModalDamage" class="stat-value">1 ⚔️</span>
                             </div>
                             <div class="slime-stat-card"
                                 title="Critical Chance - Probability to deal double damage on hits.">
-                                <span class="stat-label">Crit Chance</span>
+                                <span class="stat-label">⚡ Critical:</span>
                                 <span id="slimeModalCrit" class="stat-value">0% ⚡</span>
                             </div>
                             <div class="slime-stat-card"
                                 title="HP Regen - Health restored automatically at the end of each wave.">
-                                <span class="stat-label">HP Regen</span>
+                                <span class="stat-label">💚 Regen:</span>
                                 <span id="slimeModalRegen" class="stat-value">0 💚</span>
                             </div>
-                            <div class="slime-stat-card">
-                                <span class="stat-label">Elemental Ability</span>
-                                <span id="slimeModalEffect" class="stat-value">None</span>
-                            </div>
-                            <div class="slime-stat-card">
-                                <span class="stat-label">Status</span>
-                                <span id="slimeModalAscended" class="stat-value">Standard Slime</span>
-                            </div>
-                            <div class="slime-stat-card" title="Waves cleared since this Slime last died.">
-                                <span class="stat-label">XP Points</span>
-                                <span id="slimeModalXp" class="stat-value">0</span>
-                            </div>
+                            <div class="slime-stat-card slime-hit-effect-stat" title="Burn stacks are added on every hit and deal damage over time."><span class="stat-label">🔥 Burn:</span><span id="slimeModalBurn" class="stat-value">0</span></div>
+                            <div class="slime-stat-card slime-hit-effect-stat" title="Freeze pauses an enemy for 0.5 seconds per point on each hit."><span class="stat-label">❄️ Freeze:</span><span id="slimeModalFreeze" class="stat-value">0</span></div>
+                            <div class="slime-stat-card slime-hit-effect-stat" title="Poison stacks are added on every hit and deal damage over time."><span class="stat-label">🧪 Poison:</span><span id="slimeModalPoison" class="stat-value">0</span></div>
+                            <div class="slime-stat-card slime-hit-effect-stat" title="Stun pauses an enemy for 0.4 seconds per point on each hit."><span class="stat-label">💫 Stun:</span><span id="slimeModalStun" class="stat-value">0</span></div>
                         </div>
-
+                        <div class="slime-modal-meta">
+                            <span id="slimeModalAscended">Standard Slime</span>
+                            <span>XP <strong id="slimeModalXp">0</strong></span>
+                        </div>
                         <div class="slime-modal-section">
                             <h4 class="section-title">Equipments</h4>
                             <div id="slimeModalEquipment" class="slime-equipment-container">

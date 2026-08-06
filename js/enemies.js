@@ -889,11 +889,11 @@ function generateWaveComposition(waveNum) {
     if (waveNum === 33) return [0.2, 'ent:2', 'elf:4', 'rabbit:10'];
     if (waveNum === 34) return [0.1, 'wolf:10', 'rabbit:10'];
     if (waveNum === 35) return [0.1, 'ent:3', 'alchemist:2', 'fairy:2'];
-    if (waveNum === 36) return [0.1, 'berserker:3', 'elf:5', 'fairy:2'];
+    if (waveNum === 36) return [0.1, 'berserker:2', 'elf:5', 'fairy:2'];
     if (waveNum === 37) return [0.1, 'ent:2', 'redfairy:2', 'fairy:2'];
     if (waveNum === 38) return [0.1, 'bear:2', 'berserker:2', 'fairy:5'];
-    if (waveNum === 39) return [0.1, 'bear:3', 'ent:3', 'redfairy:2'];
-    if (waveNum === 40) return [0.2, 'ent:3', 'stonegolem:1', 'fairy:5', 'redfairy:3'];
+    if (waveNum === 39) return [0.1, 'bear:3', 'ent:2', 'redfairy:2'];
+    if (waveNum === 40) return [0.2, 'ent:2', 'stonegolem:1', 'fairy:5', 'redfairy:3'];
 
     // 41-50 Undeads: introductory compositions, building from slow walkers into mixed formations.
     if (waveNum === 41) return [0.2, 'zombi:4'];

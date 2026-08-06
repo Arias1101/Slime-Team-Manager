@@ -2,7 +2,7 @@
  * User Interface & Authentication Screen Renderer
  */
 
-import { gameState, SLIME_TYPES, killSlime, syncSlimesArray, rerollSlimeType, calculateSlimeDamage, getScaledEquipmentEffects, getEquipmentDisplayName, saveStateToLocal } from './state.js';
+import { gameState, SLIME_TYPES, killSlime, syncSlimesArray, rerollSlimeType, calculateSlimeDamage, getScaledEquipmentEffects, getEquipmentDisplayName, saveStateToLocal, getSlimeHitEffects } from './state.js';
 import { updateUpgradesUI } from './upgrades.js';
 import { activeGroundLoots, formatLootEffects } from './enemies.js';
 import { setGamePaused, isGamePaused } from './engine.js';
@@ -750,7 +750,7 @@ export function openSlimeInspectorModal(slime) {
 
     const currentHp = slime.hp !== undefined ? slime.hp : 10;
     const maxHp = slime.maxHp || 10;
-    if (hpEl) hpEl.textContent = `${currentHp} / ${maxHp} HP`;
+    if (hpEl) hpEl.textContent = `${currentHp} / ${maxHp}`;
 
     if (hpBarEl) {
         const hpPct = Math.max(0, (currentHp / maxHp) * 100);
@@ -761,17 +761,27 @@ export function openSlimeInspectorModal(slime) {
     }
 
     const baseDmg = calculateSlimeDamage(slime);
-    if (damageEl) damageEl.textContent = `${baseDmg} ⚔️`;
+    if (damageEl) damageEl.textContent = `${baseDmg}`;
 
     const critEl = document.getElementById('slimeModalCrit');
     const regenEl = document.getElementById('slimeModalRegen');
     const xpEl = document.getElementById('slimeModalXp');
 
     const critChance = slime.critChance || 0;
-    if (critEl) critEl.textContent = `${critChance}% ⚡`;
+    if (critEl) critEl.textContent = `${critChance}%`;
 
     const regenVal = slime.regen || 0;
-    if (regenEl) regenEl.textContent = `${regenVal} 💚`;
+    if (regenEl) regenEl.textContent = `${regenVal}`;
+    const hitEffects = getSlimeHitEffects(slime);
+    const hitEffectElements = {
+        burn: document.getElementById('slimeModalBurn'),
+        freeze: document.getElementById('slimeModalFreeze'),
+        poison: document.getElementById('slimeModalPoison'),
+        stun: document.getElementById('slimeModalStun')
+    };
+    Object.entries(hitEffectElements).forEach(([type, element]) => {
+        if (element) element.textContent = String(hitEffects[type] || 0);
+    });
 
     if (xpEl) xpEl.textContent = `${slime.wavesClearedSinceDeath || 0}`;
 

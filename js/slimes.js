@@ -3,7 +3,7 @@
  */
 
 import { activeEnemies, triggerLootDrop, activeGroundLoots, formatLootEffects } from './enemies.js';
-import { gameState, SLIME_TYPES, addScraps, updateBestRoster, saveStateToLocal, calculateSlimeDamage, getScaledEquipmentEffects } from './state.js';
+import { gameState, SLIME_TYPES, addScraps, updateBestRoster, saveStateToLocal, calculateSlimeDamage, getScaledEquipmentEffects, getSlimeHitEffects } from './state.js';
 import { updateUI } from './ui.js';
 /**
  * Convert viewport measurements back into the battlefield's native 500px coordinate space.
@@ -283,69 +283,35 @@ function dealTargetEnemyDamage(targetEnemy, damageAmount, slimeConfig, isCrit = 
         showFloatingDamageNumber(currentTarget.x + 8, currentTarget.y - 12, damageToApply, 'enemy-dmg');
     }
 
-    // Apply elemental status effects (Innate Slime Effect)
+    // Apply one combined set of effects: innate elemental power plus all equipment effects.
     if (!currentTarget.effects) {
         currentTarget.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, freezeTimer: 0, stunTimer: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0 };
     }
 
     const isControlImmune = currentTarget.typeId === 'death';
-    if (slimeConfig && slimeConfig.effect === 'burn') {
-        if (currentTarget.effects.burnTimer > 0) {
-            currentTarget.effects.burnStacks = (currentTarget.effects.burnStacks || 1) + 1;
-        } else {
-            currentTarget.effects.burnStacks = 1;
-        }
-        currentTarget.effects.burnTimer = slimeConfig.burnDuration || 3.0;
-    } else if (slimeConfig && slimeConfig.effect === 'poison') {
-        if (currentTarget.effects.poisonTimer > 0) {
-            currentTarget.effects.poisonStacks = (currentTarget.effects.poisonStacks || 1) + 1;
-        } else {
-            currentTarget.effects.poisonStacks = 1;
-        }
-        currentTarget.effects.poisonTimer = slimeConfig.poisonDuration || 3.0;
-    } else if (slimeConfig && slimeConfig.effect === 'freeze' && !isControlImmune) {
-        currentTarget.effects.freezeTimer = slimeConfig.freezeDuration || 0.5;
-        showFloatingStatusText(currentTarget, '❄️', 'freeze-text');
-    } else if (slimeConfig && slimeConfig.effect === 'stun' && !isControlImmune) {
-        currentTarget.effects.stunTimer = slimeConfig.stunDuration || 0.4;
-        showFloatingStatusText(currentTarget, '💫', 'stun-text');
+    const sourceSlime = slimeObj || { type: slimeConfig?.id || 'base', equipment: [] };
+    const hitEffects = getSlimeHitEffects(sourceSlime);
+
+    if (hitEffects.burn > 0) {
+        currentTarget.effects.burnStacks = currentTarget.effects.burnTimer > 0
+            ? (currentTarget.effects.burnStacks || 0) + hitEffects.burn
+            : hitEffects.burn;
+        currentTarget.effects.burnTimer = 3.0;
     }
-
-    // Apply Equipment Status Effects (Burn, Poison, Freeze, Stun from equipment!)
-    if (slimeObj && slimeObj.equipment && slimeObj.equipment.length > 0) {
-        slimeObj.equipment.forEach(eq => {
-            const effectsToProcess = getScaledEquipmentEffects(eq);
-            effectsToProcess.forEach(eff => {
-                if (eff.stat === 'effect' || eff.effectType) {
-                    const type = eff.effectType;
-                    const val = eff.value || 1;
-
-                    if (type === 'burn') {
-                        if (currentTarget.effects.burnTimer > 0) {
-                            currentTarget.effects.burnStacks = (currentTarget.effects.burnStacks || 1) + val;
-                        } else {
-                            currentTarget.effects.burnStacks = val;
-                        }
-                        currentTarget.effects.burnTimer = 3.0;
-                    } else if (type === 'poison') {
-                        if (currentTarget.effects.poisonTimer > 0) {
-                            currentTarget.effects.poisonStacks = (currentTarget.effects.poisonStacks || 1) + val;
-                        } else {
-                            currentTarget.effects.poisonStacks = val;
-                        }
-                        currentTarget.effects.poisonTimer = 3.0;
-                    } else if (type === 'freeze' && !isControlImmune) {
-                        currentTarget.effects.freezeTimer = 0.5 * Math.max(1, Number(val) || 1);
-                        showFloatingStatusText(currentTarget, '❄️', 'freeze-text');
-                    } else if (type === 'stun' && !isControlImmune) {
-                        currentTarget.effects.stunTimer = 0.4 * Math.max(1, Number(val) || 1);
-                        showFloatingStatusText(currentTarget, '💫', 'stun-text');
-                    }
-                }
-            });
-        });
+    if (hitEffects.poison > 0) {
+        currentTarget.effects.poisonStacks = currentTarget.effects.poisonTimer > 0
+            ? (currentTarget.effects.poisonStacks || 0) + hitEffects.poison
+            : hitEffects.poison;
+        currentTarget.effects.poisonTimer = 3.0;
     }
-
+    if (hitEffects.freeze > 0 && !isControlImmune) {
+        currentTarget.effects.freezeTimer = 0.5 * hitEffects.freeze;
+        showFloatingStatusText(currentTarget, String.fromCodePoint(0x2744, 0xFE0F), 'freeze-text');
+    }
+    if (hitEffects.stun > 0 && !isControlImmune) {
+        currentTarget.effects.stunTimer = 0.4 * hitEffects.stun;
+        showFloatingStatusText(currentTarget, String.fromCodePoint(0x1F4AB), 'stun-text');
+    }
     // Visual WHITE hit flash on currentTarget sprite
     if (currentTarget.el) {
         const sprite = currentTarget.el.querySelector('.enemy-sprite');
