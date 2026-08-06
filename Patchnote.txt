@@ -1,4 +1,8 @@
 Patch Notes:
+v0.8
+- Fixed healers not being able to target themselves.
+- Balance pass on Undead waves.
+
 v0.7
 - Rework of the Slime Character Sheet.
 - Renerfed those damned Sylvans.

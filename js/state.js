@@ -120,7 +120,7 @@ const SLIME_NAME_POOL = [
     'Thé Vert', 'Thé à la Pêche', 'MicMac Padiwak', 'Rascar Capac', 'Diabolo Citron',
     'Monaco', 'La Sardine', 'La Bagarre', 'Paul Ichnel', 'Paul le Saumon',
     'Paradis Yack', 'Incroyable Hulk', 'Iron Blob', 'Godefroy de Montmirail', 'Jackouille la Fripouille',
-    'Chaussée aux Moines', 'Martingale la Meringuée', 'Caprice des Dieux', 'Le Rock Fort', 'Le Mort Biais'
+    'Chaussée aux Moines', 'Martingale la Meringuée', 'Caprice des Dieux', 'Le Rock Fort', 'Tutti Frutti'
 ];
 
 /**
@@ -298,7 +298,7 @@ export function getSlimeHitEffects(slime) {
 
     (slime?.equipment || []).forEach(item => {
         getScaledEquipmentEffects(item).forEach(effect => {
-            const type = effect?.effectType || (Object.prototype.hasOwnProperty.call(totals, effect?.stat) ? effect.stat : null);
+            const type = Object.prototype.hasOwnProperty.call(totals, effect?.stat) ? effect.stat : effect?.effectType;
             if (!type) return;
             totals[type] += Math.max(1, Number(effect.value) || 1);
         });

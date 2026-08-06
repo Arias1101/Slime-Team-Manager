@@ -29,7 +29,7 @@ export function calculateLootValue(lootEffect) {
         : (lootEffect?.effects ? lootEffect.effects : (lootEffect ? [lootEffect] : []));
 
     const total = effects.reduce((value, effect) => {
-        const rawStat = effect?.effectType || effect?.stat;
+        const rawStat = effect?.stat || effect?.effectType;
         const stat = rawStat === 'freeze' ? 'ice' : rawStat;
         const weight = LOOT_STAT_WEIGHTS[stat];
         if (!weight) return value;
@@ -43,7 +43,7 @@ export function calculateLootValue(lootEffect) {
 
 /** Build display labels from loot data; loot definitions never store presentation text. */
 export function formatLootEffect(effect) {
-    const stat = effect?.effectType || effect?.stat || 'hp';
+    const stat = effect?.stat || effect?.effectType || 'hp';
     const value = Number(effect?.value ?? 1);
     const amount = Number.isFinite(value) ? value : 1;
     const signed = (amount >= 0 ? '+' : '') + amount;
@@ -72,7 +72,7 @@ export const ENEMY_TYPES = {
     // Tier 0 - Bosses ------------------------
     mage: {
         id: 'mage',
-        type: 'ranged',
+        type: 'range',
         projectile: 'fireball',
         tier: 0,
         hp: 200,
@@ -82,8 +82,8 @@ export const ENEMY_TYPES = {
         moveSpeed: 2,
         targetX: 380,         // 400=right border, 100 = Slime army
         loot_name: 'Staff of Frostfire',
-        loot_effect: [{ stat: 'effect', effectType: 'freeze', value: 1 },
-        { stat: 'effect', effectType: 'burn', value: 1 }]
+        loot_effect: [{ stat: 'freeze', value: 1 },
+        { stat: 'burn', value: 1 }]
     },
     berserker: {
         id: 'berserker',
@@ -102,7 +102,7 @@ export const ENEMY_TYPES = {
     },
     alchemist: {
         id: 'alchemist',
-        type: 'ranged',
+        type: 'range',
         projectile: 'flask',
         tier: 0,
         hp: 2000,
@@ -112,11 +112,11 @@ export const ENEMY_TYPES = {
         moveSpeed: 1.5,
         targetX: 300,
         loot_name: 'Alchemical Flask',
-        loot_effect: { stat: 'effect', effectType: 'poison', value: 5 }
+        loot_effect: { stat: 'poison', value: 5 }
     },
     catapult: {
         id: 'catapult',
-        type: 'ranged',
+        type: 'range',
         projectile: 'boulder',
         tier: 0,
         hp: 10000,
@@ -126,7 +126,7 @@ export const ENEMY_TYPES = {
         moveSpeed: 0.4,
         targetX: 400,
         loot_name: 'Catapult Boulder',
-        loot_effect: { stat: 'effect', effectType: 'stun', value: 1 }
+        loot_effect: { stat: 'stun', value: 1 }
     },
     car: {
         id: 'car',
@@ -141,7 +141,7 @@ export const ENEMY_TYPES = {
         targetX: 100,
         loot_name: 'Shiny Horse Badge',
         loot_effect: [{ stat: 'damage', value: 10 },
-        { stat: 'effect', effectType: 'stun', value: 1 }]
+        { stat: 'stun', value: 1 }]
     },
     stonegolem: {
         id: 'stonegolem',
@@ -156,21 +156,23 @@ export const ENEMY_TYPES = {
         targetX: 170,         // 400=right border, 100 = Slime army
         loot_name: 'Stone Golem Head',
         loot_effect: [{ stat: 'hp', value: 5 },
-        { stat: 'effect', effectType: 'stun', value: 1 }]
+        { stat: 'stun', value: 1 }]
     },
     lich: {
         id: 'lich',
         type: 'support',
         projectile: 'heal1',
         tier: 0,
-        hp: 2000,
-        maxHp: 2000,
+        hp: 5000,
+        maxHp: 5000,
         damage: 100,
         attackSpeed: 2,
         moveSpeed: 1,
         targetX: 380,
-        loot_name: '',
-        loot_effect: []
+        loot_name: 'Lich Mask',
+        loot_effect: [{ stat: 'burn', value: 2 },
+        { stat: 'poison', value: 2 },
+        { stat: 'freeze', value: 2 }]
     },
 
     // Tier1 - Villagers ------------------------
@@ -215,7 +217,7 @@ export const ENEMY_TYPES = {
         targetX: 110,         // Close melee range near the slimes
         loot_name: 'Burning Torch',
         loot_effect: [
-            { stat: 'effect', effectType: 'burn', value: 1 },
+            { stat: 'burn', value: 1 },
             { stat: 'hp', value: -3 }
         ]
     },
@@ -265,7 +267,7 @@ export const ENEMY_TYPES = {
     },
     hunter: {
         id: 'hunter',
-        type: 'ranged',       // Ranged attacker
+        type: 'range',       // Ranged attacker
         projectile: 'arrow',  // Arrow projectile type
         tier: 2,
         hp: 20,
@@ -303,7 +305,7 @@ export const ENEMY_TYPES = {
         moveSpeed: 12,       // Move speed
         targetX: 160,         // Close melee range near the slimes
         loot_name: 'Poison Dagger',
-        loot_effect: { stat: 'effect', effectType: 'poison', value: 1 }
+        loot_effect: { stat: 'poison', value: 1 }
     },
     lancer: {
         id: 'lancer',
@@ -370,7 +372,7 @@ export const ENEMY_TYPES = {
     },
     archer: {
         id: 'archer',
-        type: 'ranged',       // Ranged attacker
+        type: 'range',       // Ranged attacker
         projectile: 'arrow',  // Arrow projectile type
         tier: 3,
         hp: 45,
@@ -416,7 +418,7 @@ export const ENEMY_TYPES = {
     // Tier 4 - Forest Enemies ---------------------
     redfairy: {
         id: 'redfairy',
-        type: 'ranged',
+        type: 'range',
         projectile: 'fireball',
         tier: 4,
         hp: 100,
@@ -426,11 +428,11 @@ export const ENEMY_TYPES = {
         moveSpeed: 4,
         targetX: 370,
         loot_name: 'Red Fairy Core',
-        loot_effect: { stat: 'effect', effectType: 'burn', value: 3 }
+        loot_effect: { stat: 'burn', value: 3 }
     },
     elf: {
         id: 'elf',
-        type: 'ranged',
+        type: 'range',
         projectile: 'arrow',
         tier: 4,
         hp: 300,
@@ -523,8 +525,8 @@ export const ENEMY_TYPES = {
         type: 'melee',
         projectile: 'slash1',
         tier: 5,
-        hp: 1000,
-        maxHp: 1000,
+        hp: 3000,
+        maxHp: 3000,
         damage: 16,
         attackSpeed: 0.8,
         moveSpeed: 1.2,
@@ -534,8 +536,8 @@ export const ENEMY_TYPES = {
     },
     halfzombi: {
         id: 'halfzombi', type: 'melee', projectile: 'slash1', tier: 5,
-        hp: 2000,
-        maxHp: 2000,
+        hp: 4000,
+        maxHp: 4000,
         damage: 14,
         attackSpeed: 0.55,
         moveSpeed: 0.65,
@@ -548,8 +550,8 @@ export const ENEMY_TYPES = {
         type: 'melee',
         projectile: 'slash1',
         tier: 5,
-        hp: 6500,
-        maxHp: 6500,
+        hp: 6000,
+        maxHp: 6000,
         damage: 35,
         attackSpeed: 0.85,
         moveSpeed: 3,
@@ -573,7 +575,7 @@ export const ENEMY_TYPES = {
     },
     skeletonarcher: {
         id: 'skeletonarcher',
-        type: 'ranged',
+        type: 'range',
         projectile: 'arrow',
         tier: 5,
         hp: 450,
@@ -616,7 +618,7 @@ export const ENEMY_TYPES = {
     },
     testrange: {
         id: 'catapult',
-        type: 'ranged',
+        type: 'range',
         projectile: 'boulder',
         tier: -1,
         hp: 99999,
@@ -899,13 +901,13 @@ function generateWaveComposition(waveNum) {
     if (waveNum === 41) return [0.2, 'zombi:4'];
     if (waveNum === 42) return [0.2, 'zombi:5', 'skeleton:3'];
     if (waveNum === 43) return [0.15, 'skeleton:8', 'skeletonarcher:2'];
-    if (waveNum === 44) return [0.2, 'halfzombi:2', 'zombi:5'];
+    if (waveNum === 44) return [0.2, 'halfzombi:2', 'zombi:5', 'skeletonarcher:4'];
     if (waveNum === 45) return [0.15, 'bigzombi:1', 'skeleton:6', 'skeletonarcher:3'];
-    if (waveNum === 46) return [0.12, 'zombi:8', 'halfzombi:3', 'skeletonarcher:3'];
+    if (waveNum === 46) return [0.2, 'zombi:8', 'halfzombi:3', 'skeletonarcher:3'];
     if (waveNum === 47) return [0.12, 'skeleton:10', 'skeletonarcher:5'];
-    if (waveNum === 48) return [0.15, 'bigzombi:2', 'zombi:6', 'skeleton:6'];
+    if (waveNum === 48) return [0.15, 'bigzombi:1', 'zombi:6', 'skeleton:6'];
     if (waveNum === 49) return [0.12, 'halfzombi:4', 'skeleton:8', 'skeletonarcher:4'];
-    if (waveNum === 50) return [0.15, 'lich:1', 'skeleton:25', 'skeletonarcher:5'];
+    if (waveNum === 50) return [0.2, 'lich:1', 'skeleton:25', 'skeletonarcher:5'];
 
     // Infinite mode: Soft HP % Multiplier scaling (+10% per wave beyond wave 11: +10% wave 12, +20% wave 13, +30% wave 14...)
     else {
@@ -1325,8 +1327,8 @@ export function spawnEnemy(typeId = 'beggar', hpMultiplier = 1.0) {
         hp: scaledHp,
         maxHp: scaledHp,
         damage: def.damage,
-        // A small per-enemy variance stops ranged/support volleys from staying synchronized.
-        attackSpeed: (def.type === 'ranged' || def.type === 'support')
+        // A small per-enemy variance stops range/support volleys from staying synchronized.
+        attackSpeed: (def.type === 'range' || def.type === 'support')
             ? Math.max(0.01, def.attackSpeed + (Math.random() * 0.2 - 0.1))
             : def.attackSpeed,
         state: 'walking',
@@ -1527,15 +1529,15 @@ export function updateEnemies(deltaSeconds) {
                 enemy.x = enemy.targetX;
                 const attackInterval = enemy.attackSpeed > 0 ? 1 / enemy.attackSpeed : 0;
                 // Ranged/support units also get a short unique opening delay, so their first volley is not synchronized.
-                enemy.attackTimer = (enemy.type === 'ranged' || enemy.type === 'support')
+                enemy.attackTimer = (enemy.type === 'range' || enemy.type === 'support')
                     ? Math.max(0, attackInterval - Math.random() * 0.1)
                     : attackInterval;
                 if (enemy.type === 'melee') {
                     enemy.state = 'attacking';
                 } else if (enemy.type === 'tank') {
                     enemy.state = 'tanking';
-                } else if (enemy.type === 'ranged') {
-                    enemy.state = 'ranged_attack';
+                } else if (enemy.type === 'range') {
+                    enemy.state = 'range_attack';
                 } else if (enemy.type === 'support') {
                     enemy.state = 'support_attack';
                 }
@@ -1558,7 +1560,7 @@ export function updateEnemies(deltaSeconds) {
                         }, 200);
                     }
                 }
-            } else if (enemy.state === 'ranged_attack') {
+            } else if (enemy.state === 'range_attack') {
                 enemy.attackTimer += deltaSeconds;
                 if (enemy.attackTimer >= (1 / enemy.attackSpeed)) {
                     enemy.attackTimer = 0;
@@ -1606,12 +1608,12 @@ export function updateEnemies(deltaSeconds) {
 
             const isAttacking = enemy.state === 'attacking';
             const isTanking = enemy.state === 'tanking';
-            const isRanged = enemy.state === 'ranged_attack';
+            const isRanged = enemy.state === 'range_attack';
             const isSupport = enemy.state === 'support_attack';
 
             enemy.el.classList.toggle('enemy-attacking', isAttacking);
             enemy.el.classList.toggle('enemy-tanking', isTanking);
-            enemy.el.classList.toggle('enemy-ranged', isRanged || isSupport);
+            enemy.el.classList.toggle('enemy-range', isRanged || isSupport);
             enemy.el.classList.toggle('enemy-walking', !isAttacking && !isTanking && !isRanged && !isSupport);
         }
     }
@@ -1716,11 +1718,11 @@ export function updateEnemies(deltaSeconds) {
 
 /**
  * Heal the ally furthest left on the battlefield (the lowest current x coordinate).
- * Supports never target themselves; target priority matches actual on-screen progress.
+ * Supports heal the frontmost living enemy, including themselves when they are frontmost.
  */
 function healFrontmostEnemy(support) {
     const target = activeEnemies
-        .filter(enemy => enemy !== support && enemy.hp > 0)
+        .filter(enemy => enemy.hp > 0)
         .sort((a, b) => a.x - b.x)[0];
 
     if (!target) return;

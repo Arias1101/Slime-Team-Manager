@@ -793,11 +793,11 @@ export function openSlimeInspectorModal(slime) {
 
     if (slime.equipment && slime.equipment.length > 0) {
         slime.equipment.forEach(eq => {
-            if (eq.stat === 'effect' || eq.effectType) {
-                if (eq.effectType === 'burn' && !activeEffects.includes('🔥 Burn')) activeEffects.push('🔥 Burn');
-                else if (eq.effectType === 'poison' && !activeEffects.includes('🧪 Poison')) activeEffects.push('🧪 Poison');
-                else if (eq.effectType === 'freeze' && !activeEffects.includes('❄️ Freeze')) activeEffects.push('❄️ Freeze');
-                else if (eq.effectType === 'stun' && !activeEffects.includes('💫 Stun')) activeEffects.push('💫 Stun');
+            if (eq.stat === 'effect' || eq.effectType || ['burn', 'poison', 'freeze', 'stun'].includes(eq.stat)) {
+                if ((eq.effectType || eq.stat) === 'burn' && !activeEffects.includes('🔥 Burn')) activeEffects.push('🔥 Burn');
+                else if ((eq.effectType || eq.stat) === 'poison' && !activeEffects.includes('🧪 Poison')) activeEffects.push('🧪 Poison');
+                else if ((eq.effectType || eq.stat) === 'freeze' && !activeEffects.includes('❄️ Freeze')) activeEffects.push('❄️ Freeze');
+                else if ((eq.effectType || eq.stat) === 'stun' && !activeEffects.includes('💫 Stun')) activeEffects.push('💫 Stun');
             }
         });
     }
