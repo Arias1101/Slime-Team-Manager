@@ -225,10 +225,10 @@ export function addScraps(amount = 1) {
 }
 
 export const ALCHEMIST_UPGRADES = Object.freeze({
-    luck: { key: 'luck', field: 'alchemistLuckLevel', name: 'Philter of Luck', description: '+1% Base Crit per level.' },
-    rage: { key: 'rage', field: 'alchemistRageLevel', name: 'Tincture of Rage', description: '+1 Base Damage per level.' },
-    endurance: { key: 'endurance', field: 'alchemistEnduranceLevel', name: 'Elixir of Endurance', description: '+1 Base HP per level.' },
-    regeneration: { key: 'regeneration', field: 'alchemistRegenLevel', name: 'Potion of Regeneration', description: '+1 Base Regen per level.' }
+    luck: { key: 'luck', field: 'alchemistLuckLevel', name: 'Philter of Luck', description: '+1% Base Crit per level.', icon: 'luckpotion.png' },
+    rage: { key: 'rage', field: 'alchemistRageLevel', name: 'Tincture of Rage', description: '+1 Base Damage per level.', icon: 'ragepotion.png' },
+    endurance: { key: 'endurance', field: 'alchemistEnduranceLevel', name: 'Elixir of Endurance', description: '+1 Base HP per level.', icon: 'endurancepotion.png' },
+    regeneration: { key: 'regeneration', field: 'alchemistRegenLevel', name: 'Potion of Regeneration', description: '+1 Base Regen per level.', icon: 'regenerationpotion.png' }
 });
 
 export function getAlchemistUpgradeLevel(key) {

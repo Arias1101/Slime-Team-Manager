@@ -56,8 +56,8 @@ export function formatLootEffect(effect) {
         case 'burn': return String.fromCodePoint(0x1F525) + ' Burn ' + amount;
         case 'poison': return String.fromCodePoint(0x1F9EA) + ' Poison ' + amount;
         case 'freeze':
-        case 'ice': return String.fromCodePoint(0x2744, 0xFE0F) + ' Freeze';
-        case 'stun': return String.fromCodePoint(0x1F4AB) + ' Stun';
+        case 'ice': return String.fromCodePoint(0x2744, 0xFE0F) + ' Freeze ' + amount;
+        case 'stun': return String.fromCodePoint(0x1F4AB) + ' Stun ' + amount;
         default: return signed + ' ' + stat;
     }
 }
@@ -1307,7 +1307,11 @@ export function spawnEnemy(typeId = 'beggar', hpMultiplier = 1.0) {
     const def = ENEMY_TYPES[typeId] || ENEMY_TYPES.beggar;
     const enemyIdKey = def.id || typeId;
     const baseHp = def.hp || 2;
-    const scaledHp = Math.max(1, Math.round(baseHp * hpMultiplier));
+    // Each completed run raises the next New Game+ tier by 10% from base values.
+    const newGamePlusMultiplier = 1 + 0.10 * Math.max(0, gameState.newGamePlusCompletions || 0);
+    const scaledHp = Math.max(1, Math.round(baseHp * hpMultiplier * newGamePlusMultiplier));
+    const scaledDamage = Number(((def.damage || 0) * newGamePlusMultiplier).toFixed(2));
+    const scaledMoveSpeed = (def.moveSpeed || 0) * 25 * newGamePlusMultiplier;
 
     // Add a small -10 to +10 stop offset to reduce overlapping.
     const baseTargetX = def.targetX !== undefined ? def.targetX : 300;
@@ -1322,11 +1326,11 @@ export function spawnEnemy(typeId = 'beggar', hpMultiplier = 1.0) {
         sprite: `images/ennemies/${enemyIdKey}.png`,
         x: 520,
         y: 120 + (Math.random() * 30 - 15),
-        speed: def.moveSpeed * 25,
+        speed: scaledMoveSpeed,
         targetX: finalTargetX,
         hp: scaledHp,
         maxHp: scaledHp,
-        damage: def.damage,
+        damage: scaledDamage,
         // A small per-enemy variance stops range/support volleys from staying synchronized.
         attackSpeed: (def.type === 'range' || def.type === 'support')
             ? Math.max(0.01, def.attackSpeed + (Math.random() * 0.2 - 0.1))

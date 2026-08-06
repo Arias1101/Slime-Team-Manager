@@ -4262,3 +4262,14 @@ body.new-game-plus .village-buildings { display: block; }
     object-fit: contain;
     image-rendering: pixelated;
 }
+/* Build label: unobtrusive but always available for feedback reports. */
+.game-version-label {
+    position: fixed;
+    right: 10px;
+    bottom: 8px;
+    z-index: 2000;
+    color: rgba(148, 163, 184, 0.62);
+    font-family: var(--font-heading);
+    font-size: 0.52rem;
+    pointer-events: none;
+}
