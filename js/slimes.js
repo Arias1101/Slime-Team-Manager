@@ -149,7 +149,7 @@ export function triggerRandomSlimeAttack(overrideTypeId = null) {
  */
 function trySupportGraft(unitEl, support) {
     if (!support?.talents?.graft || getSlimeSpecialization(support) !== 'support' || support.hp < support.maxHp * 0.5) return false;
-    const target = (gameState.slimes || []).filter(s => s.id !== support.id && s.hp > 0 && s.hp < s.maxHp * .5).sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0];
+    const target = (gameState.slimes || []).filter(s => s.id !== support.id && getSlimeSpecialization(s) !== 'support' && s.hp > 0 && s.hp < s.maxHp * .5).sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0];
     if (!target) return false;
 
     const img = unitEl.querySelector('.slime-img');

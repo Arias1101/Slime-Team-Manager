@@ -143,15 +143,23 @@
                                         <div class="enemies-container" id="enemiesContainer">
                                             <!-- Enemies arriving from right -->
                                         </div>
-                                    </div>                            </div>
-                            <div id="villageBuildings" class="village-buildings" aria-label="Village buildings">
-                                <button class="village-door village-door-alchemist" data-village-building="Alchemist Shop" title="Alchemist Shop" aria-label="Alchemist Shop"></button>
-                                <button class="village-door village-door-common-house" data-village-building="Common House" title="Common House (Coming soon)" aria-label="Common House (Coming soon)" disabled></button>
-                                <button class="village-door village-door-forge" data-village-building="Forge" title="Forge" aria-label="Forge"></button>
-                                <button class="village-door village-door-tavern" data-village-building="Tavern" title="Tavern (Coming soon)" aria-label="Tavern (Coming soon)" disabled></button>
+                                    </div>
+                                </div>
+                                <div id="villageBuildings" class="village-buildings" aria-label="Village buildings">
+                                    <button class="village-door village-door-alchemist"
+                                        data-village-building="Alchemist Shop" title="Alchemist Shop"
+                                        aria-label="Alchemist Shop"></button>
+                                    <button class="village-door village-door-common-house"
+                                        data-village-building="Common House" title="Common House (Coming soon)"
+                                        aria-label="Common House (Coming soon)" disabled></button>
+                                    <button class="village-door village-door-forge" data-village-building="Forge"
+                                        title="Forge" aria-label="Forge"></button>
+                                    <button class="village-door village-door-tavern" data-village-building="Tavern"
+                                        title="Tavern (Coming soon)" aria-label="Tavern (Coming soon)"
+                                        disabled></button>
 
-                            </div>
-                        </section>
+                                </div>
+                            </section>
 
                             <!-- Battle Wave Action Bar -->
                             <div class="battle-controls-bar">
@@ -492,7 +500,8 @@
                         </div>
                     </div>
                     <nav class="slime-sheet-tabs" aria-label="Character sheet tabs">
-                        <button id="slimeSheetStatsTab" type="button" class="slime-sheet-tab active" aria-selected="true">Stats</button>
+                        <button id="slimeSheetStatsTab" type="button" class="slime-sheet-tab active"
+                            aria-selected="true">Stats</button>
                         <button id="slimeSheetTalentTab" type="button" class="slime-sheet-tab disabled" disabled
                             title="Available in New Game+">Specialization (Available in New Game+)</button>
                     </nav>
@@ -517,10 +526,22 @@
                                 <span class="stat-label">💚 Regen:</span>
                                 <span id="slimeModalRegen" class="stat-value">0 💚</span>
                             </div>
-                            <div class="slime-stat-card slime-hit-effect-stat" title="Burn stacks are added on every hit and deal damage over time."><span class="stat-label">🔥 Burn:</span><span id="slimeModalBurn" class="stat-value">0</span></div>
-                            <div class="slime-stat-card slime-hit-effect-stat" title="Freeze pauses an enemy for 0.5 seconds per point on each hit."><span class="stat-label">❄️ Freeze:</span><span id="slimeModalFreeze" class="stat-value">0</span></div>
-                            <div class="slime-stat-card slime-hit-effect-stat" title="Poison stacks are added on every hit and deal damage over time."><span class="stat-label">🧪 Poison:</span><span id="slimeModalPoison" class="stat-value">0</span></div>
-                            <div class="slime-stat-card slime-hit-effect-stat" title="Stun pauses an enemy for 0.4 seconds per point on each hit."><span class="stat-label">💫 Stun:</span><span id="slimeModalStun" class="stat-value">0</span></div>
+                            <div class="slime-stat-card slime-hit-effect-stat"
+                                title="Burn stacks are added on every hit and deal damage over time."><span
+                                    class="stat-label">🔥 Burn:</span><span id="slimeModalBurn"
+                                    class="stat-value">0</span></div>
+                            <div class="slime-stat-card slime-hit-effect-stat"
+                                title="Freeze pauses an enemy for 0.5 seconds per point on each hit."><span
+                                    class="stat-label">❄️ Freeze:</span><span id="slimeModalFreeze"
+                                    class="stat-value">0</span></div>
+                            <div class="slime-stat-card slime-hit-effect-stat"
+                                title="Poison stacks are added on every hit and deal damage over time."><span
+                                    class="stat-label">🧪 Poison:</span><span id="slimeModalPoison"
+                                    class="stat-value">0</span></div>
+                            <div class="slime-stat-card slime-hit-effect-stat"
+                                title="Stun pauses an enemy for 0.4 seconds per point on each hit."><span
+                                    class="stat-label">💫 Stun:</span><span id="slimeModalStun"
+                                    class="stat-value">0</span></div>
                         </div>
                         <div class="slime-modal-meta">
                             <span id="slimeModalAscended">Standard Slime</span>
@@ -537,13 +558,18 @@
                     </div>
                     <div id="slimeSheetTalentContent" class="slime-talent-content hidden">
                         <p id="slimeTalentGateMessage" class="slime-talent-gate-message">Available in New Game+</p>
-                        <p id="slimeTalentBaseMessage" class="slime-talent-base-message hidden">Only non-Base Slimes can Specialize.</p>
+                        <p id="slimeTalentBaseMessage" class="slime-talent-base-message hidden">Only non-Base Slimes can
+                            Specialize.</p>
                         <div id="slimeTalentChoices" class="slime-talent-choices">
-                            <button type="button" class="slime-talent-choice" data-specialization="support" title="Support"><img src="images/logos/support.png" alt="Support"></button>
-                            <button type="button" class="slime-talent-choice" data-specialization="fighter" title="Damage"><img src="images/logos/damage.png" alt="Damage"></button>
-                            <button type="button" class="slime-talent-choice" data-specialization="tank" title="Tank"><img src="images/logos/tank.png" alt="Tank"></button>
+                            <button type="button" class="slime-talent-choice" data-specialization="support"
+                                title="Support"><img src="images/logos/support.png" alt="Support"></button>
+                            <button type="button" class="slime-talent-choice" data-specialization="fighter"
+                                title="Damage"><img src="images/logos/damage.png" alt="Damage"></button>
+                            <button type="button" class="slime-talent-choice" data-specialization="tank"
+                                title="Tank"><img src="images/logos/tank.png" alt="Tank"></button>
                         </div>
-                        <p id="slimeTalentChosenMessage" class="slime-talent-chosen-message hidden"></p><div id="slimeSpecializationTalents" class="slime-specialization-talents hidden"></div>
+                        <p id="slimeTalentChosenMessage" class="slime-talent-chosen-message hidden"></p>
+                        <div id="slimeSpecializationTalents" class="slime-specialization-talents hidden"></div>
                     </div>
                 </div>
             </div>
@@ -604,7 +630,7 @@
             </div>
 
             <script type="module" src="js/main.js"></script>
-    <span class="game-version-label" aria-label="Game version 0.9">v0.9</span>
+            <span class="game-version-label" aria-label="Game version 0.10">v0.10</span>
 </body>
 
 </html>

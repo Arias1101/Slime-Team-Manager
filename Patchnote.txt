@@ -1,4 +1,5 @@
 Patch Notes:
+
 v0.10
 - Renamed Toxic Slime to Poison Slime.
 - Displayed Specialization bonus on Specialization Tab.
