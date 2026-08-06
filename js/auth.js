@@ -6,7 +6,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebas
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 import { getFirestore, doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 import { firebaseConfig, isFirebaseConfigured } from './config.js';
-import { gameState, defaultState, saveStateToLocal, syncSlimesArray } from './state.js';
+import { gameState, defaultState, saveStateToLocal, syncSlimesArray, migrateSpecializedSlimes } from './state.js';
 
 let auth = null;
 let db = null;

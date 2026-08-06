@@ -4302,3 +4302,31 @@ body.new-game-plus .village-buildings { display: block; }
 .slime-specialization-talent:not(:last-child)::after { content: '>'; position:absolute; left:calc(100% + 5px); top:50%; transform:translateY(-50%); color:#94a3b8; font-weight:800; font-size:1rem; }
 .slime-specialization-talent:disabled img { filter:grayscale(1) brightness(.55); opacity:.65; }
 .slime-specialization-talent:disabled { border-color:#334155; background:rgba(15,23,42,.42); }
+
+.slime-specialization-talent.unlocked { border:3px solid #fff; background:rgba(255,255,255,.12); }
+.slime-specialization-talent.unlocked span { color:#fff; font-size:1rem; }
+
+/* Graft feedback for Support Slimes. */
+.slime-support-cast-ray {
+    position: absolute;
+    width: 3px;
+    height: 46px;
+    pointer-events: none;
+    z-index: 890;
+    transform-origin: bottom center;
+    background: linear-gradient(to top, rgba(187, 247, 208, 0), rgba(134, 239, 172, 0.92), rgba(255, 255, 255, 0));
+    box-shadow: 0 0 6px rgba(74, 222, 128, 0.9);
+    animation: supportCastRay 0.2s ease-out forwards;
+}
+
+.slime-support-heal {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    pointer-events: none;
+    z-index: 900;
+    background-image: url('../images/projectiles/heal1.png');
+    background-repeat: no-repeat;
+    background-size: 600px 50px;
+    image-rendering: pixelated;
+}

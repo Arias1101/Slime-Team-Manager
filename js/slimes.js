@@ -3,7 +3,7 @@
  */
 
 import { activeEnemies, triggerLootDrop, activeGroundLoots, formatLootEffects } from './enemies.js';
-import { gameState, SLIME_TYPES, addScraps, updateBestRoster, saveStateToLocal, calculateSlimeDamage, getScaledEquipmentEffects, getSlimeHitEffects, refreshSlimeMaxHp, getSlimeJumpSprite } from './state.js';
+import { gameState, SLIME_TYPES, addScraps, updateBestRoster, saveStateToLocal, calculateSlimeDamage, getScaledEquipmentEffects, getSlimeHitEffects, refreshSlimeMaxHp, getSlimeJumpSprite, getSlimeSpecialization } from './state.js';
 import { updateUI } from './ui.js';
 /**
  * Convert viewport measurements back into the battlefield's native 500px coordinate space.
@@ -128,20 +128,113 @@ export function triggerRandomSlimeAttack(overrideTypeId = null) {
     const availableSlimes = slimeUnits.filter(unit => unit.dataset.isAttacking !== 'true' && unit.dataset.isEating !== 'true' && !unit.classList.contains('is-stunned'));
     if (availableSlimes.length === 0) return;
 
-    const randomSlimeEl = availableSlimes[Math.floor(Math.random() * availableSlimes.length)];
+    const graftNeeded = (gameState.slimes || []).some(slime => slime.hp > 0 && slime.hp < slime.maxHp * 0.5);
+    const graftSupportEl = graftNeeded ? availableSlimes.find(unit => {
+        const slime = (gameState.slimes || []).find(candidate => String(candidate.id) === String(unit.dataset.slimeId));
+        return slime?.talents?.graft && getSlimeSpecialization(slime) === 'support' && slime.hp >= slime.maxHp * 0.5;
+    }) : null;
+    const randomSlimeEl = graftSupportEl || availableSlimes[Math.floor(Math.random() * availableSlimes.length)];
 
     // Read exact slime object from gameState.slimes array using slimeId dataset
     const rawSlimeId = randomSlimeEl.dataset.slimeId;
     const slimeObj = gameState.slimes ? gameState.slimes.find(s => s.id === rawSlimeId || String(s.id) === String(rawSlimeId) || s.name === rawSlimeId) : null;
     const chosenType = overrideTypeId || (slimeObj ? slimeObj.type : null) || randomSlimeEl.dataset.slimeType || 'base';
 
+    if (trySupportGraft(randomSlimeEl, slimeObj)) return;
     executeSlimeJumpAttack(randomSlimeEl, chosenType, slimeObj);
 }
 
 /**
  * Executes a 60 FPS parabolic jump attack animation dynamically targeting the closest enemy
  */
+function trySupportGraft(unitEl, support) {
+    if (!support?.talents?.graft || getSlimeSpecialization(support) !== 'support' || support.hp < support.maxHp * 0.5) return false;
+    const target = (gameState.slimes || []).filter(s => s.id !== support.id && s.hp > 0 && s.hp < s.maxHp * .5).sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0];
+    if (!target) return false;
+
+    const img = unitEl.querySelector('.slime-img');
+    const config = SLIME_TYPES[support.type] || SLIME_TYPES.base;
+    unitEl.dataset.isAttacking = 'true';
+    playSlimeSupportCastRay(unitEl);
+    // Graft uses the first frame of the elemental die sheet as its casting pose.
+    if (img) {
+        img.src = `${config.folder}/die.png`;
+        img.style.objectPosition = '0px 0px';
+    }
+
+    setTimeout(() => {
+        const sacrificedAmount = Math.ceil(support.maxHp * .2);
+        const restoredAmount = Math.min(target.maxHp - target.hp, sacrificedAmount * 2);
+        support.hp = Math.max(1, support.hp - sacrificedAmount);
+        target.hp += restoredAmount;
+
+        const targetEl = Array.from(document.querySelectorAll('.slime-unit')).find(el => String(el.dataset.slimeId) === String(target.id));
+        if (targetEl) {
+            playSlimeSupportHealAnimation(targetEl);
+            showSlimeSupportHealingNumber(targetEl, restoredAmount);
+        }
+
+        unitEl.dataset.isAttacking = 'false';
+        if (img) {
+            img.src = getSlimeJumpSprite(support);
+            img.style.objectPosition = '0px 0px';
+        }
+        updateUI();
+    }, 500);
+    return true;
+}
+
+function getOverlayPosition(element) {
+    const overlay = document.querySelector('.battlefield-overlay');
+    if (!overlay || !element) return null;
+    const overlayRect = overlay.getBoundingClientRect();
+    const elementRect = element.getBoundingClientRect();
+    const scale = getBattlefieldRenderScale();
+    return {
+        overlay,
+        x: (elementRect.left - overlayRect.left) / scale,
+        y: (elementRect.top - overlayRect.top) / scale,
+        width: elementRect.width / scale,
+        height: elementRect.height / scale
+    };
+}
+
+function playSlimeSupportCastRay(unitEl) {
+    const position = getOverlayPosition(unitEl);
+    if (!position) return;
+    const rayEl = document.createElement('div');
+    rayEl.className = 'slime-support-cast-ray';
+    rayEl.style.left = `${position.x + position.width / 2 - 1.5}px`;
+    rayEl.style.top = `${position.y - 24}px`;
+    position.overlay.appendChild(rayEl);
+    setTimeout(() => rayEl.remove(), 200);
+}
+
+function playSlimeSupportHealAnimation(targetEl) {
+    const position = getOverlayPosition(targetEl);
+    if (!position) return;
+    const healEl = document.createElement('div');
+    healEl.className = 'slime-support-heal';
+    healEl.style.left = `${position.x + position.width / 2 - 25}px`;
+    healEl.style.top = `${position.y + position.height / 2 - 25}px`;
+    position.overlay.appendChild(healEl);
+
+    const frameDurationMs = 400 / 12;
+    for (let frame = 0; frame < 12; frame++) {
+        setTimeout(() => {
+            if (healEl.isConnected) healEl.style.backgroundPosition = `-${frame * 50}px 0`;
+        }, frame * frameDurationMs);
+    }
+    setTimeout(() => healEl.remove(), 400);
+}
+
+function showSlimeSupportHealingNumber(targetEl, restoredAmount) {
+    if (restoredAmount <= 0) return;
+    const position = getOverlayPosition(targetEl);
+    if (position) showFloatingHealingNumber(position.x + position.width / 2, position.y - 12, restoredAmount);
+}
 function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
+    if (trySupportGraft(unitEl, slimeObj)) return;
     const slimeConfig = SLIME_TYPES[typeId] || SLIME_TYPES.base;
     const imgEl = unitEl.querySelector('.slime-img');
     const shadowEl = unitEl.querySelector('.slime-shadow-sm');

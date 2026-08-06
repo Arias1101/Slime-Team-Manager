@@ -888,8 +888,8 @@ function generateWaveComposition(waveNum) {
     // 31-40 Forest Enemies: deliberately light introductory compositions.
     if (waveNum === 31) return [0.1, 'wolf:5'];
     if (waveNum === 32) return [0.1, 'wolf:5', 'bear:2'];
-    if (waveNum === 33) return [0.2, 'ent:2', 'elf:4', 'rabbit:3'];
-    if (waveNum === 34) return [0.1, 'wolf:10', 'rabbit:4'];
+    if (waveNum === 33) return [0.2, 'ent:2', 'elf:4', 'rabbit:2'];
+    if (waveNum === 34) return [0.1, 'wolf:10', 'rabbit:2'];
     if (waveNum === 35) return [0.1, 'ent:3', 'alchemist:2', 'fairy:2'];
     if (waveNum === 36) return [0.1, 'berserker:2', 'elf:5', 'fairy:2'];
     if (waveNum === 37) return [0.1, 'ent:2', 'redfairy:2', 'fairy:2'];

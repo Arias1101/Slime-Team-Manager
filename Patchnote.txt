@@ -1,4 +1,9 @@
 Patch Notes:
+v0.10
+- Renamed Toxic Slime to Poison Slime.
+- Displayed Specialization bonus on Specialization Tab.
+- Implemented first support Slime Talent "Graft".
+
 v0.9
 - Fixed missing ressources error
 - Fixed equipment colors in Slime Character Sheet.

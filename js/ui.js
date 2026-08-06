@@ -674,7 +674,7 @@ function renderSlimeTalentTree(slime) {
     const specializationTalents = document.getElementById('slimeSpecializationTalents');
     const unlocked = (gameState.newGamePlusCompletions || 0) > 0;
     const isBase = (slime.type || 'base') === 'base';
-    const specialization = slime.specialization || (SLIME_TYPES[slime.type]?.specialization || '').toLowerCase();
+    const specialization = slime.specialization || '';
 
     if (talentTab) {
         talentTab.disabled = !unlocked;
@@ -692,15 +692,21 @@ function renderSlimeTalentTree(slime) {
     }
     if (chosenMessage) {
         chosenMessage.classList.toggle('hidden', !unlocked || !specialization);
-        chosenMessage.textContent = specialization ? `Specialization chosen: ${specialization}` : '';
+        const specializationBonuses = { tank: '(+20% HP 💗)', support: '(+20% Regen 💚)', fighter: '(+20% Damage ⚔️)' };
+        const specializationLabel = String(specialization).toLowerCase();
+        chosenMessage.textContent = specialization ? `Specialization: ${specializationLabel} ${specializationBonuses[specializationLabel] || ''}`.trim() : '';
     }
     if (specializationTalents) {
         const normalizedSpecialization = String(specialization).toLowerCase();
         const icon = normalizedSpecialization ? `images/logos/${normalizedSpecialization === 'fighter' ? 'damage' : normalizedSpecialization}.png` : '';
-        const xp = Number(slime.xp ?? slime.wavesClearedSinceDeath ?? 0);
-        const costs = [10, 20, 30];
+        const xp = Number(slime.wavesClearedSinceDeath || 0);
+        const costs = [5, 15, 25];
         specializationTalents.classList.toggle('hidden', !unlocked || !specialization);
         specializationTalents.innerHTML = specialization ? costs.map((cost, index) => `<button type="button" class="slime-specialization-talent ${index === 0 && xp >= cost ? 'available' : ''}" title="Talent${index + 1}" ${index === 0 && xp >= cost ? '' : 'disabled'}><img src="${icon}" alt="Talent${index + 1}"><span>${xp}/${cost}</span></button>`).join('') : '';
+        const graftUnlocked = normalizedSpecialization === 'support' && slime.talents?.graft === true;
+        if (graftUnlocked) { const unlockedButton = specializationTalents.querySelector('.slime-specialization-talent'); if (unlockedButton) { unlockedButton.classList.add('unlocked'); unlockedButton.disabled = false; const progress = unlockedButton.querySelector('span'); if (progress) progress.textContent = '✔️'; } }
+        const graftButton = specializationTalents.querySelector('.slime-specialization-talent');
+        if (graftButton && normalizedSpecialization === 'support' && !slime.talents?.graft) graftButton.addEventListener('click', () => { if (xp < costs[0]) return; slime.wavesClearedSinceDeath = xp - costs[0]; slime.talents = { ...(slime.talents || {}), graft: true }; saveStateToLocal(); openSlimeInspectorModal(slime); });
     }
     if (!unlocked) activeSlimeSheetTab = 'stats';
 }
@@ -708,12 +714,13 @@ function renderSlimeTalentTree(slime) {
 function specializeInspectedSlime(specialization) {
     if (!currentInspectedSlime || (gameState.newGamePlusCompletions || 0) <= 0) return;
     const target = (gameState.slimes || []).find(s => s.id === currentInspectedSlime.id || s.name === currentInspectedSlime.name);
-    if (!target || (target.type || 'base') === 'base' || target.specialization || SLIME_TYPES[target.type]?.specialization) return;
+    if (!target || (target.type || 'base') === 'base' || target.specialization) return;
     const elementalPrefix = { toxic: 'poison', fire: 'fire', ice: 'ice', stone: 'stone' }[target.type];
     const typeId = elementalPrefix ? `${elementalPrefix}${specialization[0].toUpperCase()}${specialization.slice(1)}` : null;
     if (!typeId || !SLIME_TYPES[typeId]) return;
+    if (!window.confirm("You won't be able to change Slime's Type after the Specialization. Continue ?")) return;
 
-    target.type = typeId;
+    target.type = { poison: 'toxic', fire: 'fire', ice: 'ice', stone: 'stone' }[elementalPrefix] || target.type;
     target.specialization = specialization;
     sortRosterBySpecialization();
     updateBestRoster();

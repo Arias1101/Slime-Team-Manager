@@ -41,7 +41,7 @@ export const SLIME_TYPES = {
     },
     toxic: {
         id: 'toxic',
-        name: 'Toxic Slime',
+        name: 'Poison Slime',
         folder: 'images/slimes/poison',
         prefix: 'slime',
         frameCount: 8,
@@ -307,7 +307,7 @@ export function getSlimeHitEffects(slime) {
 }
 /** Resolve a Slime path from saved data or its specialized type. */
 export function getSlimeSpecialization(slime) {
-    return String(slime?.specialization || SLIME_TYPES[slime?.type]?.specialization || '').toLowerCase();
+    return String(slime?.specialization || '').toLowerCase();
 }
 
 /** Returns the appropriate jump sheet for a Slime's elemental type and specialization. */
@@ -405,7 +405,7 @@ export function syncSlimesArray() {
     }
     const usedSlots = new Set();
     gameState.slimes.forEach((s) => {
-        if (!s.name || s.name === 'Base Slime' || s.name === 'Fire Slime' || s.name === 'Ice Slime' || s.name === 'Stone Slime' || s.name === 'Toxic Slime') {
+        if (!s.name || s.name === 'Base Slime' || s.name === 'Fire Slime' || s.name === 'Ice Slime' || s.name === 'Stone Slime' || s.name === 'Toxic Slime' || s.name === 'Poison Slime') {
             s.name = generateUniqueSlimeName();
         }
         if (!s.id) s.id = s.name;
@@ -906,6 +906,9 @@ export function updateBestRoster() {
             critChance: activeSlime.critChance || 0,
             regen: activeSlime.regen || 0,
             ascended: !!activeSlime.ascended,
+            specialization: getSlimeSpecialization(activeSlime),
+            talents: activeSlime.talents ? JSON.parse(JSON.stringify(activeSlime.talents)) : {},
+            wavesClearedSinceDeath: Number(activeSlime.wavesClearedSinceDeath || 0),
             slotIndex: activeSlime.slotIndex !== undefined ? activeSlime.slotIndex : getNextAvailableSlotIndex(),
             equipment: activeSlime.equipment ? JSON.parse(JSON.stringify(activeSlime.equipment)) : []
         };
@@ -946,6 +949,9 @@ export function restoreBestRoster() {
         critChance: s.critChance || 0,
         regen: s.regen || 0,
         ascended: !!s.ascended,
+        specialization: getSlimeSpecialization(s),
+        talents: s.talents ? JSON.parse(JSON.stringify(s.talents)) : {},
+        wavesClearedSinceDeath: Number(s.wavesClearedSinceDeath || 0),
         slotIndex: s.slotIndex !== undefined ? s.slotIndex : idx,
         equipment: s.equipment ? JSON.parse(JSON.stringify(s.equipment)) : []
     }));
@@ -1029,6 +1035,31 @@ export function saveStateToLocal() {
     localStorage.setItem('slm_army_save', JSON.stringify(gameState));
 }
 
+/** One-time save migration: specialize via a field, never via a composite type ID. */
+export function migrateSpecializedSlimes() {
+    const migrate = slime => {
+        if (!slime) return;
+        const match = String(slime.type || '').match(/^(poison|fire|ice|stone)(Support|Fighter|Tank)$/i);
+        if (match) {
+            slime.type = match[1].toLowerCase() === 'poison' ? 'toxic' : match[1].toLowerCase();
+            slime.specialization = match[2].toLowerCase();
+        }
+    };
+    (gameState.slimes || []).forEach(migrate);
+    (gameState.bestRoster || []).forEach(migrate);
+    Object.values(gameState.waveSnapshots || {}).forEach(snapshot => (snapshot.slimes || []).forEach(migrate));
+
+    // Repair older blueprints that were saved before specializations and talents
+    // were included in bestRoster. Active Slimes are the authoritative source.
+    (gameState.slimes || []).forEach(activeSlime => {
+        if (!activeSlime?.specialization && !activeSlime?.talents) return;
+        const savedSlime = (gameState.bestRoster || []).find(saved => String(saved.id || saved.name) === String(activeSlime.id || activeSlime.name));
+        if (!savedSlime) return;
+        savedSlime.specialization = getSlimeSpecialization(activeSlime);
+        savedSlime.talents = activeSlime.talents ? JSON.parse(JSON.stringify(activeSlime.talents)) : {};
+        savedSlime.wavesClearedSinceDeath = Number(activeSlime.wavesClearedSinceDeath || 0);
+    });
+}
 export function loadStateFromLocal() {
     const saved = localStorage.getItem('slm_army_save');
     if (saved) {
@@ -1046,6 +1077,7 @@ export function loadStateFromLocal() {
         gameState = { ...defaultState };
         syncSlimesArray();
     }
+    migrateSpecializedSlimes();
     if (!gameState.afkLastAwayAt) {
         gameState.afkLastAwayAt = saved ? (gameState.lastSavedTimestamp || Date.now()) : Date.now();
     }
