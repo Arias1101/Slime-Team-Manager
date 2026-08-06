@@ -288,6 +288,7 @@ function dealTargetEnemyDamage(targetEnemy, damageAmount, slimeConfig, isCrit = 
         currentTarget.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, freezeTimer: 0, stunTimer: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0 };
     }
 
+    const isControlImmune = currentTarget.typeId === 'death';
     if (slimeConfig && slimeConfig.effect === 'burn') {
         if (currentTarget.effects.burnTimer > 0) {
             currentTarget.effects.burnStacks = (currentTarget.effects.burnStacks || 1) + 1;
@@ -302,10 +303,10 @@ function dealTargetEnemyDamage(targetEnemy, damageAmount, slimeConfig, isCrit = 
             currentTarget.effects.poisonStacks = 1;
         }
         currentTarget.effects.poisonTimer = slimeConfig.poisonDuration || 3.0;
-    } else if (slimeConfig && slimeConfig.effect === 'freeze') {
+    } else if (slimeConfig && slimeConfig.effect === 'freeze' && !isControlImmune) {
         currentTarget.effects.freezeTimer = slimeConfig.freezeDuration || 1.0;
         showFloatingStatusText(currentTarget, '❄️', 'freeze-text');
-    } else if (slimeConfig && slimeConfig.effect === 'stun') {
+    } else if (slimeConfig && slimeConfig.effect === 'stun' && !isControlImmune) {
         currentTarget.effects.stunTimer = slimeConfig.stunDuration || 0.8;
         showFloatingStatusText(currentTarget, '💫', 'stun-text');
     }
@@ -333,10 +334,10 @@ function dealTargetEnemyDamage(targetEnemy, damageAmount, slimeConfig, isCrit = 
                             currentTarget.effects.poisonStacks = val;
                         }
                         currentTarget.effects.poisonTimer = 3.0;
-                    } else if (type === 'freeze') {
+                    } else if (type === 'freeze' && !isControlImmune) {
                         currentTarget.effects.freezeTimer = Math.max(currentTarget.effects.freezeTimer || 0, 1.0);
                         showFloatingStatusText(currentTarget, '❄️', 'freeze-text');
-                    } else if (type === 'stun') {
+                    } else if (type === 'stun' && !isControlImmune) {
                         currentTarget.effects.stunTimer = Math.max(currentTarget.effects.stunTimer || 0, 0.8);
                         showFloatingStatusText(currentTarget, '💫', 'stun-text');
                     }

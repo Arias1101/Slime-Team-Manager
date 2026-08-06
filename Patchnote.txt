@@ -1,4 +1,11 @@
 Patch Notes:
+v0.5
+- Centered AFK reward popup
+- Nerfed Sylvan ennemies
+- Added zombies, big zombies, half zombies, skeletons, archer skeletons and lich to the game.
+- Fixed z-axis display of stacked ennemies and wierd animation for big ennemy sprites.
+- Added first end wave.
+
 v0.4
 - Added an AFK rewards functionnality it's related Upgrades and features.
 - Fixed HP bars not always updating correctly in Roster.

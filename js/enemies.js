@@ -69,7 +69,7 @@ export function formatLootEffects(lootEffect) {
     return effects.map(formatLootEffect).join(', ') || '+1 Max HP';
 }
 export const ENEMY_TYPES = {
-    // Tier X - Bosses ------------------------
+    // Tier 0 - Bosses ------------------------
     mage: {
         id: 'mage',
         type: 'ranged',
@@ -109,7 +109,7 @@ export const ENEMY_TYPES = {
         maxHp: 2000,
         damage: 1,
         attackSpeed: 0.6,
-        moveSpeed: 1,
+        moveSpeed: 1.5,
         targetX: 300,
         loot_name: 'Alchemical Flask',
         loot_effect: { stat: 'effect', effectType: 'poison', value: 5 }
@@ -153,10 +153,24 @@ export const ENEMY_TYPES = {
         damage: 15,            // Damages
         attackSpeed: 1,        // attacks per second
         moveSpeed: 1,
-        targetX: 100,         // 400=right border, 100 = Slime army
+        targetX: 170,         // 400=right border, 100 = Slime army
         loot_name: 'Stone Golem Head',
         loot_effect: [{ stat: 'hp', value: 5 },
         { stat: 'effect', effectType: 'stun' }]
+    },
+    lich: {
+        id: 'lich',
+        type: 'support',
+        projectile: 'heal1',
+        tier: 0,
+        hp: 2000,
+        maxHp: 2000,
+        damage: 100,
+        attackSpeed: 2,
+        moveSpeed: 1,
+        targetX: 380,
+        loot_name: '',
+        loot_effect: []
     },
 
     // Tier1 - Villagers ------------------------
@@ -402,7 +416,7 @@ export const ENEMY_TYPES = {
     // Tier 4 - Forest Enemies ---------------------
     redfairy: {
         id: 'redfairy',
-        type: 'range',
+        type: 'ranged',
         projectile: 'fireball',
         tier: 4,
         hp: 200,
@@ -435,9 +449,9 @@ export const ENEMY_TYPES = {
         type: 'melee',
         projectile: 'slash1',
         tier: 4,
-        hp: 400,
-        maxHp: 400,
-        damage: 20,
+        hp: 350,
+        maxHp: 350,
+        damage: 15,
         attackSpeed: 1.4,
         moveSpeed: 7,
         targetX: 160,
@@ -464,8 +478,8 @@ export const ENEMY_TYPES = {
         type: 'tank',
         projectile: 'none',
         tier: 4,
-        hp: 3000,
-        maxHp: 3000,
+        hp: 2500,
+        maxHp: 2500,
         damage: 0,
         attackSpeed: 0,
         moveSpeed: 6,
@@ -496,14 +510,96 @@ export const ENEMY_TYPES = {
         tier: 4,
         hp: 200,
         maxHp: 200,
-        damage: 10,
+        damage: 25,
         attackSpeed: 1.15,
         moveSpeed: 2,
         targetX: 370,
         loot_name: 'Fairy Core',
         loot_effect: { stat: 'regen', value: 2 }
     },
-    // Tests ------------------------------------
+    // Tier 5 - Undead Enemies ---------------------
+    zombi: {
+        id: 'zombi',
+        type: 'melee',
+        projectile: 'slash1',
+        tier: 5,
+        hp: 1000,
+        maxHp: 1000,
+        damage: 16,
+        attackSpeed: 0.8,
+        moveSpeed: 1.2,
+        targetX: 160,
+        loot_name: 'Zombie Rags',
+        loot_effect: { stat: 'hp', value: 2 }
+    },
+    halfzombi: {
+        id: 'halfzombi', type: 'melee', projectile: 'slash1', tier: 5,
+        hp: 2000,
+        maxHp: 2000,
+        damage: 14,
+        attackSpeed: 0.55,
+        moveSpeed: 0.65,
+        targetX: 160,
+        loot_name: 'Talking Head',
+        loot_effect: [{ stat: 'regen', value: 3 }, { stat: 'hp', value: -5 }]
+    },
+    bigzombi: {
+        id: 'bigzombi',
+        type: 'melee',
+        projectile: 'slash1',
+        tier: 5,
+        hp: 6500,
+        maxHp: 6500,
+        damage: 35,
+        attackSpeed: 0.85,
+        moveSpeed: 3,
+        targetX: 160,
+        loot_name: 'Ripped Shorts',
+        loot_effect: [{ stat: 'hp', value: 10 }, { stat: 'damage', value: 2 }]
+    },
+    skeleton: {
+        id: 'skeleton',
+        type: 'melee',
+        projectile: 'slash1',
+        tier: 5,
+        hp: 350,
+        maxHp: 350,
+        damage: 14,
+        attackSpeed: 1.6,
+        moveSpeed: 9,
+        targetX: 145,
+        loot_name: 'Sword (Arm Included)',
+        loot_effect: { stat: 'damage', value: 5 }
+    },
+    skeletonarcher: {
+        id: 'skeletonarcher',
+        type: 'ranged',
+        projectile: 'arrow',
+        tier: 5,
+        hp: 450,
+        maxHp: 450,
+        damage: 14,
+        attackSpeed: 1.3,
+        moveSpeed: 3,
+        targetX: 390,
+        loot_name: 'Bow (Arm Included)',
+        loot_effect: [{ stat: 'crit', value: 3 }, { stat: 'damage', value: 1 }]
+    },
+    // Tier -1, Tests & Secrets ------------------------------------
+    death: {
+        id: 'death',
+        type: 'melee',
+        projectile: '',
+        tier: 0,
+        hp: 9999999999,
+        maxHp: 9999999999,
+        damage: 999,            // Damage per projectile
+        attackSpeed: 60,     // attacks per second
+        moveSpeed: 1,
+        targetX: 150,         // 400=right border, 100 = Slime army
+        loot_name: '',
+        loot_effect: []
+    },
     testtank: {
         id: 'tank',
         type: 'melee',        // Melee attacker
@@ -582,6 +678,32 @@ export let activeGroundLoots = [];
 
 export let waveTotalEnemies = 0;
 export let waveSpawnedEnemies = 0;
+
+let postWave50BackgroundTimerId = null;
+let hasEnteredPostWave50 = false;
+
+function triggerPostWave50BackgroundTransition() {
+    const battlefield = document.querySelector('.battlefield-card');
+    if (!battlefield || hasEnteredPostWave50) return;
+
+    hasEnteredPostWave50 = true;
+    if (postWave50BackgroundTimerId) clearTimeout(postWave50BackgroundTimerId);
+
+    battlefield.style.backgroundImage = "url('images/backgrounds/inverted.jpg')";
+    postWave50BackgroundTimerId = setTimeout(() => {
+        battlefield.style.backgroundImage = "url('images/backgrounds/black.jpg')";
+        postWave50BackgroundTimerId = null;
+    }, 500);
+}
+
+function resetBattlefieldBackground() {
+    if (postWave50BackgroundTimerId) clearTimeout(postWave50BackgroundTimerId);
+    postWave50BackgroundTimerId = null;
+    hasEnteredPostWave50 = false;
+
+    const battlefield = document.querySelector('.battlefield-card');
+    if (battlefield) battlefield.style.backgroundImage = '';
+}
 
 export function updateWaveCountdownUI() {
     const el = document.getElementById('enemyWaveCount');
@@ -674,7 +796,7 @@ export function shuffleArray(array) {
 
 /**
  * Parse raw wave composition list, expanding 'type:count' entries (e.g. 'archer:10' -> 10 archers)
- * and randomizing their spawn order for maximum wave diversity.
+ * with Tier 0 enemies spawning first, then randomizing all remaining enemies.
  */
 export function parseEnemyList(rawList) {
     const expanded = [];
@@ -701,8 +823,11 @@ export function parseEnemyList(rawList) {
         }
     });
 
-    // Shuffle the expanded list to randomize spawn order
-    return shuffleArray(expanded);
+    // Tier 0 enemies (bosses/special introductions) always lead the wave in composition order.
+    // Everything else keeps the normal randomized spawn order.
+    const tierZeroEnemies = expanded.filter(typeId => ENEMY_TYPES[typeId]?.tier === 0);
+    const remainingEnemies = expanded.filter(typeId => ENEMY_TYPES[typeId]?.tier !== 0);
+    return [...tierZeroEnemies, ...shuffleArray(remainingEnemies)];
 }
 
 /**
@@ -712,7 +837,7 @@ export function parseEnemyList(rawList) {
  */
 function generateWaveComposition(waveNum) {
     // Tests
-    //if (waveNum === 1) return [0, 'testtank:1', 'fairy:1'];
+    //return [0.15, 'lich:1', 'skeleton:25', 'skeletonarcher:5']
 
     // 1-10, Manual play, Villagers
     if (waveNum === 1) return [0, 'beggar:1'];
@@ -755,22 +880,29 @@ function generateWaveComposition(waveNum) {
     if (waveNum === 32) return [0.1, 'wolf:5', 'bear:2'];
     if (waveNum === 33) return [0.2, 'ent:2', 'elf:4', 'rabbit:10'];
     if (waveNum === 34) return [0.1, 'wolf:10', 'rabbit:10'];
-    if (waveNum === 35) return [0.1, 'ent:3', 'alchemist:1', 'fairy:2'];
-    if (waveNum === 36) return [0.1, 'berserker:5', 'elf:5', 'fairy:3'];
-    if (waveNum === 37) return [0.1, 'ent:3', 'redfairy:5', 'fairy:4'];
+    if (waveNum === 35) return [0.1, 'ent:3', 'alchemist:2', 'fairy:2'];
+    if (waveNum === 36) return [0.1, 'berserker:3', 'elf:5', 'fairy:2'];
+    if (waveNum === 37) return [0.1, 'ent:2', 'redfairy:2', 'fairy:2'];
     if (waveNum === 38) return [0.1, 'bear:2', 'berserker:2', 'fairy:5'];
-    if (waveNum === 39) return [0.1, 'bear:5', 'ent:3', 'redfairy:10'];
-    if (waveNum === 40) return [2, 'ent:1', 'stonegolem:1', 'fairy:5'];
+    if (waveNum === 39) return [0.1, 'bear:3', 'ent:3', 'redfairy:2'];
+    if (waveNum === 40) return [0.2, 'ent:3', 'stonegolem:1', 'fairy:5', 'redfairy:3'];
+
+    // 41-50 Undeads: introductory compositions, building from slow walkers into mixed formations.
+    if (waveNum === 41) return [0.2, 'zombi:4'];
+    if (waveNum === 42) return [0.2, 'zombi:5', 'skeleton:3'];
+    if (waveNum === 43) return [0.15, 'skeleton:8', 'skeletonarcher:2'];
+    if (waveNum === 44) return [0.2, 'halfzombi:2', 'zombi:5'];
+    if (waveNum === 45) return [0.15, 'bigzombi:1', 'skeleton:6', 'skeletonarcher:3'];
+    if (waveNum === 46) return [0.12, 'zombi:8', 'halfzombi:3', 'skeletonarcher:3'];
+    if (waveNum === 47) return [0.12, 'skeleton:10', 'skeletonarcher:5'];
+    if (waveNum === 48) return [0.15, 'bigzombi:2', 'zombi:6', 'skeleton:6'];
+    if (waveNum === 49) return [0.12, 'halfzombi:4', 'skeleton:8', 'skeletonarcher:4'];
+    if (waveNum === 50) return [0.15, 'lich:1', 'skeleton:25', 'skeletonarcher:5'];
 
     // Infinite mode: Soft HP % Multiplier scaling (+10% per wave beyond wave 11: +10% wave 12, +20% wave 13, +30% wave 14...)
     else {
-        // Infinite scaling waves
-        const hpMultiplier = 1.0 + Math.max(0, waveNum - 11) * 0.10;
-        return {
-            interval: 0.5,
-            hpMultiplier: hpMultiplier,
-            enemies: ['tank:5', 'adventurer:5', 'soldier2h:' + waveNum, 'archer:5']
-        };
+        triggerPostWave50BackgroundTransition();
+        return [0, 'death:1'];
     }
 }
 
@@ -841,6 +973,7 @@ export function startNextWave() {
  * Full Reset action: Resets army to 1 base slime (no upgrades), scraps to 0, wave to 1, clears battlefield
  */
 export function resetGameFull() {
+    resetBattlefieldBackground();
     if (countdownTimerId) {
         clearInterval(countdownTimerId);
         countdownTimerId = null;
@@ -1108,7 +1241,7 @@ export function spawnEnemy(typeId = 'beggar', hpMultiplier = 1.0) {
         id: `enemy_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
         typeId: enemyIdKey,
         type: def.type,
-        projectile: def.projectile || 'arrow',
+        projectile: def.projectile || null,
         sprite: `images/ennemies/${enemyIdKey}.png`,
         x: 520,
         y: 120 + (Math.random() * 30 - 15),
@@ -1178,6 +1311,18 @@ function renderNewEnemyDOM(enemy) {
         spriteEl.style.height = `${h}px`;
         unit.style.width = `${w}px`;
         unit.style.height = `${h}px`;
+
+        // Keep every sprite taller than the normal 28px enemy on the same battlefield baseline.
+        // This adapts continuously to the source sprite height instead of relying on a fixed tall-sprite cutoff.
+        const baselineOffset = Math.max(0, h - 28);
+        const usesTallEnemyMotion = h >= 50;
+        unit.classList.toggle('enemy-tall', usesTallEnemyMotion);
+        if (baselineOffset > 0 && !enemy.tallSpriteAdjusted) {
+            enemy.y -= baselineOffset;
+            unit.style.top = `${enemy.y}px`;
+            enemy.tallSpriteAdjusted = true;
+        }
+
         if (shadowEl) {
             shadowEl.style.width = `${Math.max(12, Math.round(w * 0.7))}px`;
         }
@@ -1231,14 +1376,19 @@ export function updateEnemies(deltaSeconds) {
         }
 
         // --- 1. Process Frost (Freeze) & Stone (Stun) Effects ---
+        const isControlImmune = enemy.typeId === 'death';
+        if (isControlImmune) {
+            enemy.effects.freezeTimer = 0;
+            enemy.effects.stunTimer = 0;
+        }
         let isFrozen = false;
-        if (enemy.effects.freezeTimer > 0) {
+        if (!isControlImmune && enemy.effects.freezeTimer > 0) {
             enemy.effects.freezeTimer -= deltaSeconds;
             isFrozen = true;
         }
 
         let isStunned = false;
-        if (enemy.effects.stunTimer > 0) {
+        if (!isControlImmune && enemy.effects.stunTimer > 0) {
             enemy.effects.stunTimer -= deltaSeconds;
             isStunned = true;
         }
@@ -1351,6 +1501,9 @@ export function updateEnemies(deltaSeconds) {
         // --- 5. Update Visual Position & Status Effect Overlay Filters ---
         if (enemy.el) {
             enemy.el.style.left = `${enemy.x}px`;
+            // Lower feet sit in front, matching the depth ordering used by slimes.
+            const enemyFootY = enemy.y + (enemy.spriteEl?.offsetHeight || 28);
+            enemy.el.style.zIndex = `${Math.floor(enemyFootY)}`;
 
             const statusRow = enemy.statusRowEl;
             if (statusRow) {
@@ -1487,13 +1640,13 @@ export function updateEnemies(deltaSeconds) {
 }
 
 /**
- * Heal the ally furthest along the battlefield (the lowest targetX).
- * Supports never target themselves; target priority is always the lowest targetX.
+ * Heal the ally furthest left on the battlefield (the lowest current x coordinate).
+ * Supports never target themselves; target priority matches actual on-screen progress.
  */
 function healFrontmostEnemy(support) {
     const target = activeEnemies
         .filter(enemy => enemy !== support && enemy.hp > 0)
-        .sort((a, b) => (a.targetX - b.targetX) || (a.x - b.x))[0];
+        .sort((a, b) => a.x - b.x)[0];
 
     if (!target) return;
 
@@ -1559,7 +1712,8 @@ function fireProjectiles(enemy) {
     const overlay = document.querySelector('.battlefield-overlay');
     if (!overlay) return;
 
-    const projKey = (enemy.projectile || 'arrow').toLowerCase();
+    const projKey = (enemy.projectile || '').toLowerCase();
+    if (!projKey || projKey === 'none') return;
     const projType = PROJECTILE_TYPES[projKey] || {
         id: projKey,
         sprite: `images/projectiles/${projKey}.png`,
@@ -1990,8 +2144,8 @@ export function spawnSlashEffect(enemy) {
     const overlay = document.querySelector('.battlefield-overlay');
     if (!overlay) return;
 
-    const projName = enemy.projectile || 'slash1';
-    if (projName === 'none') return; // Skip if explicitly disabled
+    const projName = enemy.projectile;
+    if (!projName || projName === 'none') return; // No projectile attribute means no attack visual.
 
     const imgPath = `images/projectiles/${projName}.png`;
 
