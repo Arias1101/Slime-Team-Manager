@@ -128,7 +128,7 @@ export function triggerRandomSlimeAttack(overrideTypeId = null) {
     const availableSlimes = slimeUnits.filter(unit => unit.dataset.isAttacking !== 'true' && unit.dataset.isEating !== 'true' && !unit.classList.contains('is-stunned'));
     if (availableSlimes.length === 0) return;
 
-    const graftNeeded = (gameState.slimes || []).some(slime => slime.hp > 0 && slime.hp < slime.maxHp * 0.5);
+    const graftNeeded = (gameState.slimes || []).some(slime => slime.hp > 0 && slime.hp < slime.maxHp * 0.75);
     const graftSupportEl = graftNeeded ? availableSlimes.find(unit => {
         const slime = (gameState.slimes || []).find(candidate => String(candidate.id) === String(unit.dataset.slimeId));
         return slime?.talents?.graft && getSlimeSpecialization(slime) === 'support' && slime.hp >= slime.maxHp * 0.5;
@@ -149,7 +149,7 @@ export function triggerRandomSlimeAttack(overrideTypeId = null) {
  */
 function trySupportGraft(unitEl, support) {
     if (!support?.talents?.graft || getSlimeSpecialization(support) !== 'support' || support.hp < support.maxHp * 0.5) return false;
-    const target = (gameState.slimes || []).filter(s => s.id !== support.id && getSlimeSpecialization(s) !== 'support' && s.hp > 0 && s.hp < s.maxHp * .5).sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0];
+    const target = (gameState.slimes || []).filter(s => s.id !== support.id && getSlimeSpecialization(s) !== 'support' && s.hp > 0 && s.hp < s.maxHp * .75).sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0];
     if (!target) return false;
 
     const img = unitEl.querySelector('.slime-img');
@@ -164,8 +164,11 @@ function trySupportGraft(unitEl, support) {
 
     setTimeout(() => {
         const sacrificedAmount = Math.ceil(support.maxHp * .2);
-        const restoredAmount = Math.min(target.maxHp - target.hp, sacrificedAmount * 2);
-        support.hp = Math.max(1, support.hp - sacrificedAmount);
+        const intendedHealing = sacrificedAmount * 2;
+        const restoredAmount = Math.min(target.maxHp - target.hp, intendedHealing);
+        const overhealAmount = Math.max(0, intendedHealing - restoredAmount);
+        const overhealRecovery = Math.round(overhealAmount / 2);
+        support.hp = Math.min(support.maxHp, Math.max(1, support.hp - sacrificedAmount) + overhealRecovery);
         target.hp += restoredAmount;
 
         const targetEl = Array.from(document.querySelectorAll('.slime-unit')).find(el => String(el.dataset.slimeId) === String(target.id));

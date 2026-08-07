@@ -616,6 +616,7 @@ function renderSlimeTalentTree(slime) {
     const specializationTalents = document.getElementById('slimeSpecializationTalents');
     const unlocked = (gameState.newGamePlusCompletions || 0) > 0;
     const isBase = (slime.type || 'base') === 'base';
+    const canSpecialize = !isBase && slime.ascended === true;
     const specialization = slime.specialization || '';
 
     if (talentTab) {
@@ -625,14 +626,14 @@ function renderSlimeTalentTree(slime) {
         talentTab.title = unlocked ? 'Specialization' : 'Available in New Game+';
     }
     if (gateMessage) gateMessage.classList.toggle('hidden', unlocked);
-    if (baseMessage) baseMessage.classList.toggle('hidden', !unlocked || !isBase);
+    if (baseMessage) baseMessage.classList.toggle('hidden', !unlocked || canSpecialize || Boolean(specialization));
     if (choices) {
         choices.classList.toggle('hidden', !unlocked || Boolean(specialization));
         choices.querySelectorAll('.slime-talent-choice').forEach(choice => {
-            choice.disabled = isBase;
+            choice.disabled = !canSpecialize;
         });
     }
-    if (specializationWarning) specializationWarning.classList.toggle('hidden', !unlocked || isBase || Boolean(specialization));
+    if (specializationWarning) specializationWarning.classList.toggle('hidden', !unlocked || !canSpecialize || Boolean(specialization));
     if (chosenMessage) {
         chosenMessage.classList.toggle('hidden', !unlocked || !specialization);
         const specializationBonuses = { tank: '(+20% HP 💗)', support: '(+20% Regen 💚)', fighter: '(+20% Damage ⚔️)' };
@@ -645,7 +646,15 @@ function renderSlimeTalentTree(slime) {
         const xp = Number(slime.wavesClearedSinceDeath || 0);
         const costs = [5, 15, 25];
         specializationTalents.classList.toggle('hidden', !unlocked || !specialization);
-        specializationTalents.innerHTML = specialization ? costs.map((cost, index) => `<button type="button" class="slime-specialization-talent ${index === 0 && xp >= cost ? 'available' : ''}" title="Talent${index + 1}" ${index === 0 && xp >= cost ? '' : 'disabled'}><img src="${icon}" alt="Talent${index + 1}"><span>${xp}/${cost}</span></button>`).join('') : '';
+        specializationTalents.innerHTML = specialization ? costs.map((cost, index) => {
+            const talentNames = { support: 'Graft', fighter: 'Rebound', tank: 'Block' };
+            const dedicatedIcon = index === 0 ? talentNames[normalizedSpecialization]?.toLowerCase() : null;
+            const iconSource = dedicatedIcon ? `images/talents/${normalizedSpecialization}${dedicatedIcon}.png` : icon;
+            const talentName = index === 0 ? (talentNames[normalizedSpecialization] || 'Talent1') : `Talent${index + 1}`;
+            const button = `<button type="button" class="slime-specialization-talent ${index === 0 && xp >= cost ? 'available' : ''}" title="" ${index === 0 && xp >= cost ? '' : 'disabled'}><img src="${iconSource}" alt="${talentName}"><span>${xp}/${cost}</span></button>`;
+            if (normalizedSpecialization !== 'support' || index !== 0) return button;
+            return `<span class="talent-tooltip-glass">${button}<span class="talent-tooltip-glass-box"><strong>Graft</strong><br>Sacrifice 20% of HP to Heal twice that amount to a Slime in need.</span></span>`;
+        }).join('') : '';
         const graftUnlocked = normalizedSpecialization === 'support' && slime.talents?.graft === true;
         if (graftUnlocked) { const unlockedButton = specializationTalents.querySelector('.slime-specialization-talent'); if (unlockedButton) { unlockedButton.classList.add('unlocked'); unlockedButton.disabled = false; const progress = unlockedButton.querySelector('span'); if (progress) progress.textContent = '✔️'; } }
         const graftButton = specializationTalents.querySelector('.slime-specialization-talent');
@@ -657,11 +666,11 @@ function renderSlimeTalentTree(slime) {
 function specializeInspectedSlime(specialization) {
     if (!currentInspectedSlime || (gameState.newGamePlusCompletions || 0) <= 0) return;
     const target = (gameState.slimes || []).find(s => s.id === currentInspectedSlime.id || s.name === currentInspectedSlime.name);
-    if (!target || (target.type || 'base') === 'base' || target.specialization) return;
+    if (!target || (target.type || 'base') === 'base' || target.ascended !== true || target.specialization) return;
     const elementalPrefix = { toxic: 'poison', fire: 'fire', ice: 'ice', stone: 'stone' }[target.type];
     const typeId = elementalPrefix ? `${elementalPrefix}${specialization[0].toUpperCase()}${specialization.slice(1)}` : null;
     if (!typeId || !SLIME_TYPES[typeId]) return;
-target.type = { poison: 'toxic', fire: 'fire', ice: 'ice', stone: 'stone' }[elementalPrefix] || target.type;
+    target.type = { poison: 'toxic', fire: 'fire', ice: 'ice', stone: 'stone' }[elementalPrefix] || target.type;
     target.specialization = specialization;
     sortRosterBySpecialization();
     updateBestRoster();

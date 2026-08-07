@@ -1,4 +1,10 @@
 Patch Notes:
+v0.12
+- Overheal from Support Slimes now heal them back up.
+- Increased Support Slimes reactivity.
+- Prevented Specialization for non-Ascended Slimes.
+- Created nice Tooltip template for Talents and used it on Graft.
+
 v0.11
 - Fixed xp not reseting.
 - Fixed Roster display in Forge.

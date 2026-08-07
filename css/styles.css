@@ -4840,3 +4840,38 @@ body.new-game-plus .village-buildings {
 @media (max-width: 900px) {
     .desktop-left-col .slime-roster-list { display: flex; grid-template-columns: none; min-height: 30px; }
 }
+/* Glass tooltip for the Support Graft talent. */
+.talent-tooltip-glass {
+    position: relative;
+    display: inline-flex;
+    cursor: help;
+}
+.talent-tooltip-glass-box {
+    position: absolute;
+    z-index: 1100;
+    top: calc(100% + 10px);
+    left: 50%;
+    width: 210px;
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.32);
+    border-radius: 10px;
+    background: rgba(15, 23, 42, 0.72);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: #f8fafc;
+    font-size: 0.66rem;
+    line-height: 1.5;
+    text-align: left;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.42);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-50%) translateY(5px) scale(0.92);
+    transform-origin: bottom center;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.talent-tooltip-glass-box strong { color: #ADFF87; }
+.talent-tooltip-glass:hover .talent-tooltip-glass-box,
+.talent-tooltip-glass:focus-within .talent-tooltip-glass-box {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+}

@@ -1,5 +1,5 @@
 ------------- NOW ----------------
-
+Hidden upgrades should not be counted when calculating how many upgrades can be bought in the "upgrades" tab on narrow screens. (shows "(1)" on my end while nothing can be upgraded)
 
 ------------------ LATER -----------------
 - Roster in forge should be responsive, 3x20 layout until it runs out of space width, then switch to 4x15
@@ -18,14 +18,8 @@ To implement, when a Fighter does damage, roll for 10%, then relaunch a jump seq
 
 
 
-- Speed type of ennemies imune to overflow
 - Bench to store Slimes for later use.
+- Menus to mass change slime types / spec
 - Roster with ways to switch slimes in and out of roster/bench
 - Buildings for permanent upgrades: HP, Damage, Regen, Crit, xp on death.
-
-------- IDEAS FOR LATER, DO NOT DO THIS ---------------
-- At start of second run, Unlock upgrade "Specialization" wich Unlockes TalentTree tab in Slime Sheet
-- Complete talent tree tab with tree butons to pick from. Those buttons are enabled only if the Slime is Ascended, and not of the base Type. (if disabled explain why with tooltip).
-- Create TypeTalent Combos by hand
-- When clicking a TalentTree Specialization button, change Slime Type to the corresponding TypeTalent Combos, and replace the three button by corresponding talent tree
-- Frontlane, Midlane, Backlane and assigned classes for Slimes to unlock (Tank / Damage / Support) with talent tree
+- Trophies with Coin rewards

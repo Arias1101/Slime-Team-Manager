@@ -592,15 +592,15 @@ export const ENEMY_TYPES = {
         id: 'death',
         type: 'melee',
         projectile: '',
-        tier: 0,
+        tier: -1,
         hp: 9999999999,
         maxHp: 9999999999,
         damage: 999,            // Damage per projectile
         attackSpeed: 60,     // attacks per second
         moveSpeed: 1,
         targetX: 150,         // 400=right border, 100 = Slime army
-        loot_name: '',
-        loot_effect: []
+        loot_name: 'You Should Not See This',
+        loot_effect: { stat: 'hp', value: 1 }
     },
     testtank: {
         id: 'tank',
@@ -613,7 +613,7 @@ export const ENEMY_TYPES = {
         attackSpeed: 0,     // 0.5 attacks per second
         moveSpeed: 0.6,       // Slow move speed
         targetX: 250,         // Center of battlefield
-        loot_name: 'Test Knight Shield',
+        loot_name: 'You Should Not See This',
         loot_effect: { stat: 'hp', value: 1 }
     },
     testrange: {
@@ -627,7 +627,7 @@ export const ENEMY_TYPES = {
         attackSpeed: 0.5,   // Attacks per second
         moveSpeed: 0.3,
         targetX: 400,       // 250 = Center of battlefield, 100 = Slimes, 400 = long range
-        loot_name: 'Test Range Shield',
+        loot_name: 'You Should Not See This',
         loot_effect: { stat: 'hp', value: 1 }
     },
 };
