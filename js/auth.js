@@ -20,6 +20,45 @@ function getCloudSaveData() {
     }));
 }
 
+// Firestore enforces a 1 MiB (1,048,576 bytes) hard limit per document. If the
+// serialized save ever exceeds that, the whole cloud write fails and the user
+// silently loses cloud sync. We therefore trim heavy, non-essential data
+// (per-wave roster snapshots, which are never restored) before uploading.
+const CLOUD_SAVE_LIMIT = 1_048_576;
+const CLOUD_SAFE_TARGET = 950_000;
+
+/**
+ * Build a Firestore-serializable copy of the save, shrinking it to fit under
+ * the Firestore document limit. The local save always keeps the full state.
+ */
+function buildCloudSaveData() {
+    let data = getCloudSaveData();
+
+    const size = (obj) => new TextEncoder().encode(JSON.stringify(obj)).length;
+
+    if (size(data) <= CLOUD_SAVE_LIMIT) return data;
+
+    // 1. Drop per-wave snapshots first (unused for restore, biggest bloat).
+    if (data.waveSnapshots && typeof data.waveSnapshots === 'object') {
+        const snapshots = data.waveSnapshots;
+        const pruned = { ...data, waveSnapshots: {} };
+        // Keep only the most recent snapshots until the payload fits.
+        const keys = Object.keys(snapshots).map(Number).filter(n => !Number.isNaN(n)).sort((a, b) => a - b);
+        while (keys.length && size(pruned) > CLOUD_SAFE_TARGET) {
+            keys.shift(); // drop the oldest
+            pruned.waveSnapshots = Object.fromEntries(keys.map(k => [k, snapshots[k]]));
+        }
+        data = pruned;
+    }
+
+    // 2. Last resort: drop snapshots entirely and trim dead slime history.
+    if (size(data) > CLOUD_SAVE_LIMIT) {
+        delete data.waveSnapshots;
+    }
+
+    return data;
+}
+
 export function initAuth(onUserStatusChanged, onFirebaseMissing) {
     if (!isFirebaseConfigured()) {
         console.warn('Firebase is not configured in js/config.js');
@@ -84,7 +123,7 @@ export async function saveCloudSave() {
     try {
         const userRef = doc(db, 'users', currentUser.uid);
         await setDoc(userRef, {
-            saveData: getCloudSaveData(),
+            saveData: buildCloudSaveData(),
             lastUpdated: new Date()
         }, { merge: true });
         console.log('Cloud save successful for user:', currentUser.uid);

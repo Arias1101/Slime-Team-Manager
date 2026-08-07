@@ -899,6 +899,18 @@ export function saveWaveSnapshot(waveNum, uncollectedLootValue = 0) {
     };
 
     saveStateToLocal();
+
+    // Per-wave snapshots are never restored (rewind uses bestRoster), so keep
+    // only a small recent window to prevent the save from growing unboundedly
+    // and exceeding Firestore's document size limit.
+    const WAVE_SNAPSHOT_CAP = 20;
+    const waveKeys = Object.keys(gameState.waveSnapshots).map(Number).filter(n => !Number.isNaN(n)).sort((a, b) => a - b);
+    if (waveKeys.length > WAVE_SNAPSHOT_CAP) {
+        waveKeys.slice(0, waveKeys.length - WAVE_SNAPSHOT_CAP).forEach(k => {
+            delete gameState.waveSnapshots[k];
+        });
+        saveStateToLocal();
+    }
 }
 
 /**

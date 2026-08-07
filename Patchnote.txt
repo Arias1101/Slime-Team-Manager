@@ -1,4 +1,7 @@
 Patch Notes:
+v0.16
+- Fixed Cloud Saves
+
 v0.15
 - Prevented Slimes from using Rebound if there is no secondary target available.
 - Increased coin reward when finishing a run.
