@@ -10,6 +10,7 @@ import { initEnemiesModule, startNextWave, setAutoPlay, resetGameFull, rewindWav
 import { triggerRandomSlimeAttack, triggerSlimeEatLoot, initAscendedAutoAttacks } from './slimes.js';
 import { initUpgradesModule, sortMaxedUpgradeCardsOnPageLoad } from './upgrades.js';
 import { initShopModule } from './shop.js';
+import { openCommonHousePopup } from './commonhouse.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Load Local State
@@ -506,6 +507,7 @@ document.addEventListener('DOMContentLoaded', () => {
         button.addEventListener('click', () => {
             if (button.dataset.villageBuilding === 'Forge') openForgePopup();
             else if (button.dataset.villageBuilding === 'Alchemist Shop') openAlchemistPopup();
+            else if (button.dataset.villageBuilding === 'Common House') openCommonHousePopup();
             else openVillageBuildingPopup(button.dataset.villageBuilding);
         });
     });

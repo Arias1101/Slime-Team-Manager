@@ -339,9 +339,10 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
 
             // Rebound talent: Fighter slimes get a 10% chance to interrupt this jump and immediately
             // rejump at the second closest target, looping back to frame 2 of the jump spritesheet.
-            if (getSlimeSpecialization(slimeObj) === 'fighter' && slimeObj?.talents?.rebound && Math.random() < 0.1) {
+            // Only roll when there is actually a second target available.
+            if (getSlimeSpecialization(slimeObj) === 'fighter' && slimeObj?.talents?.rebound) {
                 const reboundTarget = pickReboundTarget();
-                if (reboundTarget) {
+                if (reboundTarget && Math.random() < 0.1) {
                     const currentArmyX = startX + dx;
                     const rebound = computeReboundTrajectory(currentArmyX, reboundTarget);
                     baseX = dx;

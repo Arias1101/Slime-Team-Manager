@@ -1153,7 +1153,7 @@ export function enterNewGamePlus() {
         slotIndex: slime.slotIndex !== undefined ? slime.slotIndex : index
     }));
     const completedRuns = (gameState.newGamePlusCompletions || 0) + 1;
-    const villageCoinReward = completedRuns;
+    const villageCoinReward = completedRuns * 2;
 
     resetGameFull({ startWave: false });
     gameState.newGamePlusCompletions = completedRuns;
@@ -2193,9 +2193,13 @@ export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg', 
 
             if (slime.hp <= 0) {
                 gameState.hasSlimeDied = true;
-                slime.wavesClearedSinceDeath = 0;
-                const savedSlime = (gameState.bestRoster || []).find(entry => String(entry.id || entry.name) === String(slime.id || slime.name));
-                if (savedSlime) savedSlime.wavesClearedSinceDeath = 0;
+                // Dying to the "death" enemy is the only exception: XP is preserved.
+                // Any other death resets the slime's XP (wavesClearedSinceDeath) to 0.
+                if (sourceEnemy?.typeId !== 'death') {
+                    slime.wavesClearedSinceDeath = 0;
+                    const savedSlime = (gameState.bestRoster || []).find(entry => String(entry.id || entry.name) === String(slime.id || slime.name));
+                    if (savedSlime) savedSlime.wavesClearedSinceDeath = 0;
+                }
                 // Instantly remove dead slime from memory array
                 gameState.slimes = gameState.slimes.filter(s => s.id !== slime.id);
                 gameState.armySize = gameState.slimes.length;
@@ -2218,9 +2222,12 @@ export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg', 
                 updateUI();
             }
         } else if (slime.hp <= 0) {
-            slime.wavesClearedSinceDeath = 0;
-            const savedSlime = (gameState.bestRoster || []).find(entry => String(entry.id || entry.name) === String(slime.id || slime.name));
-            if (savedSlime) savedSlime.wavesClearedSinceDeath = 0;
+            // Dying to the "death" enemy is the only exception: XP is preserved.
+            if (sourceEnemy?.typeId !== 'death') {
+                slime.wavesClearedSinceDeath = 0;
+                const savedSlime = (gameState.bestRoster || []).find(entry => String(entry.id || entry.name) === String(slime.id || slime.name));
+                if (savedSlime) savedSlime.wavesClearedSinceDeath = 0;
+            }
             gameState.slimes = gameState.slimes.filter(s => s.id !== slime.id);
             gameState.armySize = gameState.slimes.length;
             saveStateToLocal();

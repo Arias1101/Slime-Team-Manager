@@ -354,13 +354,13 @@ export function updateUpgradesUI() {
 
             const canAfford4 = (gameState.scraps || 0) >= cost4;
             if (canAfford4) {
-            btnUpgradeRegenEl.removeAttribute('disabled');
-            btnUpgradeRegenEl.classList.remove('disabled');
-            btnUpgradeRegenEl.classList.add('affordable');
-        } else {
-            btnUpgradeRegenEl.setAttribute('disabled', 'disabled');
-            btnUpgradeRegenEl.classList.add('disabled');
-            btnUpgradeRegenEl.classList.remove('affordable');
+                btnUpgradeRegenEl.removeAttribute('disabled');
+                btnUpgradeRegenEl.classList.remove('disabled');
+                btnUpgradeRegenEl.classList.add('affordable');
+            } else {
+                btnUpgradeRegenEl.setAttribute('disabled', 'disabled');
+                btnUpgradeRegenEl.classList.add('disabled');
+                btnUpgradeRegenEl.classList.remove('affordable');
             }
         }
     }

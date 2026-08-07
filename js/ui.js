@@ -221,12 +221,11 @@ export function renderSlimeRosterLanes(container, entries, {
         if (slime.effects?.freezeTimer > 0) item.classList.add('is-frozen');
         if (slime.effects?.stunTimer > 0) item.classList.add('is-stunned');
         item.innerHTML = `<img src="${getSlimeJumpSprite(slime)}" alt="${displayName}" class="roster-grid-icon"><div class="roster-grid-hp-bar"><div class="roster-hp-fill" style="width:${hpPct}%;background:${hpColor};"></div></div>`;
-        if (onItemClick) item.addEventListener('click', () => onItemClick(slime, item));
+        if (onItemClick) item.addEventListener('click', (e) => onItemClick(slime, item, e));
         lanes[lane].appendChild(item);
     });
 
     Object.entries(lanes).forEach(([lane, element]) => {
-        element.style.setProperty('--lane-count', Math.min(20, Math.max(1, laneCounts[lane])));
         element.classList.toggle('hidden', laneCounts[lane] === 0);
     });
 
@@ -776,10 +775,10 @@ function specializeInspectedSlime(specialization) {
     if (!currentInspectedSlime || (gameState.newGamePlusCompletions || 0) <= 0) return;
     const target = (gameState.slimes || []).find(s => s.id === currentInspectedSlime.id || s.name === currentInspectedSlime.name);
     if (!target || (target.type || 'base') === 'base' || target.ascended !== true || target.specialization) return;
-    const elementalPrefix = { toxic: 'poison', fire: 'fire', ice: 'ice', stone: 'stone' }[target.type];
+    const elementalPrefix = ['poison', 'fire', 'ice', 'stone'].includes(target.type) ? target.type : null;
     const typeId = elementalPrefix ? `${elementalPrefix}${specialization[0].toUpperCase()}${specialization.slice(1)}` : null;
     if (!typeId || !SLIME_TYPES[typeId]) return;
-    target.type = { poison: 'toxic', fire: 'fire', ice: 'ice', stone: 'stone' }[elementalPrefix] || target.type;
+    target.type = elementalPrefix || target.type;
     target.specialization = specialization;
     sortRosterBySpecialization();
     updateBestRoster();

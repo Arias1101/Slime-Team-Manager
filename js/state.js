@@ -39,8 +39,8 @@ export const SLIME_TYPES = {
         effect: 'stun',
         stunDuration: 0.4 // Base stun duration; equipment values multiply this
     },
-    toxic: {
-        id: 'toxic',
+    poison: {
+        id: 'poison',
         name: 'Poison Slime',
         folder: 'images/slimes/poison',
         prefix: 'slime',
@@ -53,9 +53,9 @@ export const SLIME_TYPES = {
 
 // Specializations currently inherit all gameplay values and sprites from their elemental base type.
 [
-    ['toxic', 'poisonSupport', 'PoisonSupport Slime'],
-    ['toxic', 'poisonFighter', 'PoisonFighter Slime'],
-    ['toxic', 'poisonTank', 'PoisonTank Slime'],
+    ['poison', 'poisonSupport', 'PoisonSupport Slime'],
+    ['poison', 'poisonFighter', 'PoisonFighter Slime'],
+    ['poison', 'poisonTank', 'PoisonTank Slime'],
     ['fire', 'fireSupport', 'FireSupport Slime'],
     ['fire', 'fireFighter', 'FireFighter Slime'],
     ['fire', 'fireTank', 'FireTank Slime'],
@@ -136,6 +136,9 @@ export function generateUniqueSlimeName(existingSlimes = []) {
     if (gameState.bestRoster) {
         gameState.bestRoster.forEach(s => { if (s && (s.name || s.id)) usedNames.add(s.name || String(s.id)); });
     }
+    if (gameState.villageRoster) {
+        gameState.villageRoster.forEach(s => { if (s && (s.name || s.id)) usedNames.add(s.name || String(s.id)); });
+    }
     if (Array.isArray(existingSlimes)) {
         existingSlimes.forEach(s => { if (s && (s.name || s.id)) usedNames.add(s.name || String(s.id)); });
     }
@@ -206,6 +209,7 @@ export const defaultState = {
     newGamePlusCompletions: 0, // Times Death has ended a run
     villageCoins: 0,            // Permanent currency earned from completed runs
     villageInventory: [],       // Unequipped equipment stored at the Forge
+    villageRoster: [],          // Reserve slimes stored at the Common House (max 180)
     alchemistLuckLevel: 0,
     alchemistRageLevel: 0,
     alchemistEnduranceLevel: 0,
@@ -486,7 +490,7 @@ export function getRandomSlimeType() {
     } else if (roll < (ignitionChance + glaciationChance + petrificationChance)) {
         return 'stone';
     } else if (roll < (ignitionChance + glaciationChance + petrificationChance + intoxicationChance)) {
-        return 'toxic';
+        return 'poison';
     }
     return 'base';
 }
@@ -1056,9 +1060,11 @@ export function migrateSpecializedSlimes() {
         if (!slime) return;
         const match = String(slime.type || '').match(/^(poison|fire|ice|stone)(Support|Fighter|Tank)$/i);
         if (match) {
-            slime.type = match[1].toLowerCase() === 'poison' ? 'toxic' : match[1].toLowerCase();
+            slime.type = match[1].toLowerCase();
             slime.specialization = match[2].toLowerCase();
         }
+        // Legacy rename: base poison slimes were stored as type 'toxic'.
+        if (slime.type === 'toxic') slime.type = 'poison';
     };
     (gameState.slimes || []).forEach(migrate);
     (gameState.bestRoster || []).forEach(migrate);
@@ -1093,6 +1099,12 @@ export function loadStateFromLocal() {
         syncSlimesArray();
     }
     migrateSpecializedSlimes();
+    // A Slime kept in the Village (Common House) is not part of the army. Prune
+    // it from the historical roster so it is never rendered as a dead RIP slot.
+    const villageKeys = new Set((gameState.villageRoster || []).map(s => s.id || s.name));
+    if (gameState.bestRoster) {
+        gameState.bestRoster = gameState.bestRoster.filter(s => !villageKeys.has(s.id || s.name));
+    }
     if (!gameState.afkLastAwayAt) {
         gameState.afkLastAwayAt = saved ? (gameState.lastSavedTimestamp || Date.now()) : Date.now();
     }

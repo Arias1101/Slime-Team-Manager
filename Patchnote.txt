@@ -1,4 +1,10 @@
 Patch Notes:
+v0.15
+- Prevented Slimes from using Rebound if there is no secondary target available.
+- Increased coin reward when finishing a run.
+- Clarified Specialization restrictions label.
+- Implemented Village Common House and Village Roster.
+
 v0.14
 - Fixed a max section width for roster sections containing lots of Slimes.
 - Implemented equipment priority.
