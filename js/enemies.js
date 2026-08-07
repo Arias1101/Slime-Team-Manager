@@ -4,7 +4,7 @@
 
 import { gameState, addScraps, saveStateToLocal, saveWaveSnapshot, restoreBestRoster, SLIME_TYPES, getSlimeTotalRegen } from './state.js';
 import { healAllSlimes, initAscendedAutoAttacks, clearAscendedAutoAttacks, showFloatingDamageNumber, showFloatingHealingNumber, showFloatingStatusTextAt, showBattlefieldWaveBanner, triggerSlimeEatLoot } from './slimes.js';
-import { updateUI, playSlimeRainRespawnAnimation } from './ui.js';
+import { updateUI, updateLootHUD, requestUIRefresh, playSlimeRainRespawnAnimation } from './ui.js';
 import { openShopModal } from './shop.js';
 import { isGamePaused } from './engine.js';
 /**
@@ -435,8 +435,8 @@ export const ENEMY_TYPES = {
         type: 'range',
         projectile: 'arrow',
         tier: 4,
-        hp: 300,
-        maxHp: 300,
+        hp: 200,
+        maxHp: 200,
         damage: 10,
         attackSpeed: 1.2,
         moveSpeed: 2,
@@ -451,8 +451,8 @@ export const ENEMY_TYPES = {
         type: 'melee',
         projectile: 'slash1',
         tier: 4,
-        hp: 350,
-        maxHp: 350,
+        hp: 300,
+        maxHp: 300,
         damage: 15,
         attackSpeed: 1.4,
         moveSpeed: 7,
@@ -465,8 +465,8 @@ export const ENEMY_TYPES = {
         type: 'melee',
         projectile: 'slash1',
         tier: 4,
-        hp: 2000,
-        maxHp: 2000,
+        hp: 1800,
+        maxHp: 1800,
         damage: 18,
         attackSpeed: 0.65,
         moveSpeed: 1.5,
@@ -480,8 +480,8 @@ export const ENEMY_TYPES = {
         type: 'tank',
         projectile: 'none',
         tier: 4,
-        hp: 2400,
-        maxHp: 2400,
+        hp: 2000,
+        maxHp: 2000,
         damage: 0,
         attackSpeed: 0,
         moveSpeed: 6,
@@ -550,8 +550,8 @@ export const ENEMY_TYPES = {
         type: 'melee',
         projectile: 'slash1',
         tier: 5,
-        hp: 6000,
-        maxHp: 6000,
+        hp: 5000,
+        maxHp: 5000,
         damage: 35,
         attackSpeed: 0.85,
         moveSpeed: 3,
@@ -566,10 +566,10 @@ export const ENEMY_TYPES = {
         tier: 5,
         hp: 350,
         maxHp: 350,
-        damage: 14,
-        attackSpeed: 1.6,
+        damage: 12,
+        attackSpeed: 1.3,
         moveSpeed: 9,
-        targetX: 145,
+        targetX: 160,
         loot_name: 'Sword (Arm Included)',
         loot_effect: { stat: 'damage', value: 5 }
     },
@@ -907,7 +907,7 @@ function generateWaveComposition(waveNum) {
     if (waveNum === 47) return [0.12, 'skeleton:10', 'skeletonarcher:5'];
     if (waveNum === 48) return [0.15, 'bigzombi:1', 'zombi:6', 'skeleton:6'];
     if (waveNum === 49) return [0.12, 'halfzombi:4', 'skeleton:8', 'skeletonarcher:4'];
-    if (waveNum === 50) return [0.2, 'lich:1', 'skeleton:25', 'skeletonarcher:5'];
+    if (waveNum === 50) return [0.4, 'lich:1', 'skeleton:25', 'skeletonarcher:5'];
 
     // Death
     else {
@@ -1296,7 +1296,8 @@ export function triggerLootDrop(enemy) {
             beingEaten: false
         };
         activeGroundLoots.push(lootObj);
-        updateUI();
+        updateLootHUD();
+        requestUIRefresh();
     }
 }
 
@@ -1338,7 +1339,10 @@ export function spawnEnemy(typeId = 'beggar', hpMultiplier = 1.0) {
         state: 'walking',
         attackTimer: 0,
         hasDroppedLoot: false,
-        el: null
+        el: null,
+        spriteHeight: 28,
+        flashUntil: 0,
+        strikeUntil: 0
     };
 
     activeEnemies.push(enemyInstance);
@@ -1388,6 +1392,7 @@ function renderNewEnemyDOM(enemy) {
     const adaptEnemyDimensions = () => {
         const w = spriteEl.naturalWidth || 28;
         const h = spriteEl.naturalHeight || 28;
+        enemy.spriteHeight = h;
         spriteEl.style.width = `${w}px`;
         spriteEl.style.height = `${h}px`;
         unit.style.width = `${w}px`;
@@ -1459,6 +1464,8 @@ export function updateEnemies(deltaSeconds) {
         window._emptyWaveSafetyTicks = 0;
     }
 
+    const now = performance.now();
+
     for (let i = activeEnemies.length - 1; i >= 0; i--) {
         const enemy = activeEnemies[i];
 
@@ -1516,8 +1523,7 @@ export function updateEnemies(deltaSeconds) {
 
                 // Flame flash on enemy sprite
                 if (enemy.spriteEl) {
-                    enemy.spriteEl.classList.add('hit-flash-white');
-                    setTimeout(() => { if (enemy.spriteEl) enemy.spriteEl.classList.remove('hit-flash-white'); }, 150);
+                    enemy.flashUntil = performance.now() + 150;
                 }
             }
 
@@ -1541,8 +1547,7 @@ export function updateEnemies(deltaSeconds) {
 
                 // Toxic flash on enemy sprite
                 if (enemy.spriteEl) {
-                    enemy.spriteEl.classList.add('hit-flash-white');
-                    setTimeout(() => { if (enemy.spriteEl) enemy.spriteEl.classList.remove('hit-flash-white'); }, 150);
+                    enemy.flashUntil = performance.now() + 150;
                 }
             }
 
@@ -1591,11 +1596,7 @@ export function updateEnemies(deltaSeconds) {
                     damageRandomSlime(enemy.damage, enemy);
                     spawnSlashEffect(enemy);
                     if (enemy.spriteEl) {
-                        enemy.spriteEl.classList.add('enemy-strike-vibrate');
-                        const spr = enemy.spriteEl;
-                        setTimeout(() => {
-                            if (spr) spr.classList.remove('enemy-strike-vibrate');
-                        }, 200);
+                        enemy.strikeUntil = performance.now() + 200;
                     }
                 }
             } else if (enemy.state === 'range_attack') {
@@ -1617,7 +1618,8 @@ export function updateEnemies(deltaSeconds) {
         if (enemy.el) {
             enemy.el.style.left = `${enemy.x}px`;
             // Lower feet sit in front, matching the depth ordering used by slimes.
-            const enemyFootY = enemy.y + (enemy.spriteEl?.offsetHeight || 28);
+            // Use the cached sprite height to avoid a forced layout read per frame.
+            const enemyFootY = enemy.y + (enemy.spriteHeight || 28);
             enemy.el.style.zIndex = `${Math.floor(enemyFootY)}`;
 
             const statusRow = enemy.statusRowEl;
@@ -1653,6 +1655,15 @@ export function updateEnemies(deltaSeconds) {
             enemy.el.classList.toggle('enemy-tanking', isTanking);
             enemy.el.classList.toggle('enemy-range', isRanged || isSupport);
             enemy.el.classList.toggle('enemy-walking', !isAttacking && !isTanking && !isRanged && !isSupport);
+
+            // Timestamp-based hit-flash & strike-vibrate (replaces per-attack setTimeout).
+            const spriteEl = enemy.spriteEl;
+            if (spriteEl) {
+                if (enemy.flashUntil && enemy.flashUntil <= now) enemy.flashUntil = 0;
+                if (enemy.strikeUntil && enemy.strikeUntil <= now) enemy.strikeUntil = 0;
+                spriteEl.classList.toggle('hit-flash-white', enemy.flashUntil > now);
+                spriteEl.classList.toggle('enemy-strike-vibrate', enemy.strikeUntil > now);
+            }
         }
 
         if (enemy.type === 'rush') damageSlimesTouchedByRush(enemy);
@@ -2305,7 +2316,7 @@ export function spawnSlashEffect(enemy) {
 
     // Position centering: 32x32 spritesheet frame centered vertically on the enemy
     // and positioned in front (to the left) of the enemy
-    const enemyHeight = (enemy.el ? enemy.el.offsetHeight : 28) || 28;
+    const enemyHeight = (enemy.spriteHeight || enemy.el?.offsetHeight || 28) || 28;
     const slashLeft = enemy.x - 24;
     const slashTop = enemy.y + (enemyHeight / 2) - 16;
 

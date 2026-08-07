@@ -111,6 +111,122 @@ export function updateUI() {
     updateUpgradesUI();
 }
 
+let uiRefreshScheduled = false;
+
+/**
+ * Batch a full UI refresh onto the next animation frame. Multiple calls within
+ * the same frame (e.g. many loot drops/eats at once) collapse into a single
+ * updateUI(), avoiding the layout/reflow cost of rebuilding the roster and the
+ * upgrades panel for every single loot.
+ */
+export function requestUIRefresh() {
+    if (uiRefreshScheduled) return;
+    uiRefreshScheduled = true;
+    requestAnimationFrame(() => {
+        uiRefreshScheduled = false;
+        updateUI();
+    });
+}
+
+/**
+ * Lightweight, immediate update of the counters that change on every loot
+ * (scraps, score, and the Eat button count). This avoids the expensive full
+ * UI rebuild in the per-loot hot path.
+ */
+export function updateLootHUD() {
+    if (scrapsCountEl) scrapsCountEl.textContent = gameState.scraps || 0;
+    if (scoreCountEl) scoreCountEl.textContent = gameState.score || 0;
+
+    const eatBtnEl = document.getElementById('btnEat');
+    if (eatBtnEl && !gameState.isInNewGamePlus) {
+        const eatLootCountEl = document.getElementById('eatLootCount');
+        if (eatLootCountEl) {
+            eatLootCountEl.textContent = activeGroundLoots ? activeGroundLoots.length : 0;
+        }
+    }
+}
+
+/**
+ * Shared roster renderer: lays out slimes into three responsive lanes
+ * (back / middle / front) inside the given container. Entries may carry
+ * `{ slime, dead: true }` to render a fallen-slot placeholder instead.
+ * Returns the lane elements.
+ */
+export function renderSlimeRosterLanes(container, entries, {
+    itemClassName = '',
+    extraClassFor = null,
+    titleFor = null,
+    dataAttrsFor = null,
+    onItemClick = null
+} = {}) {
+    if (!container) return;
+
+    const laneFor = slime => {
+        const specialization = String(slime?.specialization || SLIME_TYPES[slime?.type]?.specialization || '').toLowerCase();
+        return specialization === 'support' ? 'back' : specialization === 'tank' ? 'front' : 'middle';
+    };
+
+    const lanes = {
+        back: document.createElement('div'),
+        middle: document.createElement('div'),
+        front: document.createElement('div')
+    };
+    Object.entries(lanes).forEach(([lane, element]) => {
+        element.className = `slime-roster-lane slime-roster-lane-${lane}`;
+        container.appendChild(element);
+    });
+    container.replaceChildren(...Object.values(lanes));
+
+    const laneCounts = { back: 0, middle: 0, front: 0 };
+
+    (entries || []).forEach(entry => {
+        const slime = entry.slime || entry;
+        const isDead = entry.dead === true;
+        const lane = laneFor(slime);
+        laneCounts[lane]++;
+
+        if (isDead) {
+            const slot = slime.slotIndex ?? 0;
+            const emptyItem = document.createElement('div');
+            emptyItem.className = 'roster-grid-item empty-slot';
+            emptyItem.id = `roster_item_empty_${slot}`;
+            emptyItem.title = `RIP ${slime.name || slime.id || `Slot #${slot + 1}`}...`;
+            emptyItem.innerHTML = '<div class="roster-empty-icon">💀</div>';
+            lanes[lane].appendChild(emptyItem);
+            return;
+        }
+
+        const slimeConfig = SLIME_TYPES[slime.type] || SLIME_TYPES.base;
+        const specialization = String(slime.specialization || slimeConfig.specialization || '').toLowerCase();
+        const specializationClass = ['tank', 'fighter', 'support'].includes(specialization) ? `specialization-${specialization}` : '';
+        const displayName = slime.name || slime.id || slimeConfig.name;
+        const hpPct = Math.max(0, (slime.hp / slime.maxHp) * 100);
+        const hpColor = hpPct < 35 ? '#ef4444' : hpPct < 65 ? '#f59e0b' : '#10b981';
+
+        const extraClass = extraClassFor ? extraClassFor(slime) || '' : '';
+        const item = document.createElement('div');
+        item.className = `roster-grid-item${slime.ascended ? ' ascended' : ''}${specializationClass ? ` ${specializationClass}` : ''}${itemClassName ? ` ${itemClassName}` : ''}${extraClass ? ` ${extraClass}` : ''}`;
+        item.id = `roster_item_${slime.id}`;
+        item.dataset.slimeId = String(slime.id);
+        item.title = titleFor ? titleFor(slime) : `[Slot #${(slime.slotIndex ?? 0) + 1}] ${displayName} (${slimeConfig.name})${slime.ascended ? ' ✨' : ''}: ${slime.hp}/${slime.maxHp} HP`;
+        if (dataAttrsFor) Object.entries(dataAttrsFor(slime) || {}).forEach(([k, v]) => item.setAttribute(k, v));
+        if (slime.effects?.burnTimer > 0) item.classList.add('is-burning');
+        if (slime.effects?.poisonTimer > 0) item.classList.add('is-poisoned');
+        if (slime.effects?.freezeTimer > 0) item.classList.add('is-frozen');
+        if (slime.effects?.stunTimer > 0) item.classList.add('is-stunned');
+        item.innerHTML = `<img src="${getSlimeJumpSprite(slime)}" alt="${displayName}" class="roster-grid-icon"><div class="roster-grid-hp-bar"><div class="roster-hp-fill" style="width:${hpPct}%;background:${hpColor};"></div></div>`;
+        if (onItemClick) item.addEventListener('click', () => onItemClick(slime, item));
+        lanes[lane].appendChild(item);
+    });
+
+    Object.entries(lanes).forEach(([lane, element]) => {
+        element.style.setProperty('--lane-count', Math.max(1, laneCounts[lane]));
+        element.classList.toggle('hidden', laneCounts[lane] === 0);
+    });
+
+    return lanes;
+}
+
 /**
  * Render Slime Health Status Array on the left side of the main window
  */
@@ -129,63 +245,18 @@ function updateSlimeRoster() {
         if (!knownSlimes.some(saved => String(saved.id || saved.name) === String(slime.id || slime.name))) knownSlimes.push(slime);
     });
 
-    const lanes = {
-        back: document.createElement('div'),
-        middle: document.createElement('div'),
-        front: document.createElement('div')
-    };
-    Object.entries(lanes).forEach(([lane, element]) => {
-        element.className = `slime-roster-lane slime-roster-lane-${lane}`;
-        rosterListEl.appendChild(element);
+    const entries = knownSlimes.map(savedSlime => {
+        const slime = activeById.get(String(savedSlime.id || savedSlime.name));
+        return slime ? { slime } : { slime: savedSlime, dead: true };
     });
-    rosterListEl.replaceChildren(...Object.values(lanes));
 
-    const laneFor = slime => {
-        const specialization = String(slime?.specialization || SLIME_TYPES[slime?.type]?.specialization || '').toLowerCase();
-        return specialization === 'support' ? 'back' : specialization === 'tank' ? 'front' : 'middle';
-    };
-    const laneCounts = { back: 0, middle: 0, front: 0 };
-
-    knownSlimes.forEach((savedSlime, index) => {
-        const slimeId = String(savedSlime.id || savedSlime.name);
-        const slime = activeById.get(slimeId);
-        const lane = laneFor(slime || savedSlime);
-        laneCounts[lane]++;
-
-        if (slime) {
-            const isAscended = slime.ascended === true;
+    renderSlimeRosterLanes(rosterListEl, entries, {
+        titleFor: slime => {
             const slimeConfig = SLIME_TYPES[slime.type] || SLIME_TYPES.base;
-            const specialization = String(slime.specialization || slimeConfig.specialization || '').toLowerCase();
-            const specializationClass = ['tank', 'fighter', 'support'].includes(specialization) ? `specialization-${specialization}` : '';
             const displayName = slime.name || slime.id || slimeConfig.name;
-            const hpPct = Math.max(0, (slime.hp / slime.maxHp) * 100);
-            const hpColor = hpPct < 35 ? '#ef4444' : hpPct < 65 ? '#f59e0b' : '#10b981';
-            const item = document.createElement('div');
-            item.className = `roster-grid-item${isAscended ? ' ascended' : ''}${specializationClass ? ` ${specializationClass}` : ''}`;
-            item.id = `roster_item_${slime.id}`;
-            item.dataset.slimeId = String(slime.id);
-            item.title = `[Slot #${(slime.slotIndex ?? index) + 1}] ${displayName} (${slimeConfig.name})${isAscended ? ' ✨' : ''}: ${slime.hp}/${slime.maxHp} HP`;
-            if (slime.effects?.burnTimer > 0) item.classList.add('is-burning');
-            if (slime.effects?.poisonTimer > 0) item.classList.add('is-poisoned');
-            if (slime.effects?.freezeTimer > 0) item.classList.add('is-frozen');
-            if (slime.effects?.stunTimer > 0) item.classList.add('is-stunned');
-            item.innerHTML = `<img src="${getSlimeJumpSprite(slime)}" alt="${displayName}" class="roster-grid-icon"><div class="roster-grid-hp-bar"><div class="roster-hp-fill" style="width:${hpPct}%;background:${hpColor};"></div></div>`;
-            item.addEventListener('click', () => openSlimeInspectorModal(slime));
-            lanes[lane].appendChild(item);
-        } else {
-            const slot = savedSlime.slotIndex ?? index;
-            const emptyItem = document.createElement('div');
-            emptyItem.className = 'roster-grid-item empty-slot';
-            emptyItem.id = `roster_item_empty_${slot}`;
-            emptyItem.title = `RIP ${savedSlime.name || savedSlime.id || `Slot #${slot + 1}`}...`;
-            emptyItem.innerHTML = '<div class="roster-empty-icon">💀</div>';
-            lanes[lane].appendChild(emptyItem);
-        }
-    });
-
-    Object.entries(lanes).forEach(([lane, element]) => {
-        element.style.setProperty('--lane-count', Math.max(1, laneCounts[lane]));
-        element.classList.toggle('hidden', laneCounts[lane] === 0);
+            return `[Slot #${(slime.slotIndex ?? 0) + 1}] ${displayName} (${slimeConfig.name})${slime.ascended ? ' ✨' : ''}: ${slime.hp}/${slime.maxHp} HP`;
+        },
+        onItemClick: slime => openSlimeInspectorModal(slime)
     });
 
     const rosterPanelEl = document.querySelector('.slime-status-panel');

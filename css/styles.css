@@ -2191,11 +2191,17 @@ body.modal-open {
     color: #a1a1aa;
 }
 
-/* Roster Browser */
+/* Roster Browser - shares the same three-lane roster layout as the main/forge rosters. */
 .shop-slime-roster-grid {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    justify-content: center;
+    align-content: flex-start;
     gap: 8px;
+    width: 100%;
+    box-sizing: border-box;
     padding: 10px;
     background: rgba(39, 39, 42, 0.7);
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -3704,33 +3710,12 @@ body.modal-open {
     padding: 8px;
 }
 
-.shop-roster-grid-item {
-    appearance: none;
-    width: 31px;
-    height: 33px;
-    flex-basis: 31px;
-    padding: 2px 0;
-    background: rgba(18, 19, 22, 0.8);
-}
-
-.shop-roster-grid-item:hover {
-    transform: scale(1.16);
-    border-color: #f59e0b;
-    z-index: 1;
-}
-
+/* Shop roster items inherit the shared base sizing/styling from the main roster.
+   Only the selection indicator is shop-specific (it drives which slime is managed). */
 .shop-roster-grid-item.selected {
     border-color: #f59e0b;
     background: rgba(245, 158, 11, 0.18);
     box-shadow: 0 0 8px rgba(245, 158, 11, 0.45);
-}
-
-.shop-roster-grid-item .roster-grid-icon {
-    transform: scale(1);
-}
-
-.shop-roster-grid-item .roster-grid-hp-bar {
-    width: 22px;
 }
 
 /* Compact, themed scrollbars for every scrollable shop panel. */
@@ -4799,13 +4784,19 @@ body.new-game-plus .village-buildings {
         background: #64748b;
     }
 }
-/* The Forge shows the same three-by-twenty roster structure as the main roster. */
+/* The Forge shows the same three-lane roster structure as the main roster.
+   The lanes flex and their items wrap, so the grid resizes to the popup width
+   instead of overflowing on narrow screens. */
 .forge-roster-list.slime-roster-list {
-    display: grid;
-    grid-template-columns: repeat(20, 27px);
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: flex-start;
     justify-content: center;
-    align-content: start;
+    align-content: flex-start;
     gap: 4px;
+    width: 100%;
+    box-sizing: border-box;
     min-height: 95px;
     max-height: none;
     overflow: hidden;

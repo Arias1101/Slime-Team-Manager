@@ -5,7 +5,7 @@
 import { loadStateFromLocal, addScraps, gameState, getFortificationLevel, getFortificationUpgradeCost, buyFortificationUpgrade, getSlimeRegen, getRegenMax, markAfkStart, claimAfkScraps, previewAfkScraps, updateBestRoster, calculateSlimeDamage, saveStateToLocal, getScaledEquipmentEffects, getEquipmentQuality, getEquipmentDisplayName, ALCHEMIST_UPGRADES, getAlchemistUpgradeLevel, getAlchemistUpgradeCost, buyAlchemistUpgrade, getSlimeDeathSprite, getSlimeJumpSprite, getSlimeSpecialization } from './state.js';
 import { initAuth, loginWithGoogle, logoutUser } from './auth.js';
 import { startEngine, setGamePaused, isGamePaused } from './engine.js';
-import { updateUI, setAuthScreenState, showFirebaseNotice, playSlimeRainRespawnAnimation, initSlimeModalListeners, initMainTabsListeners, openSlimeInspectorModal } from './ui.js';
+import { updateUI, setAuthScreenState, showFirebaseNotice, playSlimeRainRespawnAnimation, initSlimeModalListeners, initMainTabsListeners, openSlimeInspectorModal, renderSlimeRosterLanes } from './ui.js';
 import { initEnemiesModule, startNextWave, setAutoPlay, resetGameFull, rewindWaveState, startNewGamePlusRun, formatLootEffects } from './enemies.js';
 import { triggerRandomSlimeAttack, triggerSlimeEatLoot, initAscendedAutoAttacks } from './slimes.js';
 import { initUpgradesModule, sortMaxedUpgradeCardsOnPageLoad } from './upgrades.js';
@@ -321,20 +321,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const inventory = getVillageInventory();
         const roster = gameState.slimes || [];
         const totalEquipped = roster.reduce((count, slime) => count + (slime.equipment || []).length, 0);
-        rosterEl.innerHTML = roster.length ? roster.map(slime => {
-            const specialization = getSlimeSpecialization(slime);
-            const specializationClass = ['tank', 'fighter', 'support'].includes(specialization) ? `specialization-${specialization}` : '';
-            const hpPct = Math.max(0, Math.min(100, ((slime.hp || 0) / Math.max(1, slime.maxHp || 1)) * 100));
-            const hpColor = hpPct < 35 ? '#ef4444' : hpPct < 65 ? '#f59e0b' : '#10b981';
-            const equipmentCount = (slime.equipment || []).length;
-            return `<button type="button" class="roster-grid-item forge-roster-grid-item ${slime.ascended ? 'ascended' : ''} ${specializationClass}" data-forge-slime-id="${slime.id}" title="${slime.name}: ${slime.hp}/${slime.maxHp} HP${specialization ? `, ${specialization}` : ''}, ${equipmentCount} equipment"><img src="${getSlimeJumpSprite(slime)}" class="roster-grid-icon" alt="${slime.name}"><div class="roster-grid-hp-bar"><div class="roster-hp-fill" style="width:${hpPct}%;background:${hpColor};"></div></div></button>`;
-        }).join('') : '<p class="forge-empty-text">No Slimes in the current roster.</p>';
-        rosterEl.querySelectorAll('[data-forge-slime-id]').forEach(card => {
-            card.addEventListener('click', () => {
-                const slime = roster.find(entry => String(entry.id) === card.dataset.forgeSlimeId);
-                if (slime) openSlimeInspectorModal(slime);
+        if (!roster.length) {
+            rosterEl.innerHTML = '<p class="forge-empty-text">No Slimes in the current roster.</p>';
+        } else {
+            renderSlimeRosterLanes(rosterEl, roster.map(slime => ({ slime })), {
+                itemClassName: 'forge-roster-grid-item',
+                dataAttrsFor: slime => ({ 'data-forge-slime-id': String(slime.id) }),
+                titleFor: slime => {
+                    const specialization = getSlimeSpecialization(slime);
+                    const equipmentCount = (slime.equipment || []).length;
+                    return `${slime.name}: ${slime.hp}/${slime.maxHp} HP${specialization ? `, ${specialization}` : ''}, ${equipmentCount} equipment`;
+                },
+                onItemClick: slime => openSlimeInspectorModal(slime)
             });
-        });
+        }
         const groupedInventory = new Map();
         inventory.forEach(item => {
             const key = getVillageItemKey(item);

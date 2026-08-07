@@ -4,7 +4,7 @@
 
 import { activeEnemies, triggerLootDrop, activeGroundLoots, formatLootEffects } from './enemies.js';
 import { gameState, SLIME_TYPES, addScraps, updateBestRoster, saveStateToLocal, calculateSlimeDamage, getScaledEquipmentEffects, getSlimeHitEffects, refreshSlimeMaxHp, getSlimeJumpSprite, getSlimeSpecialization } from './state.js';
-import { updateUI } from './ui.js';
+import { updateUI, requestUIRefresh, updateLootHUD } from './ui.js';
 /**
  * Convert viewport measurements back into the battlefield's native 500px coordinate space.
  * The wide layout scales the battlefield element as a whole, while gameplay coordinates stay native.
@@ -518,29 +518,35 @@ function dispatchSingleSlimeToEat() {
     const imgEl = unitEl.querySelector('.slime-img');
     const shadowEl = unitEl.querySelector('.slime-shadow-sm');
 
+    // Use the loot's stored battlefield coordinates instead of calling
+    // getBoundingClientRect() on every loot element (avoids layout thrash).
+    // Convert the slime's viewport rect into the overlay's native coordinate
+    // space by subtracting the overlay origin and dividing by the render scale.
+    const renderScale = getBattlefieldRenderScale();
+    const overlayEl = document.querySelector('.battlefield-overlay');
+    const overlayRect = overlayEl ? overlayEl.getBoundingClientRect() : { left: 0, top: 0 };
     const slimeRect = imgEl.getBoundingClientRect();
+    const slimeBX = (slimeRect.left - overlayRect.left) / renderScale;
+    const slimeBY = (slimeRect.top - overlayRect.top) / renderScale;
 
     let targetLoot = availableLoots[0];
     let minDistSq = Infinity;
 
-    availableLoots.forEach(loot => {
-        if (!loot.el) return;
-        const lRect = loot.el.getBoundingClientRect();
-        const dX = lRect.left - slimeRect.left;
-        const dY = lRect.top - slimeRect.top;
+    for (let i = 0; i < availableLoots.length; i++) {
+        const loot = availableLoots[i];
+        const dX = (loot.x || 0) - slimeBX;
+        const dY = (loot.y || 0) - slimeBY;
         const distSq = dX * dX + dY * dY;
         if (distSq < minDistSq) {
             minDistSq = distSq;
             targetLoot = loot;
         }
-    });
+    }
 
     targetLoot.beingEaten = true;
 
-    const lootRect = targetLoot.el.getBoundingClientRect();
-    const renderScale = getBattlefieldRenderScale();
-    const dx = (lootRect.left - slimeRect.left) / renderScale;
-    const dy = (lootRect.top - slimeRect.top) / renderScale;
+    const dx = (targetLoot.x || 0) - slimeBX;
+    const dy = (targetLoot.y || 0) - slimeBY;
     const distance = Math.sqrt(dx * dx + dy * dy);
 
     imgEl.style.transition = 'none';
@@ -605,7 +611,8 @@ function dispatchSingleSlimeToEat() {
         if (lootIdx !== -1) activeGroundLoots.splice(lootIdx, 1);
 
         addScraps(targetLoot.value);
-        updateUI();
+        updateLootHUD();
+        requestUIRefresh();
 
         // 1. Immediately pop +N 🍖 food scrap floating text (floats straight up)
         showFloatingStatusTextAt(targetLoot.x, targetLoot.y, `+${targetLoot.value} 🍖`, 'loot-text');

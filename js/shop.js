@@ -5,7 +5,7 @@
 import { gameState, saveStateToLocal, updateBestRoster, addScraps, calculateSlimeDamage, getScaledEquipmentEffects, getEquipmentDisplayName, getEquipmentSellMultiplier, getEquipmentQuality, refreshSlimeMaxHp, getSlimeJumpSprite } from './state.js';
 import { ENEMY_TYPES, calculateLootValue, formatLootEffects } from './enemies.js';
 import { SLIME_TYPES } from './state.js';
-import { updateUI } from './ui.js';
+import { updateUI, renderSlimeRosterLanes } from './ui.js';
 import { startNextWave } from './enemies.js';
 import { setGamePaused } from './engine.js';
 
@@ -139,35 +139,18 @@ function renderSlimeRosterBrowser() {
     const container = document.getElementById('shopSlimeRoster');
     if (!container) return;
 
-    container.innerHTML = '';
-
     if (!gameState.slimes || gameState.slimes.length === 0) {
         container.innerHTML = '<p class="shop-empty-text">No slimes in army.</p>';
         return;
     }
 
-    gameState.slimes.forEach(slime => {
-        const slimeConfig = SLIME_TYPES[slime.type] || SLIME_TYPES.base;
-        const isSelected = slime.id === selectedShopSlimeId;
-        const isAscended = slime.ascended === true;
-        const hpPct = Math.max(0, Math.min(100, ((slime.hp || 0) / Math.max(1, slime.maxHp || 1)) * 100));
-        const hpColor = hpPct < 35 ? '#ef4444' : hpPct < 65 ? '#f59e0b' : '#10b981';
-
-        const card = document.createElement('button');
-        card.type = 'button';
-        card.className = `roster-grid-item shop-roster-grid-item ${isSelected ? 'selected' : ''} ${isAscended ? 'ascended' : ''}`;
-        card.title = `${slime.name} (${slimeConfig.name}): ${slime.hp}/${slime.maxHp} HP`;
-        card.innerHTML = `
-            <img src="${getSlimeJumpSprite(slime)}" class="roster-grid-icon" alt="${slime.name}">
-            <div class="roster-grid-hp-bar"><div class="roster-hp-fill" style="width:${hpPct}%;background:${hpColor};"></div></div>
-        `;
-
-        card.addEventListener('click', () => {
+    renderSlimeRosterLanes(container, gameState.slimes.map(slime => ({ slime })), {
+        itemClassName: 'shop-roster-grid-item',
+        extraClassFor: slime => slime.id === selectedShopSlimeId ? 'selected' : '',
+        onItemClick: slime => {
             selectedShopSlimeId = slime.id;
             renderShopUI();
-        });
-
-        container.appendChild(card);
+        }
     });
 }
 

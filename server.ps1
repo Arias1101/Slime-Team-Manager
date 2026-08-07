@@ -27,6 +27,9 @@ while ($H.IsListening) {
             elseif ($localPath.EndsWith(".png")) { $response.ContentType = "image/png" }
             
             $response.ContentLength64 = $bytes.Length
+            $response.Headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+            $response.Headers["Pragma"] = "no-cache"
+            $response.Headers["Expires"] = "0"
             $response.OutputStream.Write($bytes, 0, $bytes.Length)
         } else {
             $response.StatusCode = 404

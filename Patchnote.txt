@@ -1,9 +1,17 @@
 Patch Notes:
+v0.13
+- Fixed some maxed out upgrade that were counting towards available Upgrades count for narrow display.
+- Optimized loot handling.
+- Optimized ennemy handling.
+- Nerfed sylvans again.
+- Fixed Shop and Forge roster styles.
+
 v0.12
 - Overheal from Support Slimes now heal them back up.
 - Increased Support Slimes reactivity.
 - Prevented Specialization for non-Ascended Slimes.
 - Created nice Tooltip template for Talents and used it on Graft.
+- Changed Roster to display Lane divisions of Slimes.
 
 v0.11
 - Fixed xp not reseting.

@@ -13,6 +13,7 @@ import {
     getAugmentationUpgradeCost,
     buyAugmentationUpgrade,
     getSlimeRegen,
+    getRegenMax,
     getRegenUpgradeCost,
     buyRegenUpgrade,
     getDigestionLevel,
@@ -341,10 +342,18 @@ export function updateUpgradesUI() {
 
         upgradeRegenValueEl.textContent = currentRegen;
         setUpgradeLevelZero(upgradeRegenCardEl, currentRegen <= 0);
-        upgradeRegenCostEl.textContent = `${cost4} 🍖`;
 
-        const canAfford4 = (gameState.scraps || 0) >= cost4;
-        if (canAfford4) {
+        const isRegenMaxed = currentRegen >= getRegenMax();
+        if (isRegenMaxed) {
+            upgradeRegenCostEl.textContent = 'MAX';
+            btnUpgradeRegenEl.setAttribute('disabled', 'disabled');
+            btnUpgradeRegenEl.classList.add('disabled');
+            btnUpgradeRegenEl.classList.remove('affordable');
+        } else {
+            upgradeRegenCostEl.textContent = `${cost4} 🍖`;
+
+            const canAfford4 = (gameState.scraps || 0) >= cost4;
+            if (canAfford4) {
             btnUpgradeRegenEl.removeAttribute('disabled');
             btnUpgradeRegenEl.classList.remove('disabled');
             btnUpgradeRegenEl.classList.add('affordable');
@@ -352,6 +361,7 @@ export function updateUpgradesUI() {
             btnUpgradeRegenEl.setAttribute('disabled', 'disabled');
             btnUpgradeRegenEl.classList.add('disabled');
             btnUpgradeRegenEl.classList.remove('affordable');
+            }
         }
     }
 
@@ -664,14 +674,15 @@ export function updateUpgradesUI() {
         else button.setAttribute('disabled', 'disabled');
     });
     // Update Upgrades Tab button label with affordable count badge: "🧪 Upgrades (X)" or "🧪 Upgrades"
-    // Only count visible, unlocked upgrade cards!
-    const allAffordableButtons = document.querySelectorAll('#upgradesContainer .btn-plus.affordable');
+    // Only count visible, unlocked, enabled, affordable upgrade cards.
+    const allUpgradeButtons = document.querySelectorAll('#upgradesContainer .upgrade-card .btn-plus');
     let affordableCount = 0;
-    allAffordableButtons.forEach(btn => {
+    allUpgradeButtons.forEach(btn => {
         const card = btn.closest('.upgrade-card');
-        if (card && card.style.display !== 'none' && !card.classList.contains('hidden')) {
-            affordableCount++;
-        }
+        if (!card || !isVisibleUpgradeCard(card)) return;
+        if (btn.hasAttribute('disabled') || btn.classList.contains('disabled')) return;
+        if (!btn.classList.contains('affordable')) return;
+        affordableCount++;
     });
 
     const tabBtnUpgradesEl = document.getElementById('tabBtnUpgrades');

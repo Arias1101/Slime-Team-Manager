@@ -1,9 +1,11 @@
 ------------- NOW ----------------
-Hidden upgrades should not be counted when calculating how many upgrades can be bought in the "upgrades" tab on narrow screens. (shows "(1)" on my end while nothing can be upgraded)
+TESTS PENDING:
+- Roster in forge should be responsive, it currently overflows on narrow screens
+- Roster in shop should use same styling as main roster and forge roster. Why do they use different styles ? Arent they sharing stuff ?
+
 
 ------------------ LATER -----------------
-- Roster in forge should be responsive, 3x20 layout until it runs out of space width, then switch to 4x15
-- Roster in shop should use same styling as main roster and forge roster. Why do they use different styles ? Arent they sharing stuff ? Could we use the same references to centralize things about Roster ?
+
 - Check if we can reduce freezes when Eating. Seems like the game has small freezes when slimes are picking up a loot late game.
 - Work on the first talent of all specializations.
 The first and last talents will be the same across slime types (fire/poison...)
