@@ -1,4 +1,16 @@
 Patch Notes:
+v0.14
+- Fixed a max section width for roster sections containing lots of Slimes.
+- Implemented equipment priority.
+- Reworked auto equip to take into account equipment priority.
+- Prevented auto equip from equiping slimes that would overcap on critical chances.
+- Implemented a way to tell slimes that can equip a shop item aparts by clicking it.
+- Reworked rewind test button to go back one wave only.
+- Implemented a way to see pending Talent upgrades in main Roster.
+- Added NewGame+ Counter in Header.
+- Implemented Block first Slime Tank Talent.
+- Implemented Rebound first Slime Fighter Talent.
+
 v0.13
 - Fixed some maxed out upgrade that were counting towards available Upgrades count for narrow display.
 - Optimized loot handling.

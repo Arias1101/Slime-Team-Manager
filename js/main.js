@@ -6,7 +6,7 @@ import { loadStateFromLocal, addScraps, gameState, getFortificationLevel, getFor
 import { initAuth, loginWithGoogle, logoutUser } from './auth.js';
 import { startEngine, setGamePaused, isGamePaused } from './engine.js';
 import { updateUI, setAuthScreenState, showFirebaseNotice, playSlimeRainRespawnAnimation, initSlimeModalListeners, initMainTabsListeners, openSlimeInspectorModal, renderSlimeRosterLanes } from './ui.js';
-import { initEnemiesModule, startNextWave, setAutoPlay, resetGameFull, rewindWaveState, startNewGamePlusRun, formatLootEffects } from './enemies.js';
+import { initEnemiesModule, startNextWave, setAutoPlay, resetGameFull, rewindWaveState, startNewGamePlusRun, formatLootEffects, ENEMY_TYPES } from './enemies.js';
 import { triggerRandomSlimeAttack, triggerSlimeEatLoot, initAscendedAutoAttacks } from './slimes.js';
 import { initUpgradesModule, sortMaxedUpgradeCardsOnPageLoad } from './upgrades.js';
 import { initShopModule } from './shop.js';
@@ -350,47 +350,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const icon = item.sprite || `images/loots/${item.id}.png`;
             const quality = getEquipmentQuality(item);
             const displayName = getEquipmentDisplayName(item);
-            return `<article class="forge-inventory-item"><img src="${icon}" alt="${item.name}"><div class="forge-item-details"><strong class="forge-item-quality-${quality}">${displayName}</strong><span>${effectText}</span></div><b class="forge-item-count">x${count}</b><div class="forge-item-actions"><button disabled title="Coming later">Equip</button><button class="btn-forge-auto-equip-item" data-forge-group-index="${groupIndex}" title="Equip one copy to the first eligible Slime">Auto Eq.</button><button class="btn-forge-auto-equip-item-all" data-forge-group-index="${groupIndex}" title="Equip every available copy across eligible Slimes">Auto Eq. All</button></div></article>`;
+            const lootPriority = item.loot_priority || ENEMY_TYPES[item.id]?.loot_priority || '';
+            const specBtn = (spec, label) => `<button class="btn-forge-spec-priority ${lootPriority === spec ? 'selected' : ''}" data-forge-item-id="${item.id}" data-forge-priority="${spec}" title="Equip ${label}s in priority"><img src="images/logos/${spec}.png" alt="${label}"></button>`;
+            const actions = `<div class="forge-item-actions forge-item-actions-spec">${specBtn('support', 'Support')}${specBtn('fighter', 'Fighter')}${specBtn('tank', 'Tank')}</div>`;
+            return `<article class="forge-inventory-item"><img src="${icon}" alt="${item.name}"><div class="forge-item-details"><strong class="forge-item-quality-${quality}">${displayName}</strong><span>${effectText}</span></div><b class="forge-item-count">x${count}</b>${actions}</article>`;
         }).join('') : '<p class="forge-empty-text">No equipment is stored in the Village Inventory.</p>';
-        inventoryEl.querySelectorAll('.btn-forge-auto-equip-item').forEach(button => {
-            const group = groupedItems[Number(button.dataset.forgeGroupIndex)];
-            const hasEligibleSlime = group && roster.some(slime => !(slime.equipment || []).some(equipment => equipment.id === group.item.id));
-            button.disabled = !hasEligibleSlime;
+        inventoryEl.querySelectorAll('.btn-forge-spec-priority').forEach(button => {
             button.addEventListener('click', () => {
-                const targetSlime = roster.find(slime => !(slime.equipment || []).some(equipment => equipment.id === group.item.id));
-                if (!targetSlime || !equipVillageItemToSlime(targetSlime, group.item)) return;
-                const inventoryIndex = getVillageInventory().findIndex(item => getVillageItemKey(item) === group.key);
-                if (inventoryIndex < 0) return;
-                gameState.villageInventory.splice(inventoryIndex, 1);
-                updateBestRoster();
-                saveStateToLocal();
-                updateUI();
-                renderForgePopup(popup);
-                flashEquipmentRecipient(targetSlime.id);
-            });
-        });
-        inventoryEl.querySelectorAll('.btn-forge-auto-equip-item-all').forEach(button => {
-            const group = groupedItems[Number(button.dataset.forgeGroupIndex)];
-            const hasEligibleSlime = group && roster.some(slime => !(slime.equipment || []).some(equipment => equipment.id === group.item.id));
-            button.disabled = !hasEligibleSlime;
-            button.addEventListener('click', () => {
-                const equippedSlimeIds = [];
-                const remainingInventory = [];
-                getVillageInventory().forEach(item => {
-                    if (getVillageItemKey(item) !== group.key) {
-                        remainingInventory.push(item);
-                        return;
-                    }
-                    const targetSlime = roster.find(slime => !(slime.equipment || []).some(equipment => equipment.id === item.id));
-                    if (targetSlime && equipVillageItemToSlime(targetSlime, item)) equippedSlimeIds.push(targetSlime.id);
-                    else remainingInventory.push(item);
+                const itemId = button.dataset.forgeItemId;
+                const spec = button.dataset.forgePriority;
+                getVillageInventory().forEach(invItem => {
+                    if (invItem.id === itemId) invItem.loot_priority = spec;
                 });
-                gameState.villageInventory = remainingInventory;
-                updateBestRoster();
                 saveStateToLocal();
-                updateUI();
                 renderForgePopup(popup);
-                equippedSlimeIds.forEach(flashEquipmentRecipient);
             });
         });
         const unequipButton = popup.querySelector('.btn-forge-unequip-all');
@@ -462,10 +435,38 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         popup.querySelector('.btn-forge-auto-equip-all').addEventListener('click', () => {
             const roster = gameState.slimes || [];
+            const LOOT_PRIORITY_ORDER = {
+                support: ['support', 'tank', 'fighter', 'basic'],
+                tank: ['tank', 'support', 'fighter', 'basic'],
+                fighter: ['fighter', 'tank', 'support', 'basic']
+            };
+            const defaultOrder = LOOT_PRIORITY_ORDER.tank;
+            const matchesSpec = (slime, spec) => {
+                const s = getSlimeSpecialization(slime);
+                return spec === 'basic' ? s === '' : s === spec;
+            };
+            const wouldExceedCritCap = (slime, item) => {
+                const critBonus = getScaledEquipmentEffects(item)
+                    .reduce((sum, e) => sum + (e?.stat === 'crit' ? Number(e?.value ?? 0) : 0), 0);
+                return ((slime.critChance || 0) + critBonus) > 100;
+            };
+            const findTarget = (item) => {
+                const priority = String(item.loot_priority || ENEMY_TYPES[item.id]?.loot_priority || '').toLowerCase();
+                const order = LOOT_PRIORITY_ORDER[priority] || defaultOrder;
+                for (const spec of order) {
+                    const target = roster.find(slime =>
+                        matchesSpec(slime, spec) &&
+                        !(slime.equipment || []).some(eq => eq.id === item.id) &&
+                        !wouldExceedCritCap(slime, item)
+                    );
+                    if (target) return target;
+                }
+                return null;
+            };
             const remainingInventory = [];
             const equippedSlimeIds = [];
             getVillageInventory().forEach(item => {
-                const targetSlime = roster.find(slime => !(slime.equipment || []).some(equipment => equipment.id === item.id));
+                const targetSlime = findTarget(item);
                 if (!targetSlime || !equipVillageItemToSlime(targetSlime, item)) remainingInventory.push(item);
                 else equippedSlimeIds.push(targetSlime.id);
             });

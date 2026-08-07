@@ -12,6 +12,7 @@ import { setGamePaused } from './engine.js';
 let selectedShopSlimeId = null;
 let shopInventory = []; // Array of 5 items: [{ id, enemyKey, name, sprite, effectText, effectsList, price, lootValue, bought }]
 let nextWaveNumber = 11;
+let shopHighlightItem = null; // Shop item whose eligibility is currently highlighted on the roster
 
 /** Roll the quality for a merchant item: normal through legendary (+4). */
 function rollShopEquipmentQuality() {
@@ -88,6 +89,7 @@ export function openShopModal(currentWaveNum) {
     }
 
     generateShopStock();
+    shopHighlightItem = null;
 
     const backdropEl = document.getElementById('shopModalBackdrop');
     const continueBtnEl = document.getElementById('btnLeaveShop');
@@ -146,7 +148,16 @@ function renderSlimeRosterBrowser() {
 
     renderSlimeRosterLanes(container, gameState.slimes.map(slime => ({ slime })), {
         itemClassName: 'shop-roster-grid-item',
-        extraClassFor: slime => slime.id === selectedShopSlimeId ? 'selected' : '',
+        extraClassFor: slime => {
+            const classes = [];
+            if (slime.id === selectedShopSlimeId) classes.push('selected');
+            if (shopHighlightItem && !shopHighlightItem.bought) {
+                const ownedItem = (slime.equipment || []).find(eq => eq.id === shopHighlightItem.enemyKey);
+                const canEquip = !ownedItem || (ownedItem.quality || 0) < (shopHighlightItem.quality || 0);
+                classes.push(canEquip ? 'can-equip' : 'cannot-equip');
+            }
+            return classes.join(' ');
+        },
         onItemClick: slime => {
             selectedShopSlimeId = slime.id;
             renderShopUI();
@@ -296,7 +307,8 @@ function renderShopMarketItems() {
         const displayName = getEquipmentDisplayName(item);
 
         const card = document.createElement('div');
-        card.className = `shop-market-card shop-quality-${item.quality || 0} ${item.bought ? 'bought' : ''}`;
+        const isSelected = shopHighlightItem && !item.bought && shopHighlightItem.enemyKey === item.enemyKey;
+        card.className = `shop-market-card shop-quality-${item.quality || 0} ${item.bought ? 'bought' : ''}${isSelected ? ' selected' : ''}`;
 
         card.innerHTML = `
             <div class="shop-market-card-left">
@@ -321,11 +333,17 @@ function renderShopMarketItems() {
         if (!item.bought) {
             const buyBtn = card.querySelector('.btn-buy-shop-item');
             if (buyBtn && canAfford && !alreadyHasEqualOrBetterItem) {
-                buyBtn.addEventListener('click', () => {
+                buyBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
                     buyShopItem(item);
                 });
             }
         }
+
+        card.addEventListener('click', () => {
+            shopHighlightItem = (shopHighlightItem && shopHighlightItem.enemyKey === item.enemyKey) ? null : item;
+            renderShopUI();
+        });
 
         container.appendChild(card);
     });
@@ -404,5 +422,6 @@ function buyShopItem(item) {
     saveStateToLocal();
     updateUI();
 
+    shopHighlightItem = null;
     renderShopUI();
 }

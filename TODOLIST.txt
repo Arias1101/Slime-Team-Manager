@@ -1,25 +1,9 @@
 ------------- NOW ----------------
-TESTS PENDING:
-- Roster in forge should be responsive, it currently overflows on narrow screens
-- Roster in shop should use same styling as main roster and forge roster. Why do they use different styles ? Arent they sharing stuff ?
 
+
+------------- TESTS PENDING  ----------------
 
 ------------------ LATER -----------------
-
-- Check if we can reduce freezes when Eating. Seems like the game has small freezes when slimes are picking up a loot late game.
-- Work on the first talent of all specializations.
-The first and last talents will be the same across slime types (fire/poison...)
-But the second one will be unique to the type/spec combo (firetank/poisonsupport...)
-Here are my ideas for the first talents:
-Tank: 
-Talent name: Block - 10% chance to ignore incoming damage.
-To implement, when a tank slime recieve damage, roll 10% to ignore it. If the Slime "blocks" then, as a placeholder, spawn the "tank" icon for 0.1s on its sprite.
-Fighter:
-Talent name: Rebound - 10% chance to rejump immediatly on the second closest ennemy when dealing damage.
-To implement, when a Fighter does damage, roll for 10%, then relaunch a jump sequence (with appropriate jumpsprite) on the second closest ennemy instead of the first. (the rebound cannot rebound, and cannot target the main original target a second time).
-
-
-
 - Bench to store Slimes for later use.
 - Menus to mass change slime types / spec
 - Roster with ways to switch slimes in and out of roster/bench

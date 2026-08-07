@@ -283,19 +283,21 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
         targetImpactX = Math.min(450, Math.max(startX + 20, predictedX - 4));
     }
 
-    const maxDx = Math.max(35, targetImpactX - startX);
-    const maxAltitude = Math.min(65, Math.max(35, 25 + maxDx * 0.16));
-    const jumpDuration = Math.min(750, Math.max(480, 450 + maxDx * 0.75));
+    let maxDx = Math.max(35, targetImpactX - startX);
+    let maxAltitude = Math.min(65, Math.max(35, 25 + maxDx * 0.16));
+    let jumpDuration = Math.min(750, Math.max(480, 450 + maxDx * 0.75));
 
-    const startTime = performance.now();
+    let startTime = performance.now();
     let hasDealtDamage = false;
+    let baseX = 0;
+    let baseY = 0;
 
     function animateJumpFrame(now) {
         const elapsed = now - startTime;
-        const progress = Math.min(1.0, elapsed / jumpDuration);
+        let progress = Math.min(1.0, elapsed / jumpDuration);
 
-        const dx = maxDx * progress;
-        const dy = -4 * maxAltitude * progress * (1.0 - progress);
+        const dx = baseX + maxDx * progress;
+        const dy = baseY - 4 * maxAltitude * progress * (1.0 - progress);
 
         imgEl.style.transform = `translate(${dx}px, ${dy}px)`;
 
@@ -334,6 +336,28 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
 
             dealTargetEnemyDamage(targetEnemy, currentDamage, slimeConfig, isCrit, slimeObj);
             // If no target enemies are in range (x <= 450), slime performs jump animation without dealing damage
+
+            // Rebound talent: Fighter slimes get a 10% chance to interrupt this jump and immediately
+            // rejump at the second closest target, looping back to frame 2 of the jump spritesheet.
+            if (getSlimeSpecialization(slimeObj) === 'fighter' && slimeObj?.talents?.rebound && Math.random() < 0.1) {
+                const reboundTarget = pickReboundTarget();
+                if (reboundTarget) {
+                    const currentArmyX = startX + dx;
+                    const rebound = computeReboundTrajectory(currentArmyX, reboundTarget);
+                    baseX = dx;
+                    baseY = dy;
+                    targetEnemy = reboundTarget;
+                    maxDx = rebound.maxDx;
+                    maxAltitude = rebound.maxAltitude;
+                    jumpDuration = rebound.jumpDuration;
+                    startTime = now;
+                    progress = 0;
+                    hasDealtDamage = false;
+                    spriteFrame = 2;
+                    imgEl.style.objectPosition = `${-(2 - 1) * 19}px 0px`;
+                    showFloatingStatusText(reboundTarget, String.fromCodePoint(0x21AA), 'rebound-text');
+                }
+            }
         }
 
         if (progress < 1.0) {
@@ -477,6 +501,48 @@ function dealImpactDamage(impactDx, damage, slimeConfig) {
         dealTargetEnemyDamage(targetEnemy, damage, slimeConfig);
     }
 }
+
+/**
+ * Pick the second closest alive enemy in range (closest to the slimes first).
+ * Used by the Fighter Rebound talent to rejump at the next target after a hit.
+ */
+function pickReboundTarget() {
+    const candidates = activeEnemies
+        .filter(e => e.hp > 0 && e.x >= 90 && e.x <= 450)
+        .sort((a, b) => a.x - b.x);
+    return candidates.length >= 2 ? candidates[1] : null;
+}
+
+/**
+ * Compute the horizontal impact X for a jump launched from refX toward a target.
+ */
+function computeJumpImpactX(refStartX, target) {
+    const estDurationSec = 0.5;
+    const stopBufferPx = 10;
+    const targetX = target.targetX || 100;
+    const remainingDistance = target.x - targetX;
+    const isFrozen = (target.effects?.freezeTimer || 0) > 0;
+    const isRush = target.type === 'rush';
+    const isStillWalking = target.state === 'walking' && !isFrozen && (isRush || remainingDistance > stopBufferPx);
+    let predictedX = target.x;
+    if (isStillWalking) {
+        const enemyTravel = (target.speed || 0) * estDurationSec;
+        predictedX = isRush ? Math.max(90, target.x - enemyTravel) : Math.max(targetX, target.x - enemyTravel);
+    }
+    return Math.min(450, Math.max(refStartX + 20, predictedX - 4));
+}
+
+/**
+ * Recompute jump trajectory for a Rebound rejump from the current airborne position.
+ */
+function computeReboundTrajectory(refX, target) {
+    const targetImpactX = computeJumpImpactX(refX, target);
+    const maxDx = Math.max(35, targetImpactX - refX);
+    const maxAltitude = Math.min(65, Math.max(35, 25 + maxDx * 0.16));
+    const jumpDuration = Math.min(750, Math.max(480, 450 + maxDx * 0.75));
+    return { maxDx, maxAltitude, jumpDuration };
+}
+
 
 /**
  * Show floating text popup at arbitrary x, y coordinates

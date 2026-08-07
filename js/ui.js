@@ -2,7 +2,7 @@
  * User Interface & Authentication Screen Renderer
  */
 
-import { gameState, SLIME_TYPES, killSlime, syncSlimesArray, rerollSlimeType, calculateSlimeDamage, getScaledEquipmentEffects, getEquipmentDisplayName, saveStateToLocal, getSlimeHitEffects, getEquipmentQuality, getSlimeTotalRegen, sortRosterBySpecialization, updateBestRoster, getSlimeJumpSprite } from './state.js';
+import { gameState, SLIME_TYPES, killSlime, syncSlimesArray, rerollSlimeType, calculateSlimeDamage, getScaledEquipmentEffects, getEquipmentDisplayName, saveStateToLocal, getSlimeHitEffects, getEquipmentQuality, getSlimeTotalRegen, sortRosterBySpecialization, updateBestRoster, getSlimeJumpSprite, canSlimeBuyNextTalent } from './state.js';
 import { updateUpgradesUI } from './upgrades.js';
 import { activeGroundLoots, formatLootEffects } from './enemies.js';
 import { setGamePaused, isGamePaused } from './engine.js';
@@ -38,6 +38,11 @@ export function updateUI() {
     const hasEndedGame = (gameState.newGamePlusCompletions || 0) > 0;
     if (villageCoinsStatEl) villageCoinsStatEl.classList.toggle('hidden', !hasEndedGame);
     if (villageCoinsCountEl) villageCoinsCountEl.textContent = gameState.villageCoins || 0;
+
+    const newGamePlusStatEl = document.getElementById('newGamePlusStat');
+    const newGamePlusCountEl = document.getElementById('newGamePlusCount');
+    if (newGamePlusStatEl) newGamePlusStatEl.classList.toggle('hidden', !hasEndedGame);
+    if (newGamePlusCountEl) newGamePlusCountEl.textContent = `+${gameState.newGamePlusCompletions || 0}`;
 
     const enemyBadgeEl = document.getElementById('enemyBadge');
     if (enemyBadgeEl) {
@@ -204,8 +209,9 @@ export function renderSlimeRosterLanes(container, entries, {
         const hpColor = hpPct < 35 ? '#ef4444' : hpPct < 65 ? '#f59e0b' : '#10b981';
 
         const extraClass = extraClassFor ? extraClassFor(slime) || '' : '';
+        const talentAvailable = canSlimeBuyNextTalent(slime);
         const item = document.createElement('div');
-        item.className = `roster-grid-item${slime.ascended ? ' ascended' : ''}${specializationClass ? ` ${specializationClass}` : ''}${itemClassName ? ` ${itemClassName}` : ''}${extraClass ? ` ${extraClass}` : ''}`;
+        item.className = `roster-grid-item${slime.ascended ? ' ascended' : ''}${specializationClass ? ` ${specializationClass}` : ''}${itemClassName ? ` ${itemClassName}` : ''}${extraClass ? ` ${extraClass}` : ''}${talentAvailable ? ' talent-available' : ''}`;
         item.id = `roster_item_${slime.id}`;
         item.dataset.slimeId = String(slime.id);
         item.title = titleFor ? titleFor(slime) : `[Slot #${(slime.slotIndex ?? 0) + 1}] ${displayName} (${slimeConfig.name})${slime.ascended ? ' ✨' : ''}: ${slime.hp}/${slime.maxHp} HP`;
@@ -220,7 +226,7 @@ export function renderSlimeRosterLanes(container, entries, {
     });
 
     Object.entries(lanes).forEach(([lane, element]) => {
-        element.style.setProperty('--lane-count', Math.max(1, laneCounts[lane]));
+        element.style.setProperty('--lane-count', Math.min(20, Math.max(1, laneCounts[lane])));
         element.classList.toggle('hidden', laneCounts[lane] === 0);
     });
 
@@ -230,6 +236,7 @@ export function renderSlimeRosterLanes(container, entries, {
 /**
  * Render Slime Health Status Array on the left side of the main window
  */
+let lastRosterSignature = '';
 function updateSlimeRoster() {
     const rosterListEl = document.getElementById('slimeRosterList') || document.getElementById('rosterList');
     const rosterCountEl = document.getElementById('rosterCount');
@@ -249,6 +256,15 @@ function updateSlimeRoster() {
         const slime = activeById.get(String(savedSlime.id || savedSlime.name));
         return slime ? { slime } : { slime: savedSlime, dead: true };
     });
+
+    // Skip rebuilding the DOM when nothing that affects the rendered items changed,
+    // so the talent-available pulse animation isn't restarted on every UI refresh.
+    const signature = entries.map(e => {
+        const s = e.slime || {};
+        return `${s.id || s.name}|${s.hp}|${s.maxHp}|${e.dead ? 'dead' : ''}|${s.ascended ? 'a' : ''}|${canSlimeBuyNextTalent(s) ? 't' : ''}`;
+    }).join(',');
+    if (signature === lastRosterSignature) return;
+    lastRosterSignature = signature;
 
     renderSlimeRosterLanes(rosterListEl, entries, {
         titleFor: slime => {
@@ -693,7 +709,10 @@ function renderSlimeTalentTree(slime) {
     if (talentTab) {
         talentTab.disabled = !unlocked;
         talentTab.classList.toggle('disabled', !unlocked);
-        talentTab.textContent = unlocked ? 'Specialization' : 'Specialization (Available in New Game+)';
+        const talentAvailable = canSlimeBuyNextTalent(slime);
+        talentTab.textContent = unlocked
+            ? (talentAvailable ? 'Specialization (1)' : 'Specialization')
+            : 'Specialization (Available in New Game+)';
         talentTab.title = unlocked ? 'Specialization' : 'Available in New Game+';
     }
     if (gateMessage) gateMessage.classList.toggle('hidden', unlocked);
@@ -717,19 +736,38 @@ function renderSlimeTalentTree(slime) {
         const xp = Number(slime.wavesClearedSinceDeath || 0);
         const costs = [5, 15, 25];
         specializationTalents.classList.toggle('hidden', !unlocked || !specialization);
+        const talentNames = { support: 'Graft', fighter: 'Rebound', tank: 'Block' };
+        const talentDescriptions = {
+            support: 'Sacrifice 20% of HP to Heal twice that amount to a Slime in need.',
+            fighter: '10% chance to re-jump on the second closest ennemy when dealing damage.',
+            tank: '10% chance to ignore incoming damage.'
+        };
+        const talentFlag = { support: 'graft', fighter: 'rebound', tank: 'block' };
         specializationTalents.innerHTML = specialization ? costs.map((cost, index) => {
-            const talentNames = { support: 'Graft', fighter: 'Rebound', tank: 'Block' };
             const dedicatedIcon = index === 0 ? talentNames[normalizedSpecialization]?.toLowerCase() : null;
             const iconSource = dedicatedIcon ? `images/talents/${normalizedSpecialization}${dedicatedIcon}.png` : icon;
             const talentName = index === 0 ? (talentNames[normalizedSpecialization] || 'Talent1') : `Talent${index + 1}`;
             const button = `<button type="button" class="slime-specialization-talent ${index === 0 && xp >= cost ? 'available' : ''}" title="" ${index === 0 && xp >= cost ? '' : 'disabled'}><img src="${iconSource}" alt="${talentName}"><span>${xp}/${cost}</span></button>`;
-            if (normalizedSpecialization !== 'support' || index !== 0) return button;
-            return `<span class="talent-tooltip-glass">${button}<span class="talent-tooltip-glass-box"><strong>Graft</strong><br>Sacrifice 20% of HP to Heal twice that amount to a Slime in need.</span></span>`;
+            const hasTooltip = index === 0 && (normalizedSpecialization === 'support' || normalizedSpecialization === 'tank' || normalizedSpecialization === 'fighter');
+            if (!hasTooltip) return button;
+            return `<span class="talent-tooltip-glass">${button}<span class="talent-tooltip-glass-box"><strong>${talentNames[normalizedSpecialization]}</strong><br>${talentDescriptions[normalizedSpecialization]}</span></span>`;
         }).join('') : '';
-        const graftUnlocked = normalizedSpecialization === 'support' && slime.talents?.graft === true;
-        if (graftUnlocked) { const unlockedButton = specializationTalents.querySelector('.slime-specialization-talent'); if (unlockedButton) { unlockedButton.classList.add('unlocked'); unlockedButton.disabled = false; const progress = unlockedButton.querySelector('span'); if (progress) progress.textContent = '✔️'; } }
-        const graftButton = specializationTalents.querySelector('.slime-specialization-talent');
-        if (graftButton && normalizedSpecialization === 'support' && !slime.talents?.graft) graftButton.addEventListener('click', () => { if (xp < costs[0]) return; slime.wavesClearedSinceDeath = xp - costs[0]; slime.talents = { ...(slime.talents || {}), graft: true }; saveStateToLocal(); openSlimeInspectorModal(slime); });
+        if (normalizedSpecialization === 'support' || normalizedSpecialization === 'tank' || normalizedSpecialization === 'fighter') {
+            const flag = talentFlag[normalizedSpecialization];
+            const firstButton = specializationTalents.querySelector('.slime-specialization-talent');
+            if (slime.talents?.[flag]) {
+                if (firstButton) { firstButton.classList.add('unlocked'); firstButton.disabled = false; const progress = firstButton.querySelector('span'); if (progress) progress.textContent = '✔️'; }
+            } else if (firstButton) {
+                firstButton.addEventListener('click', () => {
+                    if (xp < costs[0]) return;
+                    slime.wavesClearedSinceDeath = xp - costs[0];
+                    slime.talents = { ...(slime.talents || {}), [flag]: true };
+                    updateBestRoster();
+                    saveStateToLocal();
+                    openSlimeInspectorModal(slime);
+                });
+            }
+        }
     }
     if (!unlocked) activeSlimeSheetTab = 'stats';
 }

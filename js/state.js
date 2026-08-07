@@ -120,7 +120,8 @@ const SLIME_NAME_POOL = [
     'Thé Vert', 'Thé à la Pêche', 'MicMac Padiwak', 'Rascar Capac', 'Diabolo Citron',
     'Monaco', 'La Sardine', 'La Bagarre', 'Paul Ichnel', 'Paul le Saumon',
     'Paradis Yack', 'Incroyable Hulk', 'Iron Blob', 'Godefroy de Montmirail', 'Jackouille la Fripouille',
-    'Chaussée aux Moines', 'Martingale la Meringuée', 'Caprice des Dieux', 'Le Rock Fort', 'Tutti Frutti'
+    'Chaussée aux Moines', 'Martingale la Meringuée', 'Caprice des Dieux', 'Le Rock Fort', 'Tutti Frutti',
+    'Seigneur Merguez', 'Chéa Rome le Romain'
 ];
 
 /**
@@ -310,6 +311,19 @@ export function getSlimeSpecialization(slime) {
     return String(slime?.specialization || '').toLowerCase();
 }
 
+/** Whether a Slime can purchase its next specialization talent (enough XP, not already bought). */
+export function canSlimeBuyNextTalent(slime) {
+    if ((gameState.newGamePlusCompletions || 0) <= 0) return false;
+    const specialization = getSlimeSpecialization(slime);
+    if (!['support', 'tank', 'fighter'].includes(specialization)) return false;
+    const xp = Number(slime?.wavesClearedSinceDeath || 0);
+    if (xp < 5) return false;
+    if (specialization === 'support' && slime?.talents?.graft) return false;
+    if (specialization === 'tank' && slime?.talents?.block) return false;
+    if (specialization === 'fighter' && slime?.talents?.rebound) return false;
+    return true;
+}
+
 /** Returns the appropriate jump sheet for a Slime's elemental type and specialization. */
 /** Death sheets remain elemental; specializations only alter jump sheets. */
 export function getSlimeDeathSprite(slime) {
@@ -379,7 +393,7 @@ export function calculateSlimeDamage(slime) {
         ), 0)
     ), 0);
     const totalDamage = (gameState.slimeDamage || 1) + (gameState.alchemistRageLevel || 0) + equipmentDamage;
-    return Math.max(1, Math.round(totalDamage * (getSlimeSpecialization(slime) === 'fighter' ? 1.2 : 1))); 
+    return Math.max(1, Math.round(totalDamage * (getSlimeSpecialization(slime) === 'fighter' ? 1.2 : 1)));
 }
 
 export function refreshSlimeDamage(slime) {

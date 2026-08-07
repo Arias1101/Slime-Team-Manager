@@ -703,6 +703,19 @@ body.modal-open {
     transform: scaleX(-1);
 }
 
+/* Block spritesheet shown over a Tank Slime that ignored damage (Block talent). */
+.block-shield-effect {
+    position: absolute;
+    width: 25px;
+    height: 25px;
+    z-index: 180;
+    pointer-events: none;
+    image-rendering: pixelated;
+    object-fit: none;
+    opacity: 0.95;
+    filter: drop-shadow(0 0 4px rgba(173, 255, 135, 0.6));
+}
+
 /* Cartoon Jump & Off-Screen Plunge Death Animation (Constant Spin & Natural Physics) */
 .cartoon-ko-eject {
     z-index: 2000 !important;
@@ -875,6 +888,10 @@ body.modal-open {
 
 .floating-text.freeze-text {
     color: #38bdf8;
+}
+
+.floating-text.rebound-text {
+    color: #a78bfa;
 }
 
 .floating-text.loot-text {
@@ -2181,6 +2198,7 @@ body.modal-open {
     flex-direction: column;
     gap: 12px;
     min-height: 0;
+    min-width: 0;
 }
 
 .shop-section-title {
@@ -2201,6 +2219,8 @@ body.modal-open {
     align-content: flex-start;
     gap: 8px;
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
     box-sizing: border-box;
     padding: 10px;
     background: rgba(39, 39, 42, 0.7);
@@ -2443,6 +2463,11 @@ body.modal-open {
     opacity: 0.5;
     background: rgba(24, 24, 27, 0.6);
     border-color: rgba(255, 255, 255, 0.08);
+}
+
+.shop-market-card.selected:not(.bought) {
+    border: 2px solid #ffffff;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.25);
 }
 
 .shop-market-card-left {
@@ -3718,6 +3743,16 @@ body.modal-open {
     box-shadow: 0 0 8px rgba(245, 158, 11, 0.45);
 }
 
+.shop-roster-grid-item.can-equip {
+    border-color: #34d399;
+    background: rgba(52, 211, 153, 0.28) !important;
+    box-shadow: 0 0 8px rgba(52, 211, 153, 0.5);
+}
+
+.shop-roster-grid-item.cannot-equip {
+    opacity: 0.35;
+}
+
 /* Compact, themed scrollbars for every scrollable shop panel. */
 .shop-scrollbar,
 .shop-slime-equipment-list {
@@ -4382,6 +4417,31 @@ body.new-game-plus .village-buildings {
     gap: 6px;
 }
 
+.forge-item-actions-spec .btn-forge-spec-priority {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+    line-height: 0;
+}
+
+.forge-item-actions-spec .btn-forge-spec-priority img {
+    width: 16px;
+    height: 16px;
+    display: block;
+}
+
+.forge-item-actions-spec .btn-forge-spec-priority.selected {
+    border-color: #fbbf24;
+    background: rgba(251, 191, 36, 0.30);
+    box-shadow: 0 0 6px rgba(251, 191, 36, 0.6);
+}
+
+.forge-item-actions-spec .btn-forge-spec-priority:not(.selected) {
+    border-color: #4b5563;
+    background: #1f2937;
+}
+
 .forge-empty-text {
     align-self: center;
     margin: auto;
@@ -4604,6 +4664,25 @@ body.new-game-plus .village-buildings {
     animation: none !important;
 }
 
+/* A Slime that can buy its next talent pulses (keeps its specialization border color).
+   Uses filter (not box-shadow) because .ascended locks box-shadow with !important,
+   which would otherwise override the animated glow. */
+@keyframes talentAvailablePulse {
+
+    0%,
+    100% {
+        filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.25));
+    }
+
+    50% {
+        filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.5));
+    }
+}
+
+.roster-grid-item.talent-available {
+    animation: talentAvailablePulse 1s ease-in-out infinite !important;
+}
+
 .slime-specialization-talents {
     display: flex;
     gap: 12px;
@@ -4784,6 +4863,7 @@ body.new-game-plus .village-buildings {
         background: #64748b;
     }
 }
+
 /* The Forge shows the same three-lane roster structure as the main roster.
    The lanes flex and their items wrap, so the grid resizes to the popup width
    instead of overflowing on narrow screens. */
@@ -4801,6 +4881,7 @@ body.new-game-plus .village-buildings {
     max-height: none;
     overflow: hidden;
 }
+
 /* Main roster lanes are invisible, but retain the army's left-to-right formation. */
 .slime-status-panel .slime-roster-list {
     display: flex;
@@ -4810,6 +4891,7 @@ body.new-game-plus .village-buildings {
     gap: 4px;
     min-height: 30px;
 }
+
 .slime-roster-lane {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(27px, 27px));
@@ -4818,25 +4900,50 @@ body.new-game-plus .village-buildings {
     gap: 4px;
     flex: var(--lane-count) 1 0;
     min-width: 0;
+    /* Never wider than 20 slimes per line (20 * 27px + 19 * 4px gap). */
+    max-width: 616px;
 }
-.slime-roster-lane.hidden { display: none; }
+
+.slime-roster-lane.hidden {
+    display: none;
+}
 
 @media (min-width: 1260px) {
-    .desktop-left-col .slime-roster-list { display: flex; grid-template-columns: none; min-height: 37px; }
-    .desktop-left-col .slime-roster-lane { grid-template-columns: repeat(auto-fit, minmax(31px, 31px)); }
+    .desktop-left-col .slime-roster-list {
+        display: flex;
+        grid-template-columns: none;
+        min-height: 37px;
+    }
+
+    .desktop-left-col .slime-roster-lane {
+        grid-template-columns: repeat(auto-fit, minmax(31px, 31px));
+        max-width: 696px;
+    }
 }
+
 @media (min-width: 901px) and (max-width: 1259px) {
-    .desktop-left-col .slime-roster-list { display: flex; grid-template-columns: none; min-height: 30px; }
+    .desktop-left-col .slime-roster-list {
+        display: flex;
+        grid-template-columns: none;
+        min-height: 30px;
+    }
 }
+
 @media (max-width: 900px) {
-    .desktop-left-col .slime-roster-list { display: flex; grid-template-columns: none; min-height: 30px; }
+    .desktop-left-col .slime-roster-list {
+        display: flex;
+        grid-template-columns: none;
+        min-height: 30px;
+    }
 }
+
 /* Glass tooltip for the Support Graft talent. */
 .talent-tooltip-glass {
     position: relative;
     display: inline-flex;
     cursor: help;
 }
+
 .talent-tooltip-glass-box {
     position: absolute;
     z-index: 1100;
@@ -4860,7 +4967,11 @@ body.new-game-plus .village-buildings {
     transform-origin: bottom center;
     transition: opacity 0.2s ease, transform 0.2s ease;
 }
-.talent-tooltip-glass-box strong { color: #ADFF87; }
+
+.talent-tooltip-glass-box strong {
+    color: #ADFF87;
+}
+
 .talent-tooltip-glass:hover .talent-tooltip-glass-box,
 .talent-tooltip-glass:focus-within .talent-tooltip-glass-box {
     opacity: 1;
