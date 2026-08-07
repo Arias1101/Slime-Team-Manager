@@ -225,11 +225,87 @@ export function renderSlimeRosterLanes(container, entries, {
         lanes[lane].appendChild(item);
     });
 
-    Object.entries(lanes).forEach(([lane, element]) => {
-        element.classList.toggle('hidden', laneCounts[lane] === 0);
-    });
+    applyProportionalLaneWidths(container, laneCounts);
+    trackRosterForResize(container);
 
     return lanes;
+}
+
+/**
+ * Size the roster columns so the roster always uses the available width, while
+ * a lane with few slimes never gets stretched beyond its content (no gaps).
+ *
+ * Per non-empty lane the column width is:
+ *   min( contentWidth, proportionalWidth )
+ * where contentWidth = count * slotPx (one slime per slot) and proportionalWidth
+ * = count/total * usableWidth. So a small lane is content-sized, and a large
+ * lane grows to fill its proportional share — and is capped so the total never
+ * overflows or leaves gaps on narrow screens & the Common House roster.
+ *
+ * Empty lanes are hidden and omitted so they leave no separator gap.
+ * Applied to every roster (Main, Shop, Forge, Common House) via the renderer.
+ */
+/**
+ * Size the roster columns so the roster respects a fixed per-line capacity per
+ * breakpoint (wide=30, medium=24, narrow=15 slots), centered in its container,
+ * while a lane with few slimes never gets stretched beyond its content.
+ *
+ * The capacity is derived from the container's real rendered width so it always
+ * matches whatever panel size the current layout applies (main roster panel,
+ * Forge popup, Common House popup), and is clamped so a wide container can't
+ * squeeze in more slots than the breakpoint allows. Per non-empty lane the
+ * column width is:
+ *   min( contentWidth, proportionalWidth )
+ * where contentWidth = count * slotPx and proportionalWidth =
+ * count/total * capacity * slotPx. So a small lane is content-sized and a large
+ * lane grows to its proportional share of the fixed roster width — the roster
+ * never exceeds its line capacity and never overflows.
+ *
+ * Empty lanes are hidden and omitted so they leave no separator gap.
+ * Applied to every roster (Main, Shop, Forge, Common House) via the renderer.
+ */
+function applyProportionalLaneWidths(container, laneCounts) {
+    if (!container || !laneCounts) return;
+
+    const order = ['back', 'middle', 'front'];
+    const total = order.reduce((s, lane) => s + (laneCounts[lane] || 0), 0);
+    if (total <= 0) return;
+
+    // Slot width (item + 4px lane gap). Fall back if not measurable yet.
+    const item = container.querySelector('.roster-grid-item');
+    const slotPx = (item ? item.offsetWidth : 27) + 4;
+
+    // Per-line slot capacity is derived from the container's real rendered
+    // width (the slime-status-panel has three widths: 1068/750/500px), so it
+    // always matches the current layout. N slots in a lane occupy
+    // N*itemW + (N-1)*gap, hence add one gap back when counting capacity.
+    const nonEmpty = order.filter(lane => (laneCounts[lane] || 0) > 0);
+    const gap = 4;
+    const gapsTotal = Math.max(0, nonEmpty.length - 1) * gap;
+
+    const availWidth = container.clientWidth || (slotPx * 10);
+    const capacity = Math.max(1, Math.floor((availWidth + gap) / slotPx));
+
+    const rosterWidth = capacity * slotPx - gapsTotal;
+
+    // Column width per lane = min(content, proportional share of the roster).
+    const widthFor = lane => {
+        const count = laneCounts[lane] || 0;
+        const content = count * slotPx;
+        const proportional = (count / total) * rosterWidth;
+        return Math.max(0, Math.min(content, proportional));
+    };
+
+    const cols = nonEmpty.map(lane => `${Math.round(widthFor(lane))}px`);
+
+    if (cols.length === 0) return;
+    container.style.gridTemplateColumns = cols.join(' ');
+
+    // Hide empty lanes so they leave no separator gap; non-empty lanes fill width.
+    order.forEach(lane => {
+        const el = container.querySelector(`.slime-roster-lane-${lane}`);
+        if (el) el.style.display = (laneCounts[lane] || 0) > 0 ? '' : 'none';
+    });
 }
 
 /**
@@ -278,6 +354,33 @@ function updateSlimeRoster() {
     if (rosterPanelEl) requestAnimationFrame(() => {
         document.documentElement.style.setProperty('--roster-height', `${rosterPanelEl.offsetHeight || 60}px`);
     });
+}
+
+// Track every rendered roster container so its lane widths are recomputed when
+// the window is resized (the slime-status-panel width changes between
+// breakpoints: 1068/750/500px) without needing a full re-render.
+const trackedRosters = new Set();
+function trackRosterForResize(container) {
+    if (!container) return;
+    trackedRosters.add(container);
+    if (!window.__rosterResizeBound) {
+        window.__rosterResizeBound = true;
+        let resizeTimer = null;
+        window.addEventListener('resize', () => {
+            if (resizeTimer) clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                trackedRosters.forEach(el => {
+                    if (!document.contains(el)) { trackedRosters.delete(el); return; }
+                    const laneCounts = { back: 0, middle: 0, front: 0 };
+                    Object.keys(laneCounts).forEach(lane => {
+                        const laneEl = el.querySelector(`.slime-roster-lane-${lane}`);
+                        if (laneEl) laneCounts[lane] = laneEl.querySelectorAll('.roster-grid-item').length;
+                    });
+                    applyProportionalLaneWidths(el, laneCounts);
+                });
+            }, 100);
+        });
+    }
 }
 
 /**

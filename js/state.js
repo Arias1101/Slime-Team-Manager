@@ -121,7 +121,7 @@ const SLIME_NAME_POOL = [
     'Monaco', 'La Sardine', 'La Bagarre', 'Paul Ichnel', 'Paul le Saumon',
     'Paradis Yack', 'Incroyable Hulk', 'Iron Blob', 'Godefroy de Montmirail', 'Jackouille la Fripouille',
     'Chaussée aux Moines', 'Martingale la Meringuée', 'Caprice des Dieux', 'Le Rock Fort', 'Tutti Frutti',
-    'Seigneur Merguez', 'Chéa Rome le Romain'
+    'Seigneur Merguez', 'Chéa Rome le Romain', 'Goat Granny'
 ];
 
 /**

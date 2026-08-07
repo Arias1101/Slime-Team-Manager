@@ -1,4 +1,7 @@
 Patch Notes:
+v0.17
+- Fixed Roster Display. Hopefully for good.
+
 v0.16
 - Fixed Cloud Saves
 

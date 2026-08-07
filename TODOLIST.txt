@@ -1,4 +1,18 @@
 ------------- NOW ----------------
+Roster is fine for an even distribution of specialized slimes, but when no slime as a specialization or when they all are in the same specialization, they are all cramed in on third of the width. We should most likely programmaticaly change css rules based on composition:
+
+1) When there is more than 5 slimes of a give specialization, column for that specialization should never go under 5 slime width.
+2) When there is less than 5 slimes of a given specialization, column width for that specialization should be of the amount of slime there is.
+
+Lets think of the matter together.
+
+On wide display, 10*3 =  30 slimes wide roster
+On medium display, 8*3 = 24 slimes wide roster
+On narrow displayn, 5*3 = 15 slimes wide roster
+
+Slimes should use all the available width even when the roster is unevenly distributed.
+
+
 
 ------------- TESTS PENDING  ----------------
 
