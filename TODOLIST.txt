@@ -1,9 +1,9 @@
---------------- TODO NOW -----------------
-- XP doesn't reset anymore on death. It should.
-- Replace the warning popup on specialization by a simple message writen in #FF7F7F with a ⚠️ at the end, similar to the message explaining the +20% bonus stat, a message with 
-- Arrange roster like the real state of the army on the field: Tanks on the right, dps and basic in the middle, support on the left.
-- Add a dark colored background to roster squares depending on slime specialization: tank: #00355B fighter: #590E00, support: #144400. Make sure this style is overrided by status effects backgrounds.
+------------- NOW ----------------
 
+
+------------------ LATER -----------------
+- Roster in forge should be responsive, 3x20 layout until it runs out of space width, then switch to 4x15
+- Roster in shop should use same styling as main roster and forge roster. Why do they use different styles ? Arent they sharing stuff ? Could we use the same references to centralize things about Roster ?
 - Check if we can reduce freezes when Eating. Seems like the game has small freezes when slimes are picking up a loot late game.
 - Work on the first talent of all specializations.
 The first and last talents will be the same across slime types (fire/poison...)
@@ -16,7 +16,8 @@ Fighter:
 Talent name: Rebound - 10% chance to rejump immediatly on the second closest ennemy when dealing damage.
 To implement, when a Fighter does damage, roll for 10%, then relaunch a jump sequence (with appropriate jumpsprite) on the second closest ennemy instead of the first. (the rebound cannot rebound, and cannot target the main original target a second time).
 
------------------- LATER ------------------
+
+
 - Speed type of ennemies imune to overflow
 - Bench to store Slimes for later use.
 - Roster with ways to switch slimes in and out of roster/bench

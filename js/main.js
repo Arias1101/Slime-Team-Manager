@@ -2,7 +2,7 @@
  * Application Main Initializer
  */
 
-import { loadStateFromLocal, addScraps, gameState, getFortificationLevel, getFortificationUpgradeCost, buyFortificationUpgrade, getSlimeRegen, getRegenMax, markAfkStart, claimAfkScraps, previewAfkScraps, updateBestRoster, calculateSlimeDamage, saveStateToLocal, getScaledEquipmentEffects, getEquipmentQuality, getEquipmentDisplayName, ALCHEMIST_UPGRADES, getAlchemistUpgradeLevel, getAlchemistUpgradeCost, buyAlchemistUpgrade, getSlimeDeathSprite } from './state.js';
+import { loadStateFromLocal, addScraps, gameState, getFortificationLevel, getFortificationUpgradeCost, buyFortificationUpgrade, getSlimeRegen, getRegenMax, markAfkStart, claimAfkScraps, previewAfkScraps, updateBestRoster, calculateSlimeDamage, saveStateToLocal, getScaledEquipmentEffects, getEquipmentQuality, getEquipmentDisplayName, ALCHEMIST_UPGRADES, getAlchemistUpgradeLevel, getAlchemistUpgradeCost, buyAlchemistUpgrade, getSlimeDeathSprite, getSlimeJumpSprite, getSlimeSpecialization } from './state.js';
 import { initAuth, loginWithGoogle, logoutUser } from './auth.js';
 import { startEngine, setGamePaused, isGamePaused } from './engine.js';
 import { updateUI, setAuthScreenState, showFirebaseNotice, playSlimeRainRespawnAnimation, initSlimeModalListeners, initMainTabsListeners, openSlimeInspectorModal } from './ui.js';
@@ -237,6 +237,18 @@ document.addEventListener('DOMContentLoaded', () => {
         return gameState.villageInventory;
     };
     const getVillageItemKey = (item) => JSON.stringify([item.id, item.name, item.sprite, item.effects || item.effectText || '', getEquipmentQuality(item)]);
+    // Convert the previous { stat: 'effect', effectType: 'stun' } format when the Forge touches an item.
+    const normalizeLegacyItemEffects = (item) => {
+        if (!item) return item;
+        const rawEffects = Array.isArray(item.effects) ? item.effects : (item.effects ? [item.effects] : []);
+        if (!rawEffects.length) return item;
+        item.effects = rawEffects.map(effect => {
+            if (!effect || effect.stat !== 'effect' || !effect.effectType) return effect;
+            const { effectType, ...rest } = effect;
+            return { ...rest, stat: effectType, value: Number(effect.value ?? 1) || 1 };
+        });
+        return item;
+    };
     const getVillageMergeKey = (item) => JSON.stringify([item.id, item.name, item.sprite, item.effects || item.effectText || '']);
     const canMergeVillageInventory = (inventory) => {
         const counts = new Map();
@@ -251,6 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const mergeVillageInventory = (inventory) => {
         const families = new Map();
         inventory.forEach(item => {
+            normalizeLegacyItemEffects(item);
             const key = getVillageMergeKey(item);
             if (!families.has(key)) families.set(key, [[], [], [], [], []]);
             families.get(key)[getEquipmentQuality(item)].push(item);
@@ -309,11 +322,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const roster = gameState.slimes || [];
         const totalEquipped = roster.reduce((count, slime) => count + (slime.equipment || []).length, 0);
         rosterEl.innerHTML = roster.length ? roster.map(slime => {
-            const slimeConfig = { base: 'base', fire: 'fire', ice: 'ice', stone: 'stone', toxic: 'poison' }[slime.type || 'base'] || 'base';
+            const specialization = getSlimeSpecialization(slime);
+            const specializationClass = ['tank', 'fighter', 'support'].includes(specialization) ? `specialization-${specialization}` : '';
             const hpPct = Math.max(0, Math.min(100, ((slime.hp || 0) / Math.max(1, slime.maxHp || 1)) * 100));
             const hpColor = hpPct < 35 ? '#ef4444' : hpPct < 65 ? '#f59e0b' : '#10b981';
             const equipmentCount = (slime.equipment || []).length;
-            return `<button type="button" class="roster-grid-item forge-roster-grid-item ${slime.ascended ? 'ascended' : ''}" data-forge-slime-id="${slime.id}" title="${slime.name}: ${slime.hp}/${slime.maxHp} HP, ${equipmentCount} equipment"><img src="images/slimes/${slimeConfig}/jump.png" class="roster-grid-icon" alt="${slime.name}"><div class="roster-grid-hp-bar"><div class="roster-hp-fill" style="width:${hpPct}%;background:${hpColor};"></div></div></button>`;
+            return `<button type="button" class="roster-grid-item forge-roster-grid-item ${slime.ascended ? 'ascended' : ''} ${specializationClass}" data-forge-slime-id="${slime.id}" title="${slime.name}: ${slime.hp}/${slime.maxHp} HP${specialization ? `, ${specialization}` : ''}, ${equipmentCount} equipment"><img src="${getSlimeJumpSprite(slime)}" class="roster-grid-icon" alt="${slime.name}"><div class="roster-grid-hp-bar"><div class="roster-hp-fill" style="width:${hpPct}%;background:${hpColor};"></div></div></button>`;
         }).join('') : '<p class="forge-empty-text">No Slimes in the current roster.</p>';
         rosterEl.querySelectorAll('[data-forge-slime-id]').forEach(card => {
             card.addEventListener('click', () => {

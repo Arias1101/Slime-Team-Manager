@@ -1850,13 +1850,28 @@ body.modal-open {
 }
 
 .slime-modal-body::-webkit-scrollbar,
-.slime-talent-content::-webkit-scrollbar { width: 8px; }
+.slime-talent-content::-webkit-scrollbar {
+    width: 8px;
+}
+
 .slime-modal-body::-webkit-scrollbar-track,
-.slime-talent-content::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.72); border-radius: 999px; }
+.slime-talent-content::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.72);
+    border-radius: 999px;
+}
+
 .slime-modal-body::-webkit-scrollbar-thumb,
-.slime-talent-content::-webkit-scrollbar-thumb { background: linear-gradient(#34d399, #059669); border: 2px solid rgba(15, 23, 42, 0.85); border-radius: 999px; }
+.slime-talent-content::-webkit-scrollbar-thumb {
+    background: linear-gradient(#34d399, #059669);
+    border: 2px solid rgba(15, 23, 42, 0.85);
+    border-radius: 999px;
+}
+
 .slime-modal-body::-webkit-scrollbar-thumb:hover,
-.slime-talent-content::-webkit-scrollbar-thumb:hover { background: #6ee7b7; }
+.slime-talent-content::-webkit-scrollbar-thumb:hover {
+    background: #6ee7b7;
+}
+
 .slime-modal-header {
     display: flex;
     align-items: center;
@@ -2046,11 +2061,26 @@ body.modal-open {
     overflow: hidden;
 }
 
-.equipment-item-name.equipment-quality-0 { color: #f4f4f5; }
-.equipment-item-name.equipment-quality-1 { color: #4ade80; }
-.equipment-item-name.equipment-quality-2 { color: #60a5fa; }
-.equipment-item-name.equipment-quality-3 { color: #c084fc; }
-.equipment-item-name.equipment-quality-4 { color: #fb923c; }
+.equipment-item-name.equipment-quality-0 {
+    color: #f4f4f5;
+}
+
+.equipment-item-name.equipment-quality-1 {
+    color: #4ade80;
+}
+
+.equipment-item-name.equipment-quality-2 {
+    color: #60a5fa;
+}
+
+.equipment-item-name.equipment-quality-3 {
+    color: #c084fc;
+}
+
+.equipment-item-name.equipment-quality-4 {
+    color: #fb923c;
+}
+
 .equipment-item-name {
     font-size: 0.74rem;
     font-weight: 700;
@@ -3261,10 +3291,23 @@ body.modal-open {
     filter: grayscale(0.85) brightness(0.55) contrast(0.9);
     transition: filter 0.25s ease;
 }
-.roster-grid-item.is-burning { background: rgba(239, 68, 68, .42) !important; }
-.roster-grid-item.is-poisoned { background: rgba(168, 85, 247, .42) !important; }
-.roster-grid-item.is-frozen { background: rgba(56, 189, 248, .42) !important; }
-.roster-grid-item.is-stunned { background: rgba(250, 204, 21, .42) !important; }
+
+.roster-grid-item.is-burning {
+    background: rgba(239, 68, 68, .42) !important;
+}
+
+.roster-grid-item.is-poisoned {
+    background: rgba(168, 85, 247, .42) !important;
+}
+
+.roster-grid-item.is-frozen {
+    background: rgba(56, 189, 248, .42) !important;
+}
+
+.roster-grid-item.is-stunned {
+    background: rgba(250, 204, 21, .42) !important;
+}
+
 .upgrade-card.level-zero {
     border-color: rgba(251, 191, 36, 0.95);
     box-shadow: inset 0 0 8px rgba(245, 158, 11, 0.25);
@@ -3275,7 +3318,9 @@ body.modal-open {
     box-shadow: inset 0 0 10px rgba(245, 158, 11, 0.35);
 }
 
-.upgrades-container { padding-right: 10px; }
+.upgrades-container {
+    padding-right: 10px;
+}
 
 
 
@@ -3338,9 +3383,17 @@ body.modal-open {
     line-height: 1.6;
 }
 
-.slime-talent-gate-message { color: #fbbf24; }
-.slime-talent-base-message { color: #f87171; }
-.slime-talent-chosen-message { color: #86efac; }
+.slime-talent-gate-message {
+    color: #fbbf24;
+}
+
+.slime-talent-base-message {
+    color: #f87171;
+}
+
+.slime-talent-chosen-message {
+    color: #86efac;
+}
 
 .slime-talent-choices {
     display: flex;
@@ -3373,6 +3426,7 @@ body.modal-open {
     opacity: 0.35;
     filter: grayscale(1);
 }
+
 .slime-talent-choice img {
     display: block;
     width: 100%;
@@ -3380,6 +3434,7 @@ body.modal-open {
     object-fit: contain;
     image-rendering: pixelated;
 }
+
 .slime-sheet-tab.disabled {
     opacity: 0.4;
     cursor: not-allowed;
@@ -3395,16 +3450,50 @@ body.modal-open {
     gap: 5px;
     margin-bottom: 12px;
 }
-.slime-stat-card:has(#slimeModalHp) { grid-area: hp; }
-.slime-stat-card:has(#slimeModalRegen) { grid-area: regen; }
-.slime-stat-card:has(#slimeModalDamage) { grid-area: damage; }
-.slime-stat-card:has(#slimeModalCrit) { grid-area: crit; }
-.slime-stat-card:has(#slimeModalBurn) { grid-area: burn; }
-.slime-stat-card:has(#slimeModalFreeze) { grid-area: freeze; }
-.slime-stat-card:has(#slimeModalPoison) { grid-area: poison; }
-.slime-stat-card:has(#slimeModalStun) { grid-area: stun; }
-.slime-hit-effect-stat .stat-value { color: #fbbf24; }
-.slime-modal-meta { display: flex; justify-content: space-between; margin: 0 2px 10px; color: #94a3b8; font-size: 0.62rem; }
+
+.slime-stat-card:has(#slimeModalHp) {
+    grid-area: hp;
+}
+
+.slime-stat-card:has(#slimeModalRegen) {
+    grid-area: regen;
+}
+
+.slime-stat-card:has(#slimeModalDamage) {
+    grid-area: damage;
+}
+
+.slime-stat-card:has(#slimeModalCrit) {
+    grid-area: crit;
+}
+
+.slime-stat-card:has(#slimeModalBurn) {
+    grid-area: burn;
+}
+
+.slime-stat-card:has(#slimeModalFreeze) {
+    grid-area: freeze;
+}
+
+.slime-stat-card:has(#slimeModalPoison) {
+    grid-area: poison;
+}
+
+.slime-stat-card:has(#slimeModalStun) {
+    grid-area: stun;
+}
+
+.slime-hit-effect-stat .stat-value {
+    color: #fbbf24;
+}
+
+.slime-modal-meta {
+    display: flex;
+    justify-content: space-between;
+    margin: 0 2px 10px;
+    color: #94a3b8;
+    font-size: 0.62rem;
+}
 
 .slime-stat-card {
     transition: border-color 0.15s ease, background 0.15s ease;
@@ -3414,6 +3503,7 @@ body.modal-open {
     border-color: rgba(245, 158, 11, 0.5);
     background: rgba(255, 255, 255, 0.08);
 }
+
 .slime-stat-card {
     flex-direction: row;
     align-items: center;
@@ -3441,7 +3531,10 @@ body.modal-open {
     padding: 10px;
 }
 
-.slime-modal-portrait.is-dead { animation: none; transform: scale(2.5); }
+.slime-modal-portrait.is-dead {
+    animation: none;
+    transform: scale(2.5);
+}
 
 
 /* Medium desktop: keep both panels visible, with one readable upgrades column. */
@@ -3463,18 +3556,36 @@ body.modal-open {
 }
 
 @keyframes ascendedRosterBorderPulse {
-    0%, 100% { border-color: #f472b6; }
-    50% { border-color: #ef4444; }
+
+    0%,
+    100% {
+        border-color: #f472b6;
+    }
+
+    50% {
+        border-color: #ef4444;
+    }
 }
 
 .roster-grid-item.ascended {
     animation: ascendedRosterBorderPulse 0.8s ease-in-out infinite;
 }
 
-.roster-grid-item.ascended.is-burning { background: rgba(239, 68, 68, .42) !important; }
-.roster-grid-item.ascended.is-poisoned { background: rgba(168, 85, 247, .42) !important; }
-.roster-grid-item.ascended.is-frozen { background: rgba(56, 189, 248, .42) !important; }
-.roster-grid-item.ascended.is-stunned { background: rgba(250, 204, 21, .42) !important; }
+.roster-grid-item.ascended.is-burning {
+    background: rgba(239, 68, 68, .42) !important;
+}
+
+.roster-grid-item.ascended.is-poisoned {
+    background: rgba(168, 85, 247, .42) !important;
+}
+
+.roster-grid-item.ascended.is-frozen {
+    background: rgba(56, 189, 248, .42) !important;
+}
+
+.roster-grid-item.ascended.is-stunned {
+    background: rgba(250, 204, 21, .42) !important;
+}
 
 /* Support healing feedback */
 .floating-damage-num.heal {
@@ -3496,20 +3607,41 @@ body.modal-open {
 }
 
 @keyframes supportCastRay {
-    from { opacity: 0; transform: scaleY(0.35); }
-    35% { opacity: 1; transform: scaleY(1); }
-    to { opacity: 0; transform: scaleY(1.12); }
+    from {
+        opacity: 0;
+        transform: scaleY(0.35);
+    }
+
+    35% {
+        opacity: 1;
+        transform: scaleY(1);
+    }
+
+    to {
+        opacity: 0;
+        transform: scaleY(1.12);
+    }
 }
+
 /* Keep the modal portrait at its intended enlarged scale during type rerolls. */
 .slime-modal-portrait.slime-dying-vibrate {
     animation: modalRerollVibrate 0.08s infinite ease-in-out !important;
 }
 
 @keyframes modalRerollVibrate {
-    0% { transform: translate(-2px, 0) rotate(-3deg) scale(2.5); }
-    50% { transform: translate(2px, -1px) rotate(3deg) scale(2.58); }
-    100% { transform: translate(-1px, 2px) rotate(-2deg) scale(2.5); }
+    0% {
+        transform: translate(-2px, 0) rotate(-3deg) scale(2.5);
+    }
+
+    50% {
+        transform: translate(2px, -1px) rotate(3deg) scale(2.58);
+    }
+
+    100% {
+        transform: translate(-1px, 2px) rotate(-2deg) scale(2.5);
+    }
 }
+
 /* AFK reward: a persistent, interactive version of the battlefield wave banner. */
 .afk-reward-backdrop {
     position: fixed;
@@ -3563,6 +3695,7 @@ body.modal-open {
 .afk-reward-claim:hover {
     background: linear-gradient(135deg, #fbbf24, #f59e0b);
 }
+
 /* Merchant roster reuses the compact icon + HP-bar language from the main roster. */
 .shop-slime-roster-grid {
     align-content: flex-start;
@@ -3629,6 +3762,7 @@ body.modal-open {
 .shop-slime-equipment-list::-webkit-scrollbar-thumb:hover {
     background: #fbbf24;
 }
+
 /* Wide pixel-art battlefield layout: scale the native 500×212 battlefield as one crisp 2× surface. */
 @media (min-width: 1260px) {
     .app-container {
@@ -3719,8 +3853,10 @@ body.modal-open {
         overflow-y: auto !important;
     }
 }
+
 /* Wide 1.5× follow-up: leave the upgrade list in normal document flow. */
 @media (min-width: 1260px) {
+
     html,
     body {
         height: auto;
@@ -3772,8 +3908,10 @@ body.modal-open {
         overflow: visible !important;
     }
 }
+
 /* Medium 1.5× battlefield layout: retain the wide presentation with two upgrade columns. */
 @media (min-width: 901px) and (max-width: 1259px) {
+
     html,
     body {
         height: auto;
@@ -3860,30 +3998,36 @@ body.modal-open {
         overflow: visible !important;
     }
 }
+
 @keyframes afkRewardPopIn {
     from {
         opacity: 0;
         transform: scale(0.85);
     }
+
     to {
         opacity: 1;
         transform: scale(1);
     }
 }
+
 /* Tall enemies keep their feet on the normal baseline and float instead of using the exaggerated walk tilt. */
 .enemy-tall.enemy-walking .enemy-sprite {
     animation: tallEnemyFloat 1.5s infinite ease-in-out;
 }
 
 @keyframes tallEnemyFloat {
+
     0%,
     100% {
         transform: translateY(0);
     }
+
     50% {
         transform: translateY(-3px);
     }
 }
+
 /* New Game+ village intermission: roster is safe, but no battle is active. */
 body.new-game-plus .army-side .side-badge,
 body.new-game-plus .enemy-side .side-badge,
@@ -3907,7 +4051,9 @@ body.new-game-plus #tabBtnUpgrades {
     pointer-events: none;
 }
 
-body.new-game-plus .village-buildings { display: block; }
+body.new-game-plus .village-buildings {
+    display: block;
+}
 
 .village-door,
 .village-start-run {
@@ -3937,10 +4083,21 @@ body.new-game-plus .village-buildings { display: block; }
     filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.75));
 }
 
-.village-door-alchemist::before { content: "\1F9EA"; }
-.village-door-common-house::before { content: "\1F3E0"; }
-.village-door-forge::before { content: "\1F528"; }
-.village-door-tavern::before { content: "\1F37A"; }
+.village-door-alchemist::before {
+    content: "\1F9EA";
+}
+
+.village-door-common-house::before {
+    content: "\1F3E0";
+}
+
+.village-door-forge::before {
+    content: "\1F528";
+}
+
+.village-door-tavern::before {
+    content: "\1F37A";
+}
 
 .village-door:hover,
 .village-door:focus-visible {
@@ -3951,16 +4108,31 @@ body.new-game-plus .village-buildings { display: block; }
     outline: none;
 }
 
-.village-door-alchemist { left: calc(31% + 20px); top: 18%; }
+.village-door-alchemist {
+    left: calc(31% + 20px);
+    top: 18%;
+}
+
 .village-door:disabled {
     cursor: not-allowed;
     opacity: 0.32;
     filter: grayscale(1);
 }
 
-.village-door-common-house { left: calc(65% - 50px); top: 17%; }
-.village-door-forge { left: calc(82% - 40px); top: calc(47% - 20px); }
-.village-door-tavern { left: calc(14% + 90px); top: 54%; }
+.village-door-common-house {
+    left: calc(65% - 50px);
+    top: 17%;
+}
+
+.village-door-forge {
+    left: calc(82% - 40px);
+    top: calc(47% - 20px);
+}
+
+.village-door-tavern {
+    left: calc(14% + 90px);
+    top: 54%;
+}
 
 .village-start-run {
     left: 70%;
@@ -4011,7 +4183,10 @@ body.new-game-plus .village-buildings { display: block; }
     font-family: var(--font-heading);
 }
 
-.village-building-popup p { margin: 0; color: #cbd5e1; }
+.village-building-popup p {
+    margin: 0;
+    color: #cbd5e1;
+}
 
 .village-popup-close {
     position: absolute;
@@ -4037,6 +4212,7 @@ body.new-game-plus .village-buildings { display: block; }
     color: #ef4444;
     transform: scale(1.1);
 }
+
 /* The Eat control becomes the village's primary call to action. */
 .btn-eat-main.village-start-action {
     background: linear-gradient(135deg, #d97706, #b45309);
@@ -4047,6 +4223,7 @@ body.new-game-plus .village-buildings { display: block; }
 .btn-eat-main.village-start-action:hover:not([disabled]) {
     background: linear-gradient(135deg, #f59e0b, #d97706);
 }
+
 /* Forge: roster overview and persistent Village Inventory */
 .forge-building-popup {
     width: min(740px, 96vw);
@@ -4057,7 +4234,7 @@ body.new-game-plus .village-buildings { display: block; }
     overflow: hidden;
 }
 
-.forge-building-popup > h3 {
+.forge-building-popup>h3 {
     flex: 0 0 auto;
     margin-bottom: 14px;
 }
@@ -4121,8 +4298,16 @@ body.new-game-plus .village-buildings { display: block; }
     text-align: center;
 }
 
-.forge-roster-slime img { width: 24px; height: 24px; image-rendering: pixelated; }
-.forge-roster-slime span { display: none; }
+.forge-roster-slime img {
+    width: 24px;
+    height: 24px;
+    image-rendering: pixelated;
+}
+
+.forge-roster-slime span {
+    display: none;
+}
+
 .forge-roster-slime b {
     position: absolute;
     right: -4px;
@@ -4143,8 +4328,14 @@ body.new-game-plus .village-buildings { display: block; }
     margin-top: 12px;
 }
 
-.forge-inventory-section .forge-section-header { margin: 0 2px 8px; }
-.forge-inventory-section .forge-section-header > div { display: flex; gap: 6px; }
+.forge-inventory-section .forge-section-header {
+    margin: 0 2px 8px;
+}
+
+.forge-inventory-section .forge-section-header>div {
+    display: flex;
+    gap: 6px;
+}
 
 .forge-inventory-list {
     min-height: 160px;
@@ -4168,19 +4359,67 @@ body.new-game-plus .village-buildings { display: block; }
     background: rgba(15, 23, 42, 0.52);
 }
 
-.forge-inventory-item > img { width: 34px; height: 34px; object-fit: contain; image-rendering: pixelated; }
-.forge-item-details { min-width: 0; display: grid; gap: 4px; }
-.forge-item-details strong { overflow: hidden; color: #f8fafc; font-size: 0.58rem; text-overflow: ellipsis; white-space: nowrap; }
-.forge-item-details span { color: #94a3b8; font-size: 0.48rem; line-height: 1.45; }
-.forge-item-count { color: #fbbf24; font-size: 0.61rem; }
-.forge-item-actions { grid-column: 2 / 4; display: flex; gap: 6px; }
-.forge-empty-text { align-self: center; margin: auto; color: #94a3b8; font-size: 0.62rem; text-align: center; }
+.forge-inventory-item>img {
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
+.forge-item-details {
+    min-width: 0;
+    display: grid;
+    gap: 4px;
+}
+
+.forge-item-details strong {
+    overflow: hidden;
+    color: #f8fafc;
+    font-size: 0.58rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.forge-item-details span {
+    color: #94a3b8;
+    font-size: 0.48rem;
+    line-height: 1.45;
+}
+
+.forge-item-count {
+    color: #fbbf24;
+    font-size: 0.61rem;
+}
+
+.forge-item-actions {
+    grid-column: 2 / 4;
+    display: flex;
+    gap: 6px;
+}
+
+.forge-empty-text {
+    align-self: center;
+    margin: auto;
+    color: #94a3b8;
+    font-size: 0.62rem;
+    text-align: center;
+}
 
 @media (max-width: 520px) {
-    .forge-building-popup { padding: 16px; }
-    .forge-section-header { align-items: flex-start; flex-direction: column; }
-    .forge-inventory-list { grid-template-columns: 1fr; }
+    .forge-building-popup {
+        padding: 16px;
+    }
+
+    .forge-section-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .forge-inventory-list {
+        grid-template-columns: 1fr;
+    }
 }
+
 /* Forge roster mirrors the main roster: no independent scrollbar. */
 .forge-building-popup {
     height: 90vh;
@@ -4206,10 +4445,25 @@ body.new-game-plus .village-buildings { display: block; }
     scrollbar-color: rgba(251, 191, 36, 0.72) rgba(15, 23, 42, 0.72);
 }
 
-.forge-inventory-list::-webkit-scrollbar { width: 9px; }
-.forge-inventory-list::-webkit-scrollbar-track { border-radius: 6px; background: rgba(15, 23, 42, 0.72); }
-.forge-inventory-list::-webkit-scrollbar-thumb { border: 2px solid rgba(15, 23, 42, 0.72); border-radius: 6px; background: rgba(251, 191, 36, 0.72); }
-.forge-inventory-list::-webkit-scrollbar-thumb:hover { background: #fbbf24; }
+.forge-inventory-list::-webkit-scrollbar {
+    width: 9px;
+}
+
+.forge-inventory-list::-webkit-scrollbar-track {
+    border-radius: 6px;
+    background: rgba(15, 23, 42, 0.72);
+}
+
+.forge-inventory-list::-webkit-scrollbar-thumb {
+    border: 2px solid rgba(15, 23, 42, 0.72);
+    border-radius: 6px;
+    background: rgba(251, 191, 36, 0.72);
+}
+
+.forge-inventory-list::-webkit-scrollbar-thumb:hover {
+    background: #fbbf24;
+}
+
 /* Clear Forge interaction feedback and newly equipped Slime highlight. */
 .forge-section-header button:not(:disabled):active,
 .forge-item-actions button:not(:disabled):active {
@@ -4224,6 +4478,7 @@ body.new-game-plus .village-buildings { display: block; }
     border-color: #ffffff !important;
     box-shadow: 0 0 10px rgba(255, 255, 255, 0.9) !important;
 }
+
 /* Forge merging: keep the available action prominent and show item quality. */
 .btn-forge-merge-all:not(:disabled) {
     border-color: rgba(196, 181, 253, 0.92) !important;
@@ -4236,23 +4491,77 @@ body.new-game-plus .village-buildings { display: block; }
     background: linear-gradient(135deg, #8b5cf6, #6d28d9) !important;
 }
 
-.forge-item-details .forge-item-quality-0 { color: #f8fafc; }
-.forge-item-details .forge-item-quality-1 { color: #4ade80; }
-.forge-item-details .forge-item-quality-2 { color: #60a5fa; }
-.forge-item-details .forge-item-quality-3 { color: #c084fc; }
-.forge-item-details .forge-item-quality-4 { color: #fb923c; }
+.forge-item-details .forge-item-quality-0 {
+    color: #f8fafc;
+}
+
+.forge-item-details .forge-item-quality-1 {
+    color: #4ade80;
+}
+
+.forge-item-details .forge-item-quality-2 {
+    color: #60a5fa;
+}
+
+.forge-item-details .forge-item-quality-3 {
+    color: #c084fc;
+}
+
+.forge-item-details .forge-item-quality-4 {
+    color: #fb923c;
+}
+
 /* Merchant stock uses the same quality palette as forged equipment. */
-.shop-market-card.shop-quality-1 .shop-market-item-name { color: #4ade80; }
-.shop-market-card.shop-quality-2 .shop-market-item-name { color: #60a5fa; }
-.shop-market-card.shop-quality-3 .shop-market-item-name { color: #c084fc; }
-.shop-market-card.shop-quality-4 .shop-market-item-name { color: #fb923c; }
+.shop-market-card.shop-quality-1 .shop-market-item-name {
+    color: #4ade80;
+}
+
+.shop-market-card.shop-quality-2 .shop-market-item-name {
+    color: #60a5fa;
+}
+
+.shop-market-card.shop-quality-3 .shop-market-item-name {
+    color: #c084fc;
+}
+
+.shop-market-card.shop-quality-4 .shop-market-item-name {
+    color: #fb923c;
+}
+
 /* Alchemist: permanent Village Coin upgrades. */
-.alchemist-building-popup { width: min(820px, 94vw); text-align: left; }
-.alchemist-coins { margin: 4px 0 34px !important; padding-bottom: 4px; color: #fde68a; font-size: 0.62rem; }
-.alchemist-upgrades-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.alchemist-upgrade-card { min-height: 102px; }
-.alchemist-upgrade-card .upgrade-action { flex-direction: column; align-items: center; }
-@media (max-width: 900px) { .alchemist-upgrades-list { grid-template-columns: 1fr; } }
+.alchemist-building-popup {
+    width: min(820px, 94vw);
+    text-align: left;
+}
+
+.alchemist-coins {
+    margin: 4px 0 34px !important;
+    padding-bottom: 4px;
+    color: #fde68a;
+    font-size: 0.62rem;
+}
+
+.alchemist-upgrades-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.alchemist-upgrade-card {
+    min-height: 102px;
+}
+
+.alchemist-upgrade-card .upgrade-action {
+    flex-direction: column;
+    align-items: center;
+}
+
+@media (max-width: 900px) {
+    .alchemist-upgrades-list {
+        grid-template-columns: 1fr;
+    }
+}
+
 .header-coin-icon {
     width: 19px;
     height: 19px;
@@ -4267,6 +4576,7 @@ body.new-game-plus .village-buildings { display: block; }
     object-fit: contain;
     image-rendering: pixelated;
 }
+
 /* Build label: unobtrusive but always available for feedback reports. */
 .game-version-label {
     position: fixed;
@@ -4278,6 +4588,7 @@ body.new-game-plus .village-buildings { display: block; }
     font-size: 0.52rem;
     pointer-events: none;
 }
+
 /* Optical alignment refinements. */
 .enemy-badge {
     position: relative;
@@ -4288,23 +4599,91 @@ body.new-game-plus .village-buildings { display: block; }
     /* Small optical nudge without shifting the button itself. */
     padding: 0;
 }
+
 /* Talent Tree specializations replace Ascension's roster frame color. */
-.roster-grid-item.specialization-tank { border-color: #51B6FF !important; box-shadow: 0 0 5px rgba(81, 182, 255, .55); animation: none !important; }
-.roster-grid-item.specialization-fighter { border-color: #FF9047 !important; box-shadow: 0 0 5px rgba(255, 144, 71, .55); animation: none !important; }
-.roster-grid-item.specialization-support { border-color: #ADFF87 !important; box-shadow: 0 0 5px rgba(173, 255, 135, .55); animation: none !important; }
+.roster-grid-item.specialization-tank {
+    border-color: #51B6FF !important;
+    box-shadow: 0 0 5px rgba(81, 182, 255, .55);
+    animation: none !important;
+}
 
-.slime-specialization-talents { display:flex; gap:12px; justify-content:center; margin-top:16px; }
-.slime-specialization-talent { position:relative; width:62px; height:62px; border:1px solid #475569; border-radius:8px; background:rgba(15,23,42,.7); }
-.slime-specialization-talent.available { border-color:#fbbf24; cursor:pointer; }
-.slime-specialization-talent img { width:30px; height:30px; image-rendering:pixelated; }
-.slime-specialization-talent span { position:absolute; right:4px; bottom:3px; font-size:.65rem; color:#e2e8f0; }
+.roster-grid-item.specialization-fighter {
+    border-color: #FF9047 !important;
+    box-shadow: 0 0 5px rgba(255, 144, 71, .55);
+    animation: none !important;
+}
 
-.slime-specialization-talent:not(:last-child)::after { content: '>'; position:absolute; left:calc(100% + 5px); top:50%; transform:translateY(-50%); color:#94a3b8; font-weight:800; font-size:1rem; }
-.slime-specialization-talent:disabled img { filter:grayscale(1) brightness(.55); opacity:.65; }
-.slime-specialization-talent:disabled { border-color:#334155; background:rgba(15,23,42,.42); }
+.roster-grid-item.specialization-support {
+    border-color: #ADFF87 !important;
+    box-shadow: 0 0 5px rgba(173, 255, 135, .55);
+    animation: none !important;
+}
 
-.slime-specialization-talent.unlocked { border:3px solid #fff; background:rgba(255,255,255,.12); }
-.slime-specialization-talent.unlocked span { color:#fff; font-size:1rem; }
+.slime-specialization-talents {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 16px;
+}
+
+.slime-specialization-talent {
+    position: relative;
+    width: 62px;
+    height: 62px;
+    border: 1px solid #475569;
+    border-radius: 8px;
+    background: rgba(15, 23, 42, .7);
+}
+
+.slime-specialization-talent.available {
+    border-color: #fbbf24;
+    cursor: pointer;
+}
+
+.slime-specialization-talent img {
+    width: 30px;
+    height: 30px;
+    image-rendering: pixelated;
+}
+
+.slime-specialization-talent span {
+    position: absolute;
+    right: 4px;
+    bottom: 3px;
+    font-size: .65rem;
+    color: #e2e8f0;
+}
+
+.slime-specialization-talent:not(:last-child)::after {
+    content: '>';
+    position: absolute;
+    left: calc(100% + 5px);
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-weight: 800;
+    font-size: 1rem;
+}
+
+.slime-specialization-talent:disabled img {
+    filter: grayscale(1) brightness(.55);
+    opacity: .65;
+}
+
+.slime-specialization-talent:disabled {
+    border-color: #334155;
+    background: rgba(15, 23, 42, .42);
+}
+
+.slime-specialization-talent.unlocked {
+    border: 3px solid #fff;
+    background: rgba(255, 255, 255, .12);
+}
+
+.slime-specialization-talent.unlocked span {
+    color: #fff;
+    font-size: 1rem;
+}
 
 /* Graft feedback for Support Slimes. */
 .slime-support-cast-ray {
@@ -4329,4 +4708,135 @@ body.new-game-plus .village-buildings { display: block; }
     background-repeat: no-repeat;
     background-size: 600px 50px;
     image-rendering: pixelated;
+}
+
+/* Specialization status is visible in the roster without competing with status ailments. */
+.roster-grid-item.specialization-tank:not(.is-burning):not(.is-poisoned):not(.is-frozen):not(.is-stunned) {
+    background: #001828 !important;
+}
+
+.roster-grid-item.specialization-fighter:not(.is-burning):not(.is-poisoned):not(.is-frozen):not(.is-stunned) {
+    background: #1E0400 !important;
+}
+
+.roster-grid-item.specialization-support:not(.is-burning):not(.is-poisoned):not(.is-frozen):not(.is-stunned) {
+    background: #091E00 !important;
+}
+
+.slime-talent-specialization-warning {
+    margin: 18px 0;
+    color: #FF7F7F;
+    font-size: 0.74rem;
+    line-height: 1.6;
+    text-align: center;
+}
+
+/* Wide: 20 larger slots per line, for three roster lines at the 60-Slime cap. */
+@media (min-width: 1260px) {
+    .desktop-left-col .slime-roster-list {
+        grid-template-columns: repeat(20, 31px);
+        gap: 4px;
+        min-height: 103px;
+    }
+
+    .desktop-left-col .roster-grid-item {
+        width: 31px;
+        height: 33px;
+        flex-basis: 31px;
+    }
+}
+
+/* Medium: retain a compact three-by-twenty roster. */
+@media (min-width: 901px) and (max-width: 1259px) {
+    .desktop-left-col .slime-roster-list {
+        display: grid;
+        grid-template-columns: repeat(20, 27px);
+        justify-content: center;
+        gap: 4px;
+        min-height: 95px;
+    }
+}
+
+/* Narrow: four compact rows of fifteen, with page scrolling available. */
+@media (max-width: 900px) {
+
+    html,
+    body {
+        height: auto;
+        min-height: 100vh;
+        overflow-y: auto;
+    }
+
+    .app-container {
+        height: auto;
+        max-height: none;
+        overflow: visible;
+    }
+
+    .desktop-left-col .slime-roster-list {
+        display: grid;
+        grid-template-columns: repeat(15, 27px);
+        justify-content: center;
+        gap: 4px;
+        min-height: 128px;
+    }
+
+    body::-webkit-scrollbar {
+        width: 10px;
+    }
+
+    body::-webkit-scrollbar-track {
+        background: #111318;
+    }
+
+    body::-webkit-scrollbar-thumb {
+        background: #475569;
+        border-radius: 8px;
+        border: 2px solid #111318;
+    }
+
+    body::-webkit-scrollbar-thumb:hover {
+        background: #64748b;
+    }
+}
+/* The Forge shows the same three-by-twenty roster structure as the main roster. */
+.forge-roster-list.slime-roster-list {
+    display: grid;
+    grid-template-columns: repeat(20, 27px);
+    justify-content: center;
+    align-content: start;
+    gap: 4px;
+    min-height: 95px;
+    max-height: none;
+    overflow: hidden;
+}
+/* Main roster lanes are invisible, but retain the army's left-to-right formation. */
+.slime-status-panel .slime-roster-list {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 4px;
+    min-height: 30px;
+}
+.slime-roster-lane {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(27px, 27px));
+    justify-content: center;
+    align-content: start;
+    gap: 4px;
+    flex: var(--lane-count) 1 0;
+    min-width: 0;
+}
+.slime-roster-lane.hidden { display: none; }
+
+@media (min-width: 1260px) {
+    .desktop-left-col .slime-roster-list { display: flex; grid-template-columns: none; min-height: 37px; }
+    .desktop-left-col .slime-roster-lane { grid-template-columns: repeat(auto-fit, minmax(31px, 31px)); }
+}
+@media (min-width: 901px) and (max-width: 1259px) {
+    .desktop-left-col .slime-roster-list { display: flex; grid-template-columns: none; min-height: 30px; }
+}
+@media (max-width: 900px) {
+    .desktop-left-col .slime-roster-list { display: flex; grid-template-columns: none; min-height: 30px; }
 }

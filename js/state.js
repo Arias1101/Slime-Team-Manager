@@ -351,15 +351,16 @@ export function sortRosterBySpecialization() {
     const active = gameState.slimes || [];
     const best = gameState.bestRoster || [];
     const entries = new Map();
-    [...best, ...active].forEach(slime => {
+    [...active, ...best].forEach(slime => {
         if (!slime) return;
         const key = String(slime.id || slime.name);
         if (!entries.has(key)) entries.set(key, slime);
     });
-    const priority = { tank: 0, fighter: 1, support: 2 };
+    // Roster follows battlefield direction: back line on the left, then middle, then front line on the right.
+    const priority = { support: 0, fighter: 1, tank: 2 };
     const ordered = [...entries.values()].sort((a, b) => {
-        const aPriority = priority[getSlimeSpecialization(a)] ?? 3;
-        const bPriority = priority[getSlimeSpecialization(b)] ?? 3;
+        const aPriority = priority[getSlimeSpecialization(a)] ?? 1;
+        const bPriority = priority[getSlimeSpecialization(b)] ?? 1;
         return aPriority - bPriority || (a.slotIndex ?? 0) - (b.slotIndex ?? 0);
     });
     ordered.forEach((slime, index) => {

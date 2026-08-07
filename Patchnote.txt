@@ -1,4 +1,10 @@
 Patch Notes:
+v0.11
+- Fixed xp not reseting.
+- Fixed Roster display in Forge.
+- Changed background color in roster depending on Slime Specialization.
+- Fixed legacy items wrong attributes through Merge in Forge.
+- Replaced Specialization popup with simple warning.
 
 v0.10
 - Renamed Toxic Slime to Poison Slime.

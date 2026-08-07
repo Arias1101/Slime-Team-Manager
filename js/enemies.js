@@ -870,7 +870,7 @@ function generateWaveComposition(waveNum) {
     if (waveNum === 16) return [0.1, 'guard:10', 'hunter:6'];
     if (waveNum === 17) return [0.1, 'guard:6', 'lancer:5', 'adventurer:4', 'hunter:2'];
     if (waveNum === 18) return [0.1, 'guard:7', 'hunter:15'];
-    if (waveNum === 19) return [0.1, 'assassin:15', 'hunter:15'];
+    if (waveNum === 19) return [0.1, 'assassin:5', 'guard:5', 'hunter:15'];
     if (waveNum === 20) return [0, 'berserker:1', 'alchemist:1'];
 
     // 21-30 Soldiers TODO
@@ -2100,6 +2100,8 @@ export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg', 
             if (slime.hp <= 0) {
                 gameState.hasSlimeDied = true;
                 slime.wavesClearedSinceDeath = 0;
+                const savedSlime = (gameState.bestRoster || []).find(entry => String(entry.id || entry.name) === String(slime.id || slime.name));
+                if (savedSlime) savedSlime.wavesClearedSinceDeath = 0;
                 // Instantly remove dead slime from memory array
                 gameState.slimes = gameState.slimes.filter(s => s.id !== slime.id);
                 gameState.armySize = gameState.slimes.length;
@@ -2122,6 +2124,9 @@ export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg', 
                 updateUI();
             }
         } else if (slime.hp <= 0) {
+            slime.wavesClearedSinceDeath = 0;
+            const savedSlime = (gameState.bestRoster || []).find(entry => String(entry.id || entry.name) === String(slime.id || slime.name));
+            if (savedSlime) savedSlime.wavesClearedSinceDeath = 0;
             gameState.slimes = gameState.slimes.filter(s => s.id !== slime.id);
             gameState.armySize = gameState.slimes.length;
             saveStateToLocal();

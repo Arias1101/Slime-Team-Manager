@@ -119,37 +119,38 @@ function updateSlimeRoster() {
     const rosterCountEl = document.getElementById('rosterCount');
     if (!rosterListEl) return;
 
-    const activeCount = gameState.slimes ? gameState.slimes.length : 0;
-    if (rosterCountEl) {
-        rosterCountEl.textContent = `${activeCount} Slimes`;
-    }
+    const activeSlimes = gameState.slimes || [];
+    if (rosterCountEl) rosterCountEl.textContent = `${activeSlimes.length} Slimes`;
 
-    // Map active slimes by slotIndex
-    const slimesBySlot = new Map();
-    let maxSlotIndex = 0;
+    const activeById = new Map(activeSlimes.map(slime => [String(slime.id || slime.name), slime]));
+    const knownSlimes = [...(gameState.bestRoster || [])]
+        .sort((a, b) => (a.slotIndex ?? 0) - (b.slotIndex ?? 0));
+    activeSlimes.forEach(slime => {
+        if (!knownSlimes.some(saved => String(saved.id || saved.name) === String(slime.id || slime.name))) knownSlimes.push(slime);
+    });
 
-    if (gameState.slimes) {
-        gameState.slimes.forEach(s => {
-            const slot = s.slotIndex !== undefined ? s.slotIndex : 0;
-            slimesBySlot.set(slot, s);
-            if (slot > maxSlotIndex) maxSlotIndex = slot;
-        });
-    }
+    const lanes = {
+        back: document.createElement('div'),
+        middle: document.createElement('div'),
+        front: document.createElement('div')
+    };
+    Object.entries(lanes).forEach(([lane, element]) => {
+        element.className = `slime-roster-lane slime-roster-lane-${lane}`;
+        rosterListEl.appendChild(element);
+    });
+    rosterListEl.replaceChildren(...Object.values(lanes));
 
-    // Check bestRoster so slimes at the end of the roster also render as vacant slots when dead
-    if (gameState.bestRoster) {
-        gameState.bestRoster.forEach(b => {
-            const slot = b.slotIndex !== undefined ? b.slotIndex : 0;
-            if (slot > maxSlotIndex) maxSlotIndex = slot;
-        });
-    }
+    const laneFor = slime => {
+        const specialization = String(slime?.specialization || SLIME_TYPES[slime?.type]?.specialization || '').toLowerCase();
+        return specialization === 'support' ? 'back' : specialization === 'tank' ? 'front' : 'middle';
+    };
+    const laneCounts = { back: 0, middle: 0, front: 0 };
 
-    const currentNodes = Array.from(rosterListEl.children);
-
-    // Render slots 0 through maxSlotIndex in numerical order
-    for (let s = 0; s <= maxSlotIndex; s++) {
-        const slime = slimesBySlot.get(s);
-        const existingNode = currentNodes[s];
+    knownSlimes.forEach((savedSlime, index) => {
+        const slimeId = String(savedSlime.id || savedSlime.name);
+        const slime = activeById.get(slimeId);
+        const lane = laneFor(slime || savedSlime);
+        laneCounts[lane]++;
 
         if (slime) {
             const isAscended = slime.ascended === true;
@@ -158,99 +159,39 @@ function updateSlimeRoster() {
             const specializationClass = ['tank', 'fighter', 'support'].includes(specialization) ? `specialization-${specialization}` : '';
             const displayName = slime.name || slime.id || slimeConfig.name;
             const hpPct = Math.max(0, (slime.hp / slime.maxHp) * 100);
-
-            let barColor = '#10b981';
-            if (hpPct < 35) barColor = '#ef4444';
-            else if (hpPct < 65) barColor = '#f59e0b';
-
-            // Check if we can reuse the existing node
-            if (existingNode &&
-                existingNode.classList.contains('roster-grid-item') &&
-                !existingNode.classList.contains('empty-slot') &&
-                existingNode.dataset.slimeId === String(slime.id)) {
-
-                // Only update HP bar fill style and title without resetting innerHTML!
-                existingNode.title = `[Slot #${s + 1}] ${displayName} (${slimeConfig.name})${isAscended ? ' ✨' : ''}: ${slime.hp}/${slime.maxHp} HP`;
-                existingNode.classList.toggle('ascended', isAscended);
-                existingNode.classList.remove('specialization-tank', 'specialization-fighter', 'specialization-support');
-                if (specializationClass) existingNode.classList.add(specializationClass);
-
-                const rosterIcon = existingNode.querySelector('.roster-grid-icon');
-                const iconSrc = getSlimeJumpSprite(slime);
-                if (rosterIcon && rosterIcon.getAttribute('src') !== iconSrc) {
-                    rosterIcon.src = iconSrc;
-                    rosterIcon.alt = displayName;
-                }
-
-                const hpFill = existingNode.querySelector('.roster-hp-fill');
-                if (hpFill) {
-                    hpFill.style.width = `${hpPct}%`;
-                    hpFill.style.background = barColor;
-                }
-            } else {
-                const item = document.createElement('div');
-                item.className = 'roster-grid-item' + (isAscended ? ' ascended' : '') + (specializationClass ? ' ' + specializationClass : '');
-                item.id = `roster_item_${slime.id}`;
-                item.dataset.slimeId = String(slime.id);
-                item.title = `[Slot #${s + 1}] ${displayName} (${slimeConfig.name})${isAscended ? ' ✨' : ''}: ${slime.hp}/${slime.maxHp} HP`;
-
-                const iconSrc = getSlimeJumpSprite(slime);
-                item.innerHTML = `
-                    <img src="${iconSrc}" alt="${displayName}" class="roster-grid-icon">
-                    <div class="roster-grid-hp-bar">
-                        <div class="roster-hp-fill" style="width: ${hpPct}%; background: ${barColor};"></div>
-                    </div>
-                `;
-
-                item.addEventListener('click', () => {
-                    openSlimeInspectorModal(slime);
-                });
-
-                if (existingNode) {
-                    existingNode.replaceWith(item);
-                } else {
-                    rosterListEl.appendChild(item);
-                }
-            }
+            const hpColor = hpPct < 35 ? '#ef4444' : hpPct < 65 ? '#f59e0b' : '#10b981';
+            const item = document.createElement('div');
+            item.className = `roster-grid-item${isAscended ? ' ascended' : ''}${specializationClass ? ` ${specializationClass}` : ''}`;
+            item.id = `roster_item_${slime.id}`;
+            item.dataset.slimeId = String(slime.id);
+            item.title = `[Slot #${(slime.slotIndex ?? index) + 1}] ${displayName} (${slimeConfig.name})${isAscended ? ' ✨' : ''}: ${slime.hp}/${slime.maxHp} HP`;
+            if (slime.effects?.burnTimer > 0) item.classList.add('is-burning');
+            if (slime.effects?.poisonTimer > 0) item.classList.add('is-poisoned');
+            if (slime.effects?.freezeTimer > 0) item.classList.add('is-frozen');
+            if (slime.effects?.stunTimer > 0) item.classList.add('is-stunned');
+            item.innerHTML = `<img src="${getSlimeJumpSprite(slime)}" alt="${displayName}" class="roster-grid-icon"><div class="roster-grid-hp-bar"><div class="roster-hp-fill" style="width:${hpPct}%;background:${hpColor};"></div></div>`;
+            item.addEventListener('click', () => openSlimeInspectorModal(slime));
+            lanes[lane].appendChild(item);
         } else {
-            // Vacant/empty slot placeholder in roster
-            const fallenSlime = (gameState.bestRoster || []).find(b => b.slotIndex === s);
-            const fallenName = fallenSlime ? (fallenSlime.name || fallenSlime.id) : null;
-            const ripTitle = fallenName ? `RIP ${fallenName}...` : `RIP Slot #${s + 1}...`;
-
-            if (existingNode && existingNode.classList.contains('empty-slot') && existingNode.title === ripTitle) {
-                // Already RIP and matches - do nothing!
-            } else {
-                const emptyItem = document.createElement('div');
-                emptyItem.className = 'roster-grid-item empty-slot';
-                emptyItem.id = `roster_item_empty_${s}`;
-                emptyItem.title = ripTitle;
-                emptyItem.innerHTML = `
-                    <div class="roster-empty-icon">💀</div>
-                `;
-
-                if (existingNode) {
-                    existingNode.replaceWith(emptyItem);
-                } else {
-                    rosterListEl.appendChild(emptyItem);
-                }
-            }
+            const slot = savedSlime.slotIndex ?? index;
+            const emptyItem = document.createElement('div');
+            emptyItem.className = 'roster-grid-item empty-slot';
+            emptyItem.id = `roster_item_empty_${slot}`;
+            emptyItem.title = `RIP ${savedSlime.name || savedSlime.id || `Slot #${slot + 1}`}...`;
+            emptyItem.innerHTML = '<div class="roster-empty-icon">💀</div>';
+            lanes[lane].appendChild(emptyItem);
         }
-    }
+    });
 
-    // Remove any extra trailing slots if maxSlotIndex has shrunk
-    while (rosterListEl.children.length > maxSlotIndex + 1) {
-        rosterListEl.lastElementChild.remove();
-    }
+    Object.entries(lanes).forEach(([lane, element]) => {
+        element.style.setProperty('--lane-count', Math.max(1, laneCounts[lane]));
+        element.classList.toggle('hidden', laneCounts[lane] === 0);
+    });
 
-    // Update --roster-height CSS variable dynamically so upgrades container fits viewport perfectly
     const rosterPanelEl = document.querySelector('.slime-status-panel');
-    if (rosterPanelEl) {
-        requestAnimationFrame(() => {
-            const height = rosterPanelEl.offsetHeight || 60;
-            document.documentElement.style.setProperty('--roster-height', `${height}px`);
-        });
-    }
+    if (rosterPanelEl) requestAnimationFrame(() => {
+        document.documentElement.style.setProperty('--roster-height', `${rosterPanelEl.offsetHeight || 60}px`);
+    });
 }
 
 /**
@@ -671,6 +612,7 @@ function renderSlimeTalentTree(slime) {
     const baseMessage = document.getElementById('slimeTalentBaseMessage');
     const choices = document.getElementById('slimeTalentChoices');
     const chosenMessage = document.getElementById('slimeTalentChosenMessage');
+    const specializationWarning = document.getElementById('slimeTalentSpecializationWarning');
     const specializationTalents = document.getElementById('slimeSpecializationTalents');
     const unlocked = (gameState.newGamePlusCompletions || 0) > 0;
     const isBase = (slime.type || 'base') === 'base';
@@ -690,6 +632,7 @@ function renderSlimeTalentTree(slime) {
             choice.disabled = isBase;
         });
     }
+    if (specializationWarning) specializationWarning.classList.toggle('hidden', !unlocked || isBase || Boolean(specialization));
     if (chosenMessage) {
         chosenMessage.classList.toggle('hidden', !unlocked || !specialization);
         const specializationBonuses = { tank: '(+20% HP 💗)', support: '(+20% Regen 💚)', fighter: '(+20% Damage ⚔️)' };
@@ -718,9 +661,7 @@ function specializeInspectedSlime(specialization) {
     const elementalPrefix = { toxic: 'poison', fire: 'fire', ice: 'ice', stone: 'stone' }[target.type];
     const typeId = elementalPrefix ? `${elementalPrefix}${specialization[0].toUpperCase()}${specialization.slice(1)}` : null;
     if (!typeId || !SLIME_TYPES[typeId]) return;
-    if (!window.confirm("You won't be able to change Slime's Type after the Specialization. Continue ?")) return;
-
-    target.type = { poison: 'toxic', fire: 'fire', ice: 'ice', stone: 'stone' }[elementalPrefix] || target.type;
+target.type = { poison: 'toxic', fire: 'fire', ice: 'ice', stone: 'stone' }[elementalPrefix] || target.type;
     target.specialization = specialization;
     sortRosterBySpecialization();
     updateBestRoster();
