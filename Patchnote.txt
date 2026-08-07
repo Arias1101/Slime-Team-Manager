@@ -1,4 +1,8 @@
 Patch Notes:
+v0.18
+- Shiny Icons.
+- Restyled Whole App.
+
 v0.17
 - Fixed Roster Display. Hopefully for good.
 

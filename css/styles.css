@@ -336,7 +336,7 @@ body.modal-open {
 
 .btn-outline:hover {
     color: #fff;
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(81, 81, 81, 0.05);
 }
 
 /* Dashboard & Layout (Roster Top + Battlefield Bottom) */
@@ -424,17 +424,23 @@ body.modal-open {
     padding: 1px 0;
     box-sizing: border-box;
     cursor: pointer;
-    transition: transform 0.15s ease, border-color 0.15s ease;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
     width: 27px;
     height: 29px;
     flex: 0 0 27px;
 }
 
-.roster-grid-item:hover {
-    transform: scale(1.3);
-    border-color: #34d399;
-    z-index: 100;
+/* Extra :hover specificity (doubled pseudo-class) so this always wins over
+   the !important background/border rules used by ascended, specializations,
+   and status ailments (which share the same base specificity). */
+.roster-grid-item.roster-grid-item.roster-grid-item.roster-grid-item.roster-grid-item.roster-grid-item.roster-grid-item.roster-grid-item.roster-grid-item.roster-grid-item.roster-grid-item:hover:hover {
+    border-color: #ffffff !important;
+    background: #3A3D44 !important;
+    box-shadow: none !important;
+    animation-play-state: paused;
 }
+
+
 
 .roster-grid-item.ascended {
     border: 1px solid #f472b6 !important;
@@ -4100,7 +4106,11 @@ body.new-game-plus .village-buildings {
 }
 
 .village-door-alchemist::before {
-    content: "\1F9EA";
+    content: "";
+    width: 22px;
+    height: 26px;
+    margin: auto;
+    background: url("../images/logos/potion.png") no-repeat center / contain;
 }
 
 .village-door-common-house::before {
@@ -4112,7 +4122,11 @@ body.new-game-plus .village-buildings {
 }
 
 .village-door-forge::before {
-    content: "\1F528";
+    content: "";
+    width: 22px;
+    height: 26px;
+    margin: auto;
+    background: url("../images/logos/anvil.png") no-repeat center / contain;
 }
 
 .village-door-tavern::before {
@@ -4504,14 +4518,29 @@ body.new-game-plus .village-buildings {
 
 .forge-section-header button,
 .forge-item-actions button {
-    border: 1px solid rgba(251, 191, 36, 0.45);
-    border-radius: 5px;
-    padding: 5px 7px;
-    background: rgba(120, 53, 15, 0.60);
-    color: #fde68a;
+    position: relative;
+    border: 0;
+    border-radius: 0;
+    padding: 6px 10px;
+    background: #e3c765;
+    color: #1b1c21;
     font-family: var(--font-heading);
-    font-size: 0.53rem;
+    font-size: 0.55rem;
     cursor: pointer;
+    /* Thick square pixel border built with box-shadows (like the reference). */
+    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, 4px 4px 0 rgba(0, 0, 0, 0.28), inset 0px 3px rgba(255, 255, 255, 0.25);
+    transition: transform 0.06s ease, box-shadow 0.06s ease;
+}
+
+.forge-section-header button:hover:not(:disabled),
+.forge-item-actions button:hover:not(:disabled) {
+    background: #ecd57f;
+}
+
+.forge-section-header button:not(:disabled):active,
+.forge-item-actions button:not(:disabled):active {
+    transform: translateY(3px);
+    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, inset 0px 3px rgba(0, 0, 0, 0.2);
 }
 
 .forge-section-header button:disabled,
@@ -4639,11 +4668,17 @@ body.new-game-plus .village-buildings {
 }
 
 .forge-item-actions-spec .btn-forge-spec-priority {
+    position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     padding: 2px;
     line-height: 0;
+    border: 0;
+    border-radius: 0;
+    background: #e3c765;
+    box-shadow: 0px 2px #000, 0px -2px #000, 2px 0px #000, -2px 0px #000, inset 0px 2px rgba(255, 255, 255, 0.25);
+    transition: transform 0.06s ease, box-shadow 0.06s ease;
 }
 
 .forge-item-actions-spec .btn-forge-spec-priority img {
@@ -4653,20 +4688,22 @@ body.new-game-plus .village-buildings {
 }
 
 .forge-item-actions-spec .btn-forge-spec-priority.selected {
-    border-color: #fbbf24;
-    background: rgba(251, 191, 36, 0.30);
-    box-shadow: 0 0 6px rgba(251, 191, 36, 0.6);
+    background: #e3c765;
 }
 
 .forge-item-actions-spec .btn-forge-spec-priority:not(.selected) {
-    border-color: #4b5563;
-    background: #1f2937;
+    background: #2a2d34;
+}
+
+.forge-item-actions-spec .btn-forge-spec-priority:active {
+    transform: translateY(2px);
+    box-shadow: 0px 2px #000, 0px -2px #000, 2px 0px #000, -2px 0px #000, inset 0px 2px rgba(0, 0, 0, 0.2);
 }
 
 .forge-empty-text {
     align-self: center;
     margin: auto;
-    color: #94a3b8;
+    color: #9aa0a6;
     font-size: 0.62rem;
     text-align: center;
 }
@@ -4703,26 +4740,28 @@ body.new-game-plus .village-buildings {
 }
 
 .forge-roster-grid-item {
-    border: 1px solid rgba(16, 185, 129, 0.30);
+    border: 2px solid #0b0c0e;
+    border-radius: 0;
 }
 
 .forge-inventory-list {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(251, 191, 36, 0.72) rgba(15, 23, 42, 0.72);
+    scrollbar-width: auto;
+    scrollbar-color: auto;
 }
 
 .forge-inventory-list::-webkit-scrollbar {
     width: 9px;
+    border-radius: 0;
 }
 
 .forge-inventory-list::-webkit-scrollbar-track {
-    border-radius: 6px;
+    border-radius: 0;
     background: rgba(15, 23, 42, 0.72);
 }
 
 .forge-inventory-list::-webkit-scrollbar-thumb {
     border: 2px solid rgba(15, 23, 42, 0.72);
-    border-radius: 6px;
+    border-radius: 0;
     background: rgba(251, 191, 36, 0.72);
 }
 
@@ -4775,6 +4814,145 @@ body.new-game-plus .village-buildings {
 
 .forge-item-details .forge-item-quality-4 {
     color: #fb923c;
+}
+
+/* ===== Pixel-style Forge (bold borders, sharp edges, no glass) ===== */
+.forge-building-popup {
+    border: 3px solid #0b0c0e;
+    border-radius: 0;
+    background: #1b1c21;
+    box-shadow: 6px 6px 0 #0a0b0d;
+    color: #e2e2e0;
+}
+
+.forge-building-popup>h3 {
+    margin: 0 36px 14px 0;
+    color: #e3c765;
+    font-size: 0.95rem;
+}
+
+.forge-roster-section {
+    padding: 12px;
+    border: 2px solid #0b0c0e;
+    border-radius: 0;
+    background: #24262b;
+}
+
+.forge-section-header {
+    margin-bottom: 10px;
+}
+
+.forge-section-header h4 {
+    color: #c8cbcf;
+    font-size: 0.5rem;
+}
+
+.forge-section-header button,
+.forge-item-actions button {
+    position: relative;
+    border: 0;
+    border-radius: 0;
+    padding: 6px 9px;
+    background: #e3c765;
+    color: #1b1c21;
+    cursor: pointer;
+    font-family: var(--font-heading);
+    font-size: 0.45rem;
+    /* Thick square pixel border built with box-shadows (like the reference). */
+    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, 4px 4px 0 rgba(0, 0, 0, 0.28), inset 0px 3px rgba(255, 255, 255, 0.25);
+    transition: transform 0.06s ease, box-shadow 0.06s ease;
+}
+
+.forge-section-header button:hover:not(:disabled),
+.forge-item-actions button:hover:not(:disabled) {
+    background: #ecd57f;
+}
+
+.forge-section-header button:not(:disabled):active,
+.forge-item-actions button:not(:disabled):active {
+    transform: translateY(3px);
+    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, inset 0px 3px rgba(0, 0, 0, 0.2);
+}
+
+.forge-roster-slime {
+    border: 2px solid #0b0c0e;
+    border-radius: 0;
+    background: #24262b;
+}
+
+.forge-roster-slime b {
+    border-radius: 0;
+    background: #1b1c21;
+    border: 1px solid #e3c765;
+}
+
+.forge-inventory-section {
+    margin-top: 14px;
+}
+
+.forge-inventory-item {
+    padding: 9px;
+    border: 2px solid #0b0c0e;
+    border-radius: 0;
+    background: #24262b;
+}
+
+.forge-item-details strong {
+    color: #f0f0ee;
+    font-size: 0.5rem;
+}
+
+.forge-item-count {
+    color: #e3c765;
+}
+
+.btn-forge-merge-all:not(:disabled) {
+    position: relative;
+    border: 0 !important;
+    border-color: transparent !important;
+    background: #e3c765 !important;
+    color: #1b1c21 !important;
+    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, 4px 4px 0 rgba(0, 0, 0, 0.28), inset 0px 3px rgba(255, 255, 255, 0.25) !important;
+}
+
+.btn-forge-merge-all:not(:disabled):hover {
+    background: #ecd57f !important;
+}
+
+.btn-forge-merge-all:not(:disabled):active {
+    transform: translateY(3px);
+    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, inset 0px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+.forge-inventory-list {
+    scrollbar-color: auto;
+}
+
+.forge-inventory-list::-webkit-scrollbar-track {
+    border-radius: 0;
+    background: #1b1c21;
+}
+
+.forge-inventory-list::-webkit-scrollbar-thumb {
+    border: 2px solid #1b1c21;
+    border-radius: 0;
+    background: #e3c765;
+}
+
+/* Square, pixel-styled close button for this popup. */
+.forge-building-popup .village-popup-close {
+    border: 2px solid #000;
+    border-radius: 0;
+    background: #2a2d34;
+    color: #c8cbcf;
+    box-shadow: 3px 3px 0 #0a0b0d;
+}
+
+.forge-building-popup .village-popup-close:hover {
+    background: #3a3d44;
+    border-color: #000;
+    color: #ef4444;
+    transform: none;
 }
 
 /* Merchant stock uses the same quality palette as forged equipment. */

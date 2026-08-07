@@ -400,7 +400,7 @@ document.addEventListener('DOMContentLoaded', () => {
         backdrop.className = 'village-building-backdrop';
         const popup = document.createElement('div');
         popup.className = 'village-building-popup alchemist-building-popup';
-        popup.innerHTML = `<button class="village-popup-close" aria-label="Close">&times;</button><h3>Alchemist Shop</h3><p class="alchemist-coins">Village Coins: <strong>${gameState.villageCoins || 0}</strong> <img src="images/logos/coin.png" alt="Village Coin" class="village-coin-icon"></p><div class="alchemist-upgrades-list"></div>`;
+        popup.innerHTML = `<button class="village-popup-close" aria-label="Close">&times;</button><h3 class="common-house-title"><img class="common-house-title-icon" src="images/logos/potion.png" alt="Alchemist"> Alchemist Shop</h3><p class="alchemist-coins">Village Coins: <strong>${gameState.villageCoins || 0}</strong> <img src="images/logos/coin.png" alt="Village Coin" class="village-coin-icon"></p><div class="alchemist-upgrades-list"></div>`;
         popup.querySelector('.village-popup-close').addEventListener('click', closeVillageBuildingPopup);
         backdrop.addEventListener('click', (event) => { if (event.target === backdrop) closeVillageBuildingPopup(); });
         backdrop.appendChild(popup);
@@ -416,7 +416,8 @@ document.addEventListener('DOMContentLoaded', () => {
         backdrop.style.zIndex = '9000';
         const popup = document.createElement('div');
         popup.className = 'village-building-popup forge-building-popup';
-        popup.innerHTML = `<button class="village-popup-close" aria-label="Close">&times;</button><h3>Forge</h3><section class="forge-roster-section"><div class="forge-section-header"><h4>Current Slime Roster</h4><button class="btn-forge-unequip-all">Unequip All</button></div><div class="forge-roster-list slime-roster-list"></div></section><section class="forge-inventory-section"><div class="forge-section-header"><h4>Village Inventory</h4><div><button class="btn-forge-auto-equip-all" title="Equip every available item across the roster">Auto Equip All</button><button class="btn-forge-merge-all" title="Merge five matching items into one higher-quality item">Merge All</button></div></div><div class="forge-inventory-list"></div></section>`;
+        popup.innerHTML = `<button class="village-popup-close" aria-label="Close">&times;</button><h3 class="common-house-title"><img class="common-house-title-icon" src="images/logos/anvil.png" alt="Forge"> Forge</h3><div class="forge-section-header forge-roster-header"><h4>Current Slime Roster</h4></div><section class="forge-roster-section"><div class="forge-roster-list slime-roster-list"></div></section><section class="forge-inventory-section"><div class="forge-section-header"><h4>Village Inventory</h4><div><button class="btn-forge-unequip-all">Unequip All</button><button class="btn-forge-merge-all" title="Merge five matching items into one higher-quality item">Merge All</button><button class="btn-forge-auto-equip-all" title="Equip every available item across the roster">Auto Equip All</button></div></div><div class="forge-inventory-list"></div></section>`;
+
         popup.querySelector('.village-popup-close').addEventListener('click', closeVillageBuildingPopup);
         popup.querySelector('.btn-forge-unequip-all').addEventListener('click', () => {
             const inventory = getVillageInventory();
