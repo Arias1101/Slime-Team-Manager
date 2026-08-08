@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -12,7 +12,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka:wght@400;600;700&family=Inter:wght@400;600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Press+Start+2P&family=Fredoka:wght@400;600;700&family=Inter:wght@400;600;700&display=swap"
         rel="stylesheet">
 
     <!-- Stylesheet -->
@@ -96,7 +96,8 @@
                 <div class="user-profile-section" id="authSection">
                     <div class="test-controls-corner">
                         <button id="btnRewindWave" class="btn-test-action" title="Go back 1 wave">⏮️ Rewind</button>
-                        <button id="btnFeedCheat" class="btn-test-action" title="Add 1000 scraps for testing">&#127830;
+                        <button id="btnForwardWave" class="btn-test-action" title="Jump to wave 51">⏭️ Forward</button>
+                        <button id="btnFeedCheat" class="btn-test-action" title="Add 1000 scraps for testing"><img class="upgrade-scrap-icon" src="images/logos/scrap.png" alt="Scraps">
                             Feed</button>
                         <button id="btnNextWave" class="btn-test-action" title="Full game restart">🔄 Reset</button>
                     </div>
@@ -205,7 +206,7 @@
                                 </div>
                                 <div class="upgrade-action">
                                     <button id="btnUpgradeArmySize" class="btn-plus" disabled>+</button>
-                                    <span class="upgrade-cost" id="upgradeArmySizeCost">5 🍖</span>
+                                    <span class="upgrade-cost" id="upgradeArmySizeCost">5 <img class="upgrade-scrap-icon" src="images/logos/scrap.png" alt="Scraps"></span>
                                 </div>
                             </div>
 
@@ -223,7 +224,7 @@
                                 </div>
                                 <div class="upgrade-action">
                                     <button id="btnUpgradeSelection" class="btn-plus" disabled>+</button>
-                                    <span class="upgrade-cost" id="upgradeSelectionCost">1 🍖</span>
+                                    <span class="upgrade-cost" id="upgradeSelectionCost">1 <img class="upgrade-scrap-icon" src="images/logos/scrap.png" alt="Scraps"></span>
                                 </div>
                             </div>
 
@@ -242,7 +243,7 @@
                                 </div>
                                 <div class="upgrade-action">
                                     <button id="btnUpgradeAugmentation" class="btn-plus" disabled>+</button>
-                                    <span class="upgrade-cost" id="upgradeAugmentationCost">5 🍖</span>
+                                    <span class="upgrade-cost" id="upgradeAugmentationCost">5 <img class="upgrade-scrap-icon" src="images/logos/scrap.png" alt="Scraps"></span>
                                 </div>
                             </div>
 
@@ -261,7 +262,7 @@
                                 </div>
                                 <div class="upgrade-action">
                                     <button id="btnUpgradeAscension" class="btn-plus" disabled>+</button>
-                                    <span class="upgrade-cost" id="upgradeAscensionCost">10 🍖</span>
+                                    <span class="upgrade-cost" id="upgradeAscensionCost">10 <img class="upgrade-scrap-icon" src="images/logos/scrap.png" alt="Scraps"></span>
                                 </div>
                             </div>
 
@@ -280,7 +281,7 @@
                                 </div>
                                 <div class="upgrade-action">
                                     <button id="btnUpgradeRegen" class="btn-plus" disabled>+</button>
-                                    <span class="upgrade-cost" id="upgradeRegenCost">3 🍖</span>
+                                    <span class="upgrade-cost" id="upgradeRegenCost">3 <img class="upgrade-scrap-icon" src="images/logos/scrap.png" alt="Scraps"></span>
                                 </div>
                             </div>
 
@@ -298,7 +299,7 @@
                                 </div>
                                 <div class="upgrade-action">
                                     <button id="btnUpgradeFortification" class="btn-plus" disabled>+</button>
-                                    <span class="upgrade-cost" id="upgradeFortificationCost">10 &#127830;</span>
+                                    <span class="upgrade-cost" id="upgradeFortificationCost">10 <img class="upgrade-scrap-icon" src="images/logos/scrap.png" alt="Scraps"></span>
                                 </div>
                             </div>
                             <!-- Upgrade: AfkScrapCeiling -->
@@ -317,7 +318,7 @@
                                 </div>
                                 <div class="upgrade-action">
                                     <button id="btnUpgradeAfkScrapCeiling" class="btn-plus" disabled>+</button>
-                                    <span class="upgrade-cost" id="upgradeAfkScrapCeilingCost">10 &#127830;</span>
+                                    <span class="upgrade-cost" id="upgradeAfkScrapCeilingCost">10 <img class="upgrade-scrap-icon" src="images/logos/scrap.png" alt="Scraps"></span>
                                 </div>
                             </div>
                             <!-- Upgrade: AfkScrap -->
@@ -335,7 +336,7 @@
                                 </div>
                                 <div class="upgrade-action">
                                     <button id="btnUpgradeAfkScrap" class="btn-plus" disabled>+</button>
-                                    <span class="upgrade-cost" id="upgradeAfkScrapCost">10 &#127830;</span>
+                                    <span class="upgrade-cost" id="upgradeAfkScrapCost">10 <img class="upgrade-scrap-icon" src="images/logos/scrap.png" alt="Scraps"></span>
                                 </div>
                             </div>
                             <!-- Upgrade: Digestion -->
@@ -352,7 +353,7 @@
                                 </div>
                                 <div class="upgrade-action">
                                     <button id="btnUpgradeDigestion" class="btn-plus" disabled>+</button>
-                                    <span class="upgrade-cost" id="upgradeDigestionCost">1 🍖</span>
+                                    <span class="upgrade-cost" id="upgradeDigestionCost">1 <img class="upgrade-scrap-icon" src="images/logos/scrap.png" alt="Scraps"></span>
                                 </div>
                             </div>
 
@@ -370,7 +371,7 @@
                                 </div>
                                 <div class="upgrade-action">
                                     <button id="btnUpgradeIncubation" class="btn-plus" disabled>+</button>
-                                    <span class="upgrade-cost" id="upgradeIncubationCost">5 🍖</span>
+                                    <span class="upgrade-cost" id="upgradeIncubationCost">5 <img class="upgrade-scrap-icon" src="images/logos/scrap.png" alt="Scraps"></span>
                                 </div>
                             </div>
 
@@ -388,7 +389,7 @@
                                 </div>
                                 <div class="upgrade-action">
                                     <button id="btnUpgradeIgnition" class="btn-plus" disabled>+</button>
-                                    <span class="upgrade-cost" id="upgradeIgnitionCost">10 🍖</span>
+                                    <span class="upgrade-cost" id="upgradeIgnitionCost">10 <img class="upgrade-scrap-icon" src="images/logos/scrap.png" alt="Scraps"></span>
                                 </div>
                             </div>
 
@@ -406,7 +407,7 @@
                                 </div>
                                 <div class="upgrade-action">
                                     <button id="btnUpgradeGlaciation" class="btn-plus" disabled>+</button>
-                                    <span class="upgrade-cost" id="upgradeGlaciationCost">10 🍖</span>
+                                    <span class="upgrade-cost" id="upgradeGlaciationCost">10 <img class="upgrade-scrap-icon" src="images/logos/scrap.png" alt="Scraps"></span>
                                 </div>
                             </div>
 
@@ -425,7 +426,7 @@
                                 </div>
                                 <div class="upgrade-action">
                                     <button id="btnUpgradePetrification" class="btn-plus" disabled>+</button>
-                                    <span class="upgrade-cost" id="upgradePetrificationCost">10 🍖</span>
+                                    <span class="upgrade-cost" id="upgradePetrificationCost">10 <img class="upgrade-scrap-icon" src="images/logos/scrap.png" alt="Scraps"></span>
                                 </div>
                             </div>
 
@@ -444,7 +445,7 @@
                                 </div>
                                 <div class="upgrade-action">
                                     <button id="btnUpgradeIntoxication" class="btn-plus" disabled>+</button>
-                                    <span class="upgrade-cost" id="upgradeIntoxicationCost">10 🍖</span>
+                                    <span class="upgrade-cost" id="upgradeIntoxicationCost">10 <img class="upgrade-scrap-icon" src="images/logos/scrap.png" alt="Scraps"></span>
                                 </div>
                             </div>
 
@@ -460,7 +461,7 @@
                                 </div>
                                 <div class="upgrade-action">
                                     <button id="btnUpgradeEvolution" class="btn-plus" disabled>+</button>
-                                    <span class="upgrade-cost" id="upgradeEvolutionCost">10 🍖</span>
+                                    <span class="upgrade-cost" id="upgradeEvolutionCost">10 <img class="upgrade-scrap-icon" src="images/logos/scrap.png" alt="Scraps"></span>
                                 </div>
                             </div>
 
@@ -476,7 +477,7 @@
                                 </div>
                                 <div class="upgrade-action">
                                     <button id="btnUpgradeExaltation" class="btn-plus" disabled>+</button>
-                                    <span class="upgrade-cost" id="upgradeExaltationCost">100 🍖</span>
+                                    <span class="upgrade-cost" id="upgradeExaltationCost">100 <img class="upgrade-scrap-icon" src="images/logos/scrap.png" alt="Scraps"></span>
                                 </div>
                             </div>-->
                         </div>
@@ -490,7 +491,7 @@
                 <div id="slimeModal" class="slime-inspector-modal pixel-popup">
                     <div class="modal-header-actions">
                         <button id="slimeModalRerollType" class="modal-reroll-btn"
-                            title="Reroll Slime Type for 50 Scraps" style="display: none;">🎲 50 🍖</button>
+                            title="Reroll Slime Type for 50 Scraps" style="display: none;">🎲 50 <img class="upgrade-scrap-icon" src="images/logos/scrap.png" alt="Scraps"></button>
                         <button id="slimeModalKill" class="modal-kill-btn" title="Sacrifice / Kill Slime">💀</button>
                         <button id="slimeModalClose" class="village-popup-close" aria-label="Close">&times;</button>
                     </div>

@@ -6,7 +6,7 @@ import { loadStateFromLocal, addScraps, gameState, getFortificationLevel, getFor
 import { initAuth, loginWithGoogle, logoutUser } from './auth.js';
 import { startEngine, setGamePaused, isGamePaused } from './engine.js';
 import { updateUI, setAuthScreenState, showFirebaseNotice, playSlimeRainRespawnAnimation, initSlimeModalListeners, initMainTabsListeners, openSlimeInspectorModal, renderSlimeRosterLanes } from './ui.js';
-import { initEnemiesModule, startNextWave, setAutoPlay, resetGameFull, rewindWaveState, startNewGamePlusRun, formatLootEffects, ENEMY_TYPES } from './enemies.js';
+import { initEnemiesModule, startNextWave, setAutoPlay, resetGameFull, rewindWaveState, forwardWaveState, startNewGamePlusRun, formatLootEffects, ENEMY_TYPES } from './enemies.js';
 import { triggerRandomSlimeAttack, triggerSlimeEatLoot, initAscendedAutoAttacks } from './slimes.js';
 import { initUpgradesModule, sortMaxedUpgradeCardsOnPageLoad } from './upgrades.js';
 import { initShopModule } from './shop.js';
@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const buttonEl = document.getElementById('btnUpgradeFortification');
         if (!cardEl || !valueEl || !costEl || !buttonEl) return;
 
-        const isUnlocked = (gameState.maxWaveCleared || 0) >= 30;
+        const isUnlocked = (gameState.maxWaveCleared || 0) >= 30 || (gameState.newGamePlusCompletions || 0) > 0;
         cardEl.classList.toggle('hidden', !isUnlocked);
         if (!isUnlocked) return;
 
@@ -90,9 +90,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const cost = getFortificationUpgradeCost();
         const canAfford = (gameState.scraps || 0) >= cost;
         const valueText = `${10 + level}`;
-        const costText = `${cost} ${String.fromCodePoint(0x1F356)}`;
+        const scrapIcon = '<img class="upgrade-scrap-icon" src="images/logos/scrap.png" alt="Scraps">';
+        const costText = `${cost} ${scrapIcon}`;
         if (valueEl.textContent !== valueText) valueEl.textContent = valueText;
-        if (costEl.textContent !== costText) costEl.textContent = costText;
+        if (costEl.innerHTML !== costText) costEl.innerHTML = costText;
         cardEl.classList.toggle('level-zero', level === 0);
         buttonEl.classList.toggle('disabled', !canAfford);
         buttonEl.classList.toggle('affordable', canAfford);
@@ -199,6 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const btnEat = document.getElementById('btnEat');
     const btnRewindWave = document.getElementById('btnRewindWave');
+    const btnForwardWave = document.getElementById('btnForwardWave');
     const btnFeedCheat = document.getElementById('btnFeedCheat');
     const btnNextWave = document.getElementById('btnNextWave');
     const battlefieldCard = document.querySelector('.battlefield-card');
@@ -519,6 +521,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnRewindWave) {
         btnRewindWave.addEventListener('click', () => {
             rewindWaveState();
+        });
+    }
+
+    // Forward Wave Button Listener: Test shortcut to jump to wave 51
+    if (btnForwardWave) {
+        btnForwardWave.addEventListener('click', () => {
+            forwardWaveState();
         });
     }
 

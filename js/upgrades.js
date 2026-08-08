@@ -54,6 +54,9 @@ import { updateUI } from './ui.js';
 let upgradeCardOrderInitialized = false;
 const seenVisibleUpgradeCards = new Set();
 
+/** Inline scrap icon used in upgrade cost labels. */
+const SCRAP_ICON = '<img class="upgrade-scrap-icon" src="images/logos/scrap.png" alt="Scraps">';
+
 function isVisibleUpgradeCard(card) {
     return !card.classList.contains('hidden') && card.style.display !== 'none';
 }
@@ -128,6 +131,26 @@ export function updateUpgradesUI() {
             ignition: false,
             glaciation: false
         };
+    }
+
+    // In New Game Plus every upgrade stays unlocked, since upgrade levels are no longer reset.
+    const inNewGamePlus = (gameState.newGamePlusCompletions || 0) > 0;
+    if (inNewGamePlus) {
+        Object.assign(gameState.unlockedUpgrades, {
+            division: true,
+            ascension: true,
+            augmentation: true,
+            regen: true,
+            digestion: true,
+            incubation: true,
+            selectionCard: true,
+            evolutionCard: true,
+            exaltationCard: true,
+            ignition: true,
+            glaciation: true,
+            petrification: true,
+            intoxication: true
+        });
     }
 
     const totalScore = gameState.score || 0;
@@ -266,7 +289,7 @@ export function updateUpgradesUI() {
             btnUpgradeArmySizeEl.classList.add('disabled');
             btnUpgradeArmySizeEl.classList.remove('affordable');
         } else {
-            upgradeArmySizeCostEl.textContent = `${cost1} 🍖`;
+            upgradeArmySizeCostEl.innerHTML = `${cost1} ${SCRAP_ICON}`;
             const canAfford1 = (gameState.scraps || 0) >= cost1;
             if (canAfford1) {
                 btnUpgradeArmySizeEl.removeAttribute('disabled');
@@ -292,7 +315,7 @@ export function updateUpgradesUI() {
 
         upgradeAscendedCountEl.textContent = ascendedCount;
         setUpgradeLevelZero(upgradeAscensionCardEl, (gameState.maxAscendedSlimesReached || 0) === 0 && ascendedCount === 0);
-        upgradeAscensionCostEl.textContent = `${cost2} 🍖`;
+        upgradeAscensionCostEl.innerHTML = `${cost2} ${SCRAP_ICON}`;
 
         const canAfford2 = (gameState.scraps || 0) >= cost2 && unascendedCount > 0;
         if (canAfford2) {
@@ -317,7 +340,7 @@ export function updateUpgradesUI() {
 
         upgradeDamageValueEl.textContent = currentDamage;
         setUpgradeLevelZero(upgradeAugmentationCardEl, currentDamage <= 1);
-        upgradeAugmentationCostEl.textContent = `${cost3} 🍖`;
+        upgradeAugmentationCostEl.innerHTML = `${cost3} ${SCRAP_ICON}`;
 
         const canAfford3 = (gameState.scraps || 0) >= cost3;
         if (canAfford3) {
@@ -350,7 +373,7 @@ export function updateUpgradesUI() {
             btnUpgradeRegenEl.classList.add('disabled');
             btnUpgradeRegenEl.classList.remove('affordable');
         } else {
-            upgradeRegenCostEl.textContent = `${cost4} 🍖`;
+            upgradeRegenCostEl.innerHTML = `${cost4} ${SCRAP_ICON}`;
 
             const canAfford4 = (gameState.scraps || 0) >= cost4;
             if (canAfford4) {
@@ -386,13 +409,13 @@ export function updateUpgradesUI() {
             btnUpgradeDigestionEl.classList.remove('affordable');
         } else if (slimesCount >= bestRosterCount) {
             const costDigestion = getDigestionUpgradeCost();
-            upgradeDigestionCostEl.textContent = `${costDigestion} 🍖`;
+            upgradeDigestionCostEl.innerHTML = `${costDigestion} ${SCRAP_ICON}`;
             btnUpgradeDigestionEl.setAttribute('disabled', 'disabled');
             btnUpgradeDigestionEl.classList.add('disabled');
             btnUpgradeDigestionEl.classList.remove('affordable');
         } else {
             const costDigestion = getDigestionUpgradeCost();
-            upgradeDigestionCostEl.textContent = `${costDigestion} 🍖`;
+            upgradeDigestionCostEl.innerHTML = `${costDigestion} ${SCRAP_ICON}`;
 
             const canAffordDigestion = (gameState.scraps || 0) >= costDigestion;
             if (canAffordDigestion) {
@@ -424,7 +447,7 @@ export function updateUpgradesUI() {
             btnUpgradeIncubationEl.classList.remove('affordable');
         } else {
             const costIncub = getIncubationUpgradeCost();
-            upgradeIncubationCostEl.textContent = `${costIncub} 🍖`;
+            upgradeIncubationCostEl.innerHTML = `${costIncub} ${SCRAP_ICON}`;
             const canAffordIncub = (gameState.scraps || 0) >= costIncub;
             btnUpgradeIncubationEl.toggleAttribute('disabled', !canAffordIncub);
             btnUpgradeIncubationEl.classList.toggle('disabled', !canAffordIncub);
@@ -445,7 +468,7 @@ export function updateUpgradesUI() {
             btnUpgradeSelectionEl.classList.remove('affordable');
         } else {
             const costSelection = getSelectionUpgradeCost();
-            upgradeSelectionCostEl.textContent = `${costSelection} 🍖`;
+            upgradeSelectionCostEl.innerHTML = `${costSelection} ${SCRAP_ICON}`;
 
             const canAffordSelection = (gameState.scraps || 0) >= costSelection;
             if (canAffordSelection) {
@@ -474,7 +497,7 @@ export function updateUpgradesUI() {
             btnUpgradeEvolutionEl.classList.remove('affordable');
         } else {
             const costEvo = getEvolutionUpgradeCost();
-            upgradeEvolutionCostEl.textContent = `${costEvo} 🍖`;
+            upgradeEvolutionCostEl.innerHTML = `${costEvo} ${SCRAP_ICON}`;
 
             const canAffordEvo = (gameState.scraps || 0) >= costEvo;
             if (canAffordEvo) {
@@ -503,7 +526,7 @@ export function updateUpgradesUI() {
             btnUpgradeExaltationEl.classList.remove('affordable');
         } else {
             const costExalt = getExaltationUpgradeCost();
-            upgradeExaltationCostEl.textContent = `${costExalt} 🍖`;
+            upgradeExaltationCostEl.innerHTML = `${costExalt} ${SCRAP_ICON}`;
 
             const canAffordExalt = (gameState.scraps || 0) >= costExalt;
             if (canAffordExalt) {
@@ -536,7 +559,7 @@ export function updateUpgradesUI() {
             btnUpgradeIgnitionEl.classList.remove('affordable');
         } else {
             const cost5 = getIgnitionUpgradeCost();
-            upgradeIgnitionCostEl.textContent = `${cost5} 🍖`;
+            upgradeIgnitionCostEl.innerHTML = `${cost5} ${SCRAP_ICON}`;
 
             const canAfford5 = (gameState.scraps || 0) >= cost5;
             if (canAfford5) {
@@ -569,7 +592,7 @@ export function updateUpgradesUI() {
             btnUpgradeGlaciationEl.classList.remove('affordable');
         } else {
             const cost6 = getGlaciationUpgradeCost();
-            upgradeGlaciationCostEl.textContent = `${cost6} 🍖`;
+            upgradeGlaciationCostEl.innerHTML = `${cost6} ${SCRAP_ICON}`;
 
             const canAfford6 = (gameState.scraps || 0) >= cost6;
             if (canAfford6) {
@@ -608,7 +631,7 @@ export function updateUpgradesUI() {
             btnUpgradePetrificationEl.classList.remove('affordable');
         } else {
             const cost7 = getPetrificationUpgradeCost();
-            upgradePetrificationCostEl.textContent = String(cost7) + ' ' + String.fromCodePoint(0x1F356);
+            upgradePetrificationCostEl.innerHTML = `${cost7} ${SCRAP_ICON}`;
             const canAfford7 = (gameState.scraps || 0) >= cost7;
             if (canAfford7) {
                 btnUpgradePetrificationEl.removeAttribute('disabled');
@@ -639,7 +662,7 @@ export function updateUpgradesUI() {
             btnUpgradeIntoxicationEl.classList.remove('affordable');
         } else {
             const cost8 = getIntoxicationUpgradeCost();
-            upgradeIntoxicationCostEl.textContent = `${cost8} 🍖`;
+            upgradeIntoxicationCostEl.innerHTML = `${cost8} ${SCRAP_ICON}`;
 
             const canAfford8 = (gameState.scraps || 0) >= cost8;
             if (canAfford8) {
@@ -661,11 +684,11 @@ export function updateUpgradesUI() {
     ];
     afkUpgrades.forEach(([card, value, cost, button, level, current, nextCost, suffix]) => {
         if (!card || !value || !cost || !button) return;
-        const afkUnlocked = getIncubationLevel() > 0;
+        const afkUnlocked = getIncubationLevel() > 0 || inNewGamePlus;
         card.classList.toggle('hidden', !afkUnlocked);
         if (!afkUnlocked) return;
         value.textContent = String(current) + suffix;
-        cost.textContent = String(nextCost) + ' ' + String.fromCodePoint(0x1F356);
+        cost.innerHTML = String(nextCost) + ' ' + SCRAP_ICON;
         setUpgradeLevelZero(card, level === 0);
         const canAfford = (gameState.scraps || 0) >= nextCost;
         button.classList.toggle('disabled', !canAfford);

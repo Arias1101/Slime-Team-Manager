@@ -17,8 +17,8 @@
        (main, shop, forge, common-house). Change once to affect all. */
     --roster-spec-gap: 4px;
 
-    --font-heading: 'Press Start 2P', monospace;
-    --font-body: 'Press Start 2P', monospace;
+    --font-heading: 'Silkscreen', monospace;
+    --font-body: 'Silkscreen', monospace;
 
     --radius-lg: 24px;
     --radius-md: 14px;
@@ -1264,9 +1264,9 @@ body.modal-open {
 /* Floating Pixel Art Damage Numbers */
 .floating-damage-num {
     position: absolute;
-    font-family: 'Press Start 2P', 'Outfit', monospace, sans-serif;
+    font-family: var(--font-body);
     font-size: 11px;
-    font-weight: 800;
+    font-weight: 400;
     line-height: 1;
     pointer-events: none;
     z-index: 120;
@@ -3711,7 +3711,7 @@ body.modal-open {
 }
 
 .slime-inspector-modal .equipment-item-name {
-    font-size: 0.52rem;
+    font-size: 0.68rem;
 }
 
 .slime-inspector-modal .equipment-empty-text {
@@ -4771,8 +4771,8 @@ body.new-game-plus .village-buildings {
 .common-house-popup .shop-section-title,
 .shop-building-popup .shop-section-title {
     font-family: var(--font-heading);
-    font-size: 0.5rem;
-    font-weight: normal;
+    font-size: 0.7rem;
+    font-weight: 700;
     text-transform: none;
     letter-spacing: normal;
     color: #c8cbcf;
@@ -4874,13 +4874,43 @@ body.new-game-plus .village-buildings {
     font-size: 0.55rem;
 }
 
+.alchemist-building-popup .alchemist-upgrade-card .upgrade-card-title {
+    font-family: var(--font-heading);
+    font-size: 0.78rem;
+    color: #f0f0ee;
+    white-space: normal;
+    line-height: 1.2;
+}
+
+.alchemist-building-popup .alchemist-upgrade-card .upgrade-current {
+    font-size: 0.62rem;
+    font-weight: normal;
+    color: #9aa0a6;
+}
+
 .alchemist-building-popup .alchemist-upgrade-card .upgrade-text {
     color: #c8cbcf;
-    font-size: 0.68rem;
+    font-size: 0.62rem;
+}
+
+.alchemist-building-popup .alchemist-upgrade-card .upgrade-value {
+    color: #e3c765;
+    font-weight: bold;
 }
 
 .alchemist-building-popup .alchemist-upgrade-card .upgrade-cost {
     color: #e3c765;
+    font-family: var(--font-heading);
+    font-size: 0.6rem;
+    font-weight: normal;
+    background: #1b1c21;
+    border: 2px solid #0b0c0e;
+    border-radius: 0;
+    box-shadow: 2px 2px 0 #0a0b0d;
+    padding: 2px 5px;
+    max-width: 72px;
+    white-space: normal;
+    line-height: 1.15;
 }
 
 /* Keep the golden pixel look even when affordable (overrides .btn-plus.affordable). */
@@ -4889,6 +4919,20 @@ body.new-game-plus .village-buildings {
     color: #1b1c21;
     border-color: transparent;
     box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, 4px 4px 0 rgba(0, 0, 0, 0.28), inset 0px 3px rgba(255, 255, 255, 0.6);
+}
+
+.alchemist-building-popup .btn-alchemist-upgrade:not(:disabled):active {
+    background: #b49d4d !important;
+    color: #1b1c21 !important;
+    transform: translateY(2px) !important;
+    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, inset 0px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+.alchemist-building-popup .btn-alchemist-upgrade.affordable:not(:disabled):active {
+    background: #b49d4d !important;
+    color: #1b1c21 !important;
+    transform: translateY(2px) !important;
+    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, inset 0px 3px rgba(0, 0, 0, 0.2) !important;
 }
 
 /* The Eat control becomes the village's primary call to action. */
@@ -5088,6 +5132,14 @@ body.new-game-plus .village-buildings {
     line-height: 1.45;
 }
 
+.slime-inspector-modal .equipment-item-effect {
+    font-size: 0.55rem;
+}
+
+.forge-item-details span {
+    font-size: 0.55rem;
+}
+
 .forge-item-count {
     color: #fbbf24;
     font-size: 0.61rem;
@@ -5236,13 +5288,20 @@ body.new-game-plus .village-buildings {
 
 .forge-section-header h4 {
     color: #c8cbcf;
-    font-size: 0.5rem;
+    font-size: 0.7rem;
 }
 
 .forge-section-header button,
 .forge-item-actions button {
-    font-size: 0.45rem;
     padding: 6px 9px;
+}
+
+.forge-section-header button {
+    font-size: 0.62rem;
+}
+
+.forge-item-actions button {
+    font-size: 0.45rem;
 }
 
 .forge-roster-slime b {
@@ -5261,7 +5320,7 @@ body.new-game-plus .village-buildings {
 
 .forge-item-details strong {
     color: #f0f0ee;
-    font-size: 0.5rem;
+    font-size: 0.68rem;
 }
 
 .forge-item-count {
@@ -5347,13 +5406,13 @@ body.new-game-plus .village-buildings {
 
 .shop-building-popup .shop-slime-info-stats {
     color: #c8cbcf;
-    font-size: 0.5rem;
+    font-size: 0.68rem;
 }
 
 .shop-building-popup .shop-slime-equipment-title {
     color: #c8cbcf;
     font-family: var(--font-heading);
-    font-size: 0.5rem;
+    font-size: 0.68rem;
     text-transform: none;
     letter-spacing: normal;
 }
@@ -5375,19 +5434,19 @@ body.new-game-plus .village-buildings {
 
 .shop-building-popup .shop-eq-name {
     font-family: var(--font-heading);
-    font-size: 0.5rem;
+    font-size: 0.68rem;
 }
 
 .shop-building-popup .shop-eq-effect {
     color: #94a3b8;
-    font-size: 0.42rem;
+    font-size: 0.55rem;
 }
 
 .shop-building-popup .btn-sell-equipment {
     background: #c62828;
     color: #ffffff;
     border-radius: 0;
-    font-size: 0.45rem;
+    font-size: 0.6rem;
     padding: 6px 9px;
     box-shadow: 0px 2px #000, 0px -2px #000, 2px 0px #000, -2px 0px #000, inset 0px 2px rgba(255, 255, 255, 0.2);
 }
@@ -5440,18 +5499,18 @@ body.new-game-plus .village-buildings {
 
 .shop-building-popup .shop-market-item-name {
     font-family: var(--font-heading);
-    font-size: 0.55rem;
+    font-size: 0.72rem;
     color: #f0f0ee;
 }
 
 .shop-building-popup .shop-market-item-effect {
     color: #94a3b8;
-    font-size: 0.45rem;
+    font-size: 0.58rem;
 }
 
 .shop-building-popup .btn-buy-shop-item {
     padding: 6px 12px;
-    font-size: 0.48rem;
+    font-size: 0.62rem;
 }
 
 .shop-building-popup .badge-bought {
@@ -5514,6 +5573,180 @@ body.new-game-plus .village-buildings {
     width: min(820px, 94vw);
     text-align: left;
 }
+
+/* ===== Pixel-style Upgrades tab (specifics on top of the base classes) ===== */
+.upgrades-section {
+    background: #1b1c21;
+    border: 2px solid #E0C564;
+    border-radius: 0;
+    box-shadow: 6px 6px 0 #0a0b0d;
+    color: #e2e2e0;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+.upgrades-section .upgrades-header {
+    border-bottom: 2px solid #0b0c0e;
+    padding-bottom: 8px;
+}
+
+.upgrades-section .upgrades-title {
+    font-size: 0.9rem;
+    color: #e3c765;
+}
+
+.upgrades-section .upgrades-container::-webkit-scrollbar {
+    width: 9px;
+    border-radius: 0;
+}
+
+.upgrades-section .upgrades-container::-webkit-scrollbar-track {
+    border-radius: 0;
+    background: #1b1c21;
+}
+
+.upgrades-section .upgrades-container::-webkit-scrollbar-thumb {
+    border: 2px solid #1b1c21;
+    border-radius: 0;
+    background: #e3c765;
+}
+
+.upgrades-section .upgrades-container::-webkit-scrollbar-thumb:hover {
+    background: #ecd57f;
+}
+
+.upgrades-section .upgrade-card {
+    background: #24262b;
+    border: 2px solid #0b0c0e;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 8px 10px;
+}
+
+.upgrades-section .upgrade-card:hover {
+    background: #2a2d34;
+    border-color: #0b0c0e;
+}
+
+.upgrades-section .upgrade-card.level-zero {
+    border-color: #e3c765;
+    box-shadow: inset 0 0 8px rgba(227, 199, 101, 0.25);
+}
+
+.upgrades-section .upgrade-card.level-zero:hover {
+    border-color: #e3c765;
+    box-shadow: inset 0 0 10px rgba(227, 199, 101, 0.35);
+}
+
+.upgrades-section .upgrade-icon-img {
+    width: 36px;
+    height: 36px;
+    padding: 4px;
+    background: #1b1c21;
+    border: 2px solid #0b0c0e;
+    border-radius: 0;
+    box-sizing: border-box;
+}
+
+.upgrades-section .upgrade-card-title {
+    font-family: var(--font-heading);
+    font-size: 0.78rem;
+    color: #f0f0ee;
+    white-space: normal;
+    line-height: 1.2;
+}
+
+.upgrades-section .upgrade-current {
+    font-size: 0.62rem;
+    font-weight: normal;
+    color: #9aa0a6;
+}
+
+.upgrades-section .upgrade-text {
+    font-size: 0.62rem;
+    color: #c8cbcf;
+}
+
+.upgrades-section .upgrade-value {
+    color: #e3c765;
+    font-weight: bold;
+}
+
+.upgrades-section .upgrade-cost {
+    font-family: var(--font-heading);
+    font-size: 0.6rem;
+    font-weight: normal;
+    color: #e3c765;
+    background: #1b1c21;
+    border: 2px solid #0b0c0e;
+    border-radius: 0;
+    box-shadow: 2px 2px 0 #0a0b0d;
+    padding: 2px 5px;
+    max-width: 72px;
+    white-space: normal;
+    line-height: 1.15;
+}
+
+.upgrades-section .upgrade-action {
+    width: 72px;
+    min-width: 72px;
+}
+
+.upgrades-section .upgrade-scrap-icon {
+    width: 14px;
+    height: 14px;
+    vertical-align: -2px;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
+.upgrades-section .btn-plus {
+    border-radius: 0;
+    background: #2a2d34;
+    border: 0;
+    color: #c8cbcf;
+    box-shadow: 0px 2px #000, 0px -2px #000, 2px 0px #000, -2px 0px #000, inset 0px 2px rgba(255, 255, 255, 0.38);
+    transition: transform 0.06s ease, box-shadow 0.06s ease, background 0.06s ease;
+}
+
+.upgrades-section .btn-plus:hover:not(:disabled) {
+    background: #3a3d44;
+    transform: scale(1.1);
+}
+
+.upgrades-section .btn-plus:not(:disabled):active {
+    background: #e3c765 !important;
+    color: #1b1c21 !important;
+    transform: translateY(2px) !important;
+    box-shadow: 0px 2px #000, 0px -2px #000, 2px 0px #000, -2px 0px #000, inset 0px 2px rgba(0, 0, 0, 0.2) !important;
+}
+
+.upgrades-section .btn-plus.affordable {
+    background: #e3c765;
+    color: #1b1c21;
+    border: 0;
+    box-shadow: 0px 2px #000, 0px -2px #000, 2px 0px #000, -2px 0px #000, inset 0px 2px rgba(255, 255, 255, 0.6);
+}
+
+.upgrades-section .btn-plus.affordable:hover:not(:disabled) {
+    background: #ecd57f;
+}
+
+.upgrades-section .btn-plus.affordable:not(:disabled):active {
+    background: #b49d4d !important;
+    color: #1b1c21 !important;
+    transform: translateY(2px) !important;
+    box-shadow: 0px 2px #000, 0px -2px #000, 2px 0px #000, -2px 0px #000, inset 0px 2px rgba(0, 0, 0, 0.2) !important;
+}
+
+.upgrades-section .btn-plus.disabled,
+.upgrades-section .btn-plus[disabled] {
+    opacity: 0.35;
+    cursor: not-allowed;
+    filter: grayscale(1);
+    transform: none !important;
+}
+
 
 .alchemist-coins {
     margin: 4px 0 34px !important;

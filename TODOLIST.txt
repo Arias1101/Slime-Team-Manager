@@ -3,8 +3,20 @@
 ------------- TESTS PENDING  ----------------
 
 ------------------ LATER -----------------
-- Bench to store Slimes for later use.
 - Menus to mass change slime types / spec
-- Roster with ways to switch slimes in and out of roster/bench
-- Buildings for permanent upgrades: HP, Damage, Regen, Crit, xp on death.
-- Trophies with Coin rewards
+- Trophies with Coin rewards:
+Ideas:
+Holy Trinity: Start a Run with 20 Supports / 20 Fighters / 20 Tanks in your Roster.
+The Great Wall: Start a Run with 60 Tanks in your Roster.
+The Best Defense: Start a Run with 60 Fighters in your Roster.
+Why Not?: Start a Run with 60 Supports in your Roster.
+Iron Man: Finish a Run without wiping once.
+Paper Thin: Finish a Run in wich you wipped at every Tier.
+I am the Danger: Kill Death.
+You Have No Idea How Fast I Am: Kill the F40.
+Poor Guy: Wipe to the first Beggar.
+Stun Locked: Kill the Golem before it passes half of the Battlefield.
+Winter is Coming: Start a Run with 60 Ice Slimes in your Roster.
+Blazing Hot: Start a Run with 60 Fire Slimes in your Roster.
+Stonehead: Start a Run with 60 Stone Slimes in your Roster.
+Toxicity: Start a Run with 60 Poison Slimes in your Roster.

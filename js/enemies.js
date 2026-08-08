@@ -1024,8 +1024,25 @@ export function startNextWave() {
 /**
  * Full Reset action: Resets army to 1 base slime (no upgrades), scraps to 0, wave to 1, clears battlefield
  */
-export function resetGameFull({ startWave = true } = {}) {
+export function resetGameFull({ startWave = true, preserveUpgrades = false } = {}) {
     const newGamePlusCompletions = gameState.newGamePlusCompletions || 0;
+    const savedUpgrades = {
+        slimeDamage: gameState.slimeDamage,
+        slimeRegen: gameState.slimeRegen,
+        digestionLevel: gameState.digestionLevel,
+        incubationLevel: gameState.incubationLevel,
+        autoEatLevel: gameState.autoEatLevel,
+        fortificationLevel: gameState.fortificationLevel,
+        afkScrapCeilingLevel: gameState.afkScrapCeilingLevel,
+        afkScrapLevel: gameState.afkScrapLevel,
+        afkScrapCeilingPurchased: gameState.afkScrapCeilingPurchased,
+        afkScrapPurchased: gameState.afkScrapPurchased,
+        ignitionLevel: gameState.ignitionLevel,
+        glaciationLevel: gameState.glaciationLevel,
+        petrificationLevel: gameState.petrificationLevel,
+        intoxicationLevel: gameState.intoxicationLevel,
+        unlockedUpgrades: gameState.unlockedUpgrades
+    };
     document.body.classList.remove('new-game-plus');
     resetBattlefieldBackground();
     if (countdownTimerId) {
@@ -1047,39 +1064,59 @@ export function resetGameFull({ startWave = true } = {}) {
     gameState.armySize = 1;
     gameState.maxSlimesReached = 1;
     gameState.maxAscendedSlimesReached = 0;
-    gameState.slimeDamage = 1;
-    gameState.slimeRegen = 0;
     gameState.hasSlimeDied = false;
     gameState.hasUsedDivision = false;
-    gameState.digestionLevel = 0;
-    gameState.incubationLevel = 0;
-    gameState.autoEatLevel = 0;
-    gameState.fortificationLevel = 0;
-    gameState.afkScrapCeilingLevel = 0;
-    gameState.afkScrapLevel = 0;
-    gameState.afkScrapCeilingPurchased = false;
-    gameState.afkScrapPurchased = false;
     gameState.afkLastAwayAt = Date.now();
-    gameState.ignitionLevel = 0;
-    gameState.glaciationLevel = 0;
-    gameState.petrificationLevel = 0;
-    gameState.intoxicationLevel = 0;
-    gameState.unlockedUpgrades = {
-        division: false,
-        ascension: false,
-        augmentation: false,
-        regen: false,
-        digestion: false,
-        incubation: false,
-        selectionCard: false,
-        selection: false,
-        evolutionCard: false,
-        evolution: false,
-        ignition: false,
-        glaciation: false,
-        petrification: false,
-        intoxication: false
-    };
+    if (preserveUpgrades) {
+        Object.assign(gameState, {
+            slimeDamage: savedUpgrades.slimeDamage,
+            slimeRegen: savedUpgrades.slimeRegen,
+            digestionLevel: savedUpgrades.digestionLevel,
+            incubationLevel: savedUpgrades.incubationLevel,
+            autoEatLevel: savedUpgrades.autoEatLevel,
+            fortificationLevel: savedUpgrades.fortificationLevel,
+            afkScrapCeilingLevel: savedUpgrades.afkScrapCeilingLevel,
+            afkScrapLevel: savedUpgrades.afkScrapLevel,
+            afkScrapCeilingPurchased: savedUpgrades.afkScrapCeilingPurchased,
+            afkScrapPurchased: savedUpgrades.afkScrapPurchased,
+            ignitionLevel: savedUpgrades.ignitionLevel,
+            glaciationLevel: savedUpgrades.glaciationLevel,
+            petrificationLevel: savedUpgrades.petrificationLevel,
+            intoxicationLevel: savedUpgrades.intoxicationLevel,
+            unlockedUpgrades: savedUpgrades.unlockedUpgrades
+        });
+    } else {
+        gameState.slimeDamage = 1;
+        gameState.slimeRegen = 0;
+        gameState.digestionLevel = 0;
+        gameState.incubationLevel = 0;
+        gameState.autoEatLevel = 0;
+        gameState.fortificationLevel = 0;
+        gameState.afkScrapCeilingLevel = 0;
+        gameState.afkScrapLevel = 0;
+        gameState.afkScrapCeilingPurchased = false;
+        gameState.afkScrapPurchased = false;
+        gameState.ignitionLevel = 0;
+        gameState.glaciationLevel = 0;
+        gameState.petrificationLevel = 0;
+        gameState.intoxicationLevel = 0;
+        gameState.unlockedUpgrades = {
+            division: false,
+            ascension: false,
+            augmentation: false,
+            regen: false,
+            digestion: false,
+            incubation: false,
+            selectionCard: false,
+            selection: false,
+            evolutionCard: false,
+            evolution: false,
+            ignition: false,
+            glaciation: false,
+            petrification: false,
+            intoxication: false
+        };
+    }
     gameState.waveSnapshots = {};
     const initialName = 'Gooey';
     const permanentHp = 10 + (gameState.fortificationLevel || 0) + (gameState.alchemistEnduranceLevel || 0);
@@ -1157,7 +1194,7 @@ export function enterNewGamePlus() {
     const completedRuns = (gameState.newGamePlusCompletions || 0) + 1;
     const villageCoinReward = completedRuns * 2;
 
-    resetGameFull({ startWave: false });
+    resetGameFull({ startWave: false, preserveUpgrades: true });
     gameState.newGamePlusCompletions = completedRuns;
     gameState.villageCoins = (gameState.villageCoins || 0) + villageCoinReward;
     gameState.isInNewGamePlus = true;
@@ -2335,6 +2372,13 @@ let isNewGamePlusTransition = false;
 export function rewindWaveState() {
     const targetWave = Math.max(1, (gameState.currentWave || 1) - 1);
     performWaveReset(targetWave);
+}
+
+/**
+ * Test shortcut: jump forward to wave 51.
+ */
+export function forwardWaveState() {
+    performWaveReset(51);
 }
 
 /**

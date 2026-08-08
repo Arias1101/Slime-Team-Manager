@@ -69,6 +69,14 @@ export const SLIME_TYPES = {
     SLIME_TYPES[id] = { ...SLIME_TYPES[baseType], id, name, specialization: id.replace(/^(poison|fire|ice|stone)/, '') };
 });
 
+/** Hard ceiling for every upgrade cost: no upgrade may ever exceed this in scraps. */
+export const MAX_UPGRADE_COST = 500;
+
+/** Clamp an upgrade cost to the global hard ceiling. */
+function clampUpgradeCost(cost) {
+    return Math.min(MAX_UPGRADE_COST, cost);
+}
+
 const SLIME_NAME_POOL = [
     'Gooey', 'Bloop', 'Splat', 'Pudding', 'Blobby',
     'Glurp', 'Jelly', 'Slush', 'Gummy', 'Squish',
@@ -242,7 +250,7 @@ export function getAlchemistUpgradeLevel(key) {
 }
 
 export function getAlchemistUpgradeCost(key) {
-    return getAlchemistUpgradeLevel(key) + 1;
+    return clampUpgradeCost(getAlchemistUpgradeLevel(key) + 1);
 }
 
 export function buyAlchemistUpgrade(key) {
@@ -529,7 +537,7 @@ export function syncSlimesArray() {
  */
 export function getArmySizeUpgradeCost() {
     const currentSlimes = (gameState.slimes && gameState.slimes.length) ? gameState.slimes.length : (gameState.armySize || 1);
-    return 2 + currentSlimes;
+    return clampUpgradeCost(2 + currentSlimes);
 }
 
 /**
@@ -625,7 +633,7 @@ export function buyArmySizeUpgrade() {
  */
 export function getAscensionUpgradeCost() {
     const ascendedCount = getAscendedSlimeCount();
-    return 1 + (ascendedCount * 1);
+    return clampUpgradeCost(1 + (ascendedCount * 1));
 }
 
 /**
@@ -673,11 +681,11 @@ export function getSlimeDamage() {
 }
 
 /**
- * Get current cost for Augmentation Upgrade (Exponential: 10 * 1.45^level)
+ * Get current cost for Augmentation Upgrade (Exponential: 10 * 1.20^level)
  */
 export function getAugmentationUpgradeCost() {
     const level = Math.max(0, getSlimeDamage() - 1);
-    return Math.floor(10 * Math.pow(1.45, level));
+    return clampUpgradeCost(Math.floor(10 * Math.pow(1.20, level)));
 }
 
 /**
@@ -705,11 +713,11 @@ export function getSlimeRegen() {
 }
 
 /**
- * Get current cost for Regeneration Upgrade (Exponential: 8 * 1.60^level)
+ * Get current cost for Regeneration Upgrade (Exponential: 8 * 1.25^level)
  */
 export function getRegenUpgradeCost() {
     const level = Math.max(0, getSlimeRegen());
-    return Math.floor(8 * Math.pow(1.60, level));
+    return clampUpgradeCost(Math.floor(8 * Math.pow(1.25, level)));
 }
 
 /**
@@ -784,7 +792,7 @@ export function getIgnitionLevel() {
 
 export function getIgnitionUpgradeCost() {
     const lvl = getIgnitionLevel();
-    return 10 + (3 * lvl);
+    return clampUpgradeCost(10 + (3 * lvl));
 }
 
 export function buyIgnitionUpgrade() {
@@ -811,7 +819,7 @@ export function getGlaciationLevel() {
 
 export function getGlaciationUpgradeCost() {
     const lvl = getGlaciationLevel();
-    return 10 + (3 * lvl);
+    return clampUpgradeCost(10 + (3 * lvl));
 }
 
 export function buyGlaciationUpgrade() {
@@ -838,7 +846,7 @@ export function getPetrificationLevel() {
 
 export function getPetrificationUpgradeCost() {
     const lvl = getPetrificationLevel();
-    return 10 + (3 * lvl);
+    return clampUpgradeCost(10 + (3 * lvl));
 }
 
 export function buyPetrificationUpgrade() {
@@ -865,7 +873,7 @@ export function getIntoxicationLevel() {
 
 export function getIntoxicationUpgradeCost() {
     const lvl = getIntoxicationLevel();
-    return 10 + (3 * lvl);
+    return clampUpgradeCost(10 + (3 * lvl));
 }
 
 export function buyIntoxicationUpgrade() {
@@ -892,7 +900,7 @@ export function getDigestionLevel() {
 
 export function getDigestionUpgradeCost() {
     const lvl = getDigestionLevel();
-    return 1 + lvl;
+    return clampUpgradeCost(1 + lvl);
 }
 
 export function buyDigestionUpgrade() {
@@ -1226,8 +1234,8 @@ export function getAfkScrapCeilingLevel() { return gameState.afkScrapCeilingLeve
 export function getAfkScrapLevel() { return gameState.afkScrapLevel || 0; }
 export function getAfkScrapCeiling() { return 0 + (500 * getAfkScrapCeilingLevel()); }
 export function getAfkScrapsPerMinute() { return 0 + (5 * getAfkScrapLevel()); }
-export function getAfkScrapCeilingUpgradeCost() { return Math.floor(10 * Math.pow(1.45, getAfkScrapCeilingLevel())); }
-export function getAfkScrapUpgradeCost() { return Math.floor(10 * Math.pow(1.45, getAfkScrapLevel())); }
+export function getAfkScrapCeilingUpgradeCost() { return clampUpgradeCost(Math.floor(10 * Math.pow(1.45, getAfkScrapCeilingLevel()))); }
+export function getAfkScrapUpgradeCost() { return clampUpgradeCost(Math.floor(10 * Math.pow(1.45, getAfkScrapLevel()))); }
 
 export function buyAfkScrapCeilingUpgrade() {
     const cost = getAfkScrapCeilingUpgradeCost();
@@ -1279,9 +1287,11 @@ export function claimAfkScraps(timestamp = Date.now()) {
     saveStateToLocal();
     return { minutes, scraps };
 }
-export function getRegenMax() { return 5 + Math.floor((gameState.fortificationLevel || 0) / 2); }
+// Cap on Regeneration level temporarily disabled so it can be upgraded further than half base Slime HPs.
+export function getRegenMax() { return Infinity; }
+// Previous cap: 5 + Math.floor((gameState.fortificationLevel || 0) / 2)
 export function getFortificationLevel() { return gameState.fortificationLevel || 0; }
-export function getFortificationUpgradeCost() { return Math.floor(10 * Math.pow(1.45, getFortificationLevel())); }
+export function getFortificationUpgradeCost() { return clampUpgradeCost(Math.floor(10 * Math.pow(1.20, getFortificationLevel()))); }
 export function buyFortificationUpgrade() { const cost = getFortificationUpgradeCost(); if ((gameState.scraps || 0) < cost) return false; gameState.scraps -= cost; gameState.fortificationLevel = getFortificationLevel() + 1; (gameState.slimes || []).forEach(s => { s.baseMaxHp = (s.baseMaxHp ?? s.maxHp ?? 10) + 1; refreshSlimeMaxHp(s); }); updateBestRoster(); saveStateToLocal(); return true; }
 
 

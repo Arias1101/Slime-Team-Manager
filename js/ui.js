@@ -107,6 +107,17 @@ export function updateUI() {
         }
     }
 
+    const btnForwardWave = document.getElementById('btnForwardWave');
+    if (btnForwardWave) {
+        if ((gameState.currentWave || 1) >= 51) {
+            btnForwardWave.setAttribute('disabled', 'disabled');
+            btnForwardWave.classList.add('disabled');
+        } else {
+            btnForwardWave.removeAttribute('disabled');
+            btnForwardWave.classList.remove('disabled');
+        }
+    }
+
     if (!armyContainerEl || armyContainerEl.children.length === 0 || lastRenderedArmySize !== gameState.armySize) {
         lastRenderedArmySize = gameState.armySize;
         renderSlimeArmy();
@@ -840,7 +851,7 @@ function renderSlimeTalentTree(slime) {
         specializationTalents.classList.toggle('hidden', !unlocked || !specialization);
         const talentNames = { support: 'Graft', fighter: 'Rebound', tank: 'Block' };
         const talentDescriptions = {
-            support: 'Sacrifice 20% of HP to Heal twice that amount to a Slime in need.',
+            support: 'Sacrifice 20% of HP to Heal twice that amount to a Slime in need (Can\'t target other Support Slimes).',
             fighter: '10% chance to re-jump on the second closest ennemy when dealing damage.',
             tank: '10% chance to ignore incoming damage.'
         };
