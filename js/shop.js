@@ -201,7 +201,7 @@ function renderSelectedSlimeSheet() {
                 <div class="shop-slime-info-stats">
                     <span title="Health Points (HP) - Slime dies if this hits 0.">❤️ ${selectedSlime.hp}/${selectedSlime.maxHp} HP</span> | 
                     <span title="Damage - Base power dealt to enemies during collisions.">⚔️ ${selectedSlime.damage} Dmg</span> | 
-                    <span title="Critical Chance - Probability to deal double damage on hits.">⚡ ${selectedSlime.critChance || 0}% Crit</span>
+                    <span title="Critical Chance - Each 100% guarantees a x2 crit tier; overflow rolls for the next tier (x4, x8...).">⚡ ${selectedSlime.critChance || 0}% Crit</span>
                 </div>
             </div>
         </div>

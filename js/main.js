@@ -417,7 +417,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 slime.maxHp = slime.baseMaxHp;
                 slime.hp = slime.maxHp;
                 slime.regen = gameState.alchemistRegenLevel || 0;
-                slime.critChance = gameState.alchemistLuckLevel || 0;
+                slime.critChance = (gameState.alchemistLuckLevel || 0) + (gameState.precisionLevel || 0);
                 slime.damage = calculateSlimeDamage(slime);
             });
             updateBestRoster();
@@ -437,19 +437,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const s = getSlimeSpecialization(slime);
                 return spec === 'basic' ? s === '' : s === spec;
             };
-            const wouldExceedCritCap = (slime, item) => {
-                const critBonus = getScaledEquipmentEffects(item)
-                    .reduce((sum, e) => sum + (e?.stat === 'crit' ? Number(e?.value ?? 0) : 0), 0);
-                return ((slime.critChance || 0) + critBonus) > 100;
-            };
             const findTarget = (item) => {
                 const priority = String(item.loot_priority || ENEMY_TYPES[item.id]?.loot_priority || '').toLowerCase();
                 const order = LOOT_PRIORITY_ORDER[priority] || defaultOrder;
                 for (const spec of order) {
                     const target = roster.find(slime =>
                         matchesSpec(slime, spec) &&
-                        !(slime.equipment || []).some(eq => eq.id === item.id) &&
-                        !wouldExceedCritCap(slime, item)
+                        !(slime.equipment || []).some(eq => eq.id === item.id)
                     );
                     if (target) return target;
                 }

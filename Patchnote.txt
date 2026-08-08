@@ -1,7 +1,11 @@
 Patch Notes:
 v0.18
-- Shiny Icons.
 - Restyled Whole App.
+- Implemented Precision upgrade.
+- Implemented Mega Crit.
+- Drasticaly reduced upgrade costs scalings.
+- Reworked Freeze to inflict bonus damage, but slow instead of stun.
+- Reworked damage numbers display methods.
 
 v0.17
 - Fixed Roster Display. Hopefully for good.

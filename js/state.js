@@ -19,7 +19,7 @@ export const SLIME_TYPES = {
         frameCount: 8,
         effect: 'burn',
         burnDamagePerSec: 1,
-        burnDuration: 3.0 // 3 seconds DoT (1 damage per second)
+        burnDuration: 10 // 10 seconds DoT (1 damage per second)
     },
     ice: {
         id: 'ice',
@@ -28,7 +28,7 @@ export const SLIME_TYPES = {
         prefix: 'slime',
         frameCount: 8,
         effect: 'freeze',
-        freezeDuration: 0.5 // Base freeze duration; equipment values multiply this
+        freezeDuration: 1 // Base freeze duration; equipment values multiply this
     },
     stone: {
         id: 'stone',
@@ -37,7 +37,7 @@ export const SLIME_TYPES = {
         prefix: 'slime',
         frameCount: 8,
         effect: 'stun',
-        stunDuration: 0.4 // Base stun duration; equipment values multiply this
+        stunDuration: 0.5 // Base stun duration; equipment values multiply this
     },
     poison: {
         id: 'poison',
@@ -47,7 +47,7 @@ export const SLIME_TYPES = {
         frameCount: 8,
         effect: 'poison',
         poisonDamagePerSec: 2,
-        poisonDuration: 3.0 // 3 seconds DoT (2 damage per stack per 1.0s tick)
+        poisonDuration: 10 // 10 seconds DoT (2 damage per stack per 1.0s tick)
     }
 };
 
@@ -174,6 +174,7 @@ export const defaultState = {
     maxAscendedSlimesReached: 0, // Highest count of ascended slimes reached at once
     slimeDamage: 1,       // Bonus attack damage per slime
     slimeRegen: 0,        // Health regained per wave for all slimes
+    precisionLevel: 0,    // Level of Precision upgrade (+1% base crit chance per level)
     hasSlimeDied: false,  // Unlocks Regeneration upgrade when true
     hasUsedDivision: false, // Unlocks Selection upgrade when true
     digestionLevel: 0,    // Level of Digestion upgrade (extra slimes going to eat)
@@ -193,6 +194,7 @@ export const defaultState = {
         division: false,
         ascension: false,
         augmentation: false,
+        precision: false,
         regen: false,
         digestion: false,
         incubation: false,
@@ -440,9 +442,14 @@ export function recalculateSlimeMaxHp(slime) {
 export function recalculateSlimeStats(slime) {
     if (!slime) return;
     recalculateSlimeMaxHp(slime);
-    slime.critChance = Math.max(0, (gameState.alchemistLuckLevel || 0) + getSlimeEquipmentStatBonus(slime, 'crit'));
+    slime.critChance = Math.max(0, getBaseCritChance() + getSlimeEquipmentStatBonus(slime, 'crit'));
     slime.regen = Math.max(0, (gameState.alchemistRegenLevel || 0) + getSlimeEquipmentStatBonus(slime, 'regen'));
     refreshSlimeDamage(slime);
+}
+
+/** Base crit chance from Alchemist luck + Precision upgrade. */
+export function getBaseCritChance() {
+    return (gameState.alchemistLuckLevel || 0) + (gameState.precisionLevel || 0);
 }
 
 /** Total per-wave regeneration, including the global upgrade and Support bonus. */
@@ -613,7 +620,7 @@ export function buyArmySizeUpgrade() {
         maxHp: 10 + fortificationBonus + alchemistEndurance,
         baseMaxHp: 10 + fortificationBonus + alchemistEndurance,
         damage: calculateSlimeDamage({ equipment: [] }),
-        critChance: gameState.alchemistLuckLevel || 0,
+        critChance: getBaseCritChance(),
         regen: gameState.alchemistRegenLevel || 0,
         ascended: false,
         slotIndex: slotIndex,
@@ -699,6 +706,43 @@ export function buyAugmentationUpgrade() {
     gameState.slimeDamage = (gameState.slimeDamage || 1) + 1;
 
     refreshAllSlimeDamage();
+
+    updateBestRoster();
+    saveStateToLocal();
+    return true;
+}
+
+/**
+ * Get current Precision upgrade level (default 0)
+ */
+export function getPrecisionLevel() {
+    return gameState.precisionLevel || 0;
+}
+
+/**
+ * Get current cost for Precision Upgrade (Exponential: 10 * 1.20^level)
+ */
+export function getPrecisionUpgradeCost() {
+    const level = Math.max(0, getPrecisionLevel());
+    return clampUpgradeCost(Math.floor(10 * Math.pow(1.20, level)));
+}
+
+/**
+ * Purchase Precision Upgrade: deducts exponential cost scraps & increases base crit chance by 1%
+ */
+export function buyPrecisionUpgrade() {
+    const cost = getPrecisionUpgradeCost();
+    if ((gameState.scraps || 0) < cost) return false;
+
+    gameState.scraps -= cost;
+    gameState.precisionLevel = (gameState.precisionLevel || 0) + 1;
+
+    const apply = (slime) => {
+        if (!slime) return;
+        slime.critChance = (slime.critChance || 0) + 1;
+    };
+    (gameState.slimes || []).forEach(apply);
+    (gameState.bestRoster || []).forEach(apply);
 
     updateBestRoster();
     saveStateToLocal();
@@ -960,6 +1004,7 @@ export function saveWaveSnapshot(waveNum, uncollectedLootValue = 0) {
         maxSlimesReached: gameState.maxSlimesReached || 1,
         slimeDamage: gameState.slimeDamage || 1,
         slimeRegen: gameState.slimeRegen || 0,
+        precisionLevel: gameState.precisionLevel || 0,
         hasSlimeDied: gameState.hasSlimeDied || false,
         digestionLevel: gameState.digestionLevel || 0,
         ignitionLevel: gameState.ignitionLevel || 0,

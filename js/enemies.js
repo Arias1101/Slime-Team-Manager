@@ -1029,6 +1029,7 @@ export function resetGameFull({ startWave = true, preserveUpgrades = false } = {
     const savedUpgrades = {
         slimeDamage: gameState.slimeDamage,
         slimeRegen: gameState.slimeRegen,
+        precisionLevel: gameState.precisionLevel,
         digestionLevel: gameState.digestionLevel,
         incubationLevel: gameState.incubationLevel,
         autoEatLevel: gameState.autoEatLevel,
@@ -1071,6 +1072,7 @@ export function resetGameFull({ startWave = true, preserveUpgrades = false } = {
         Object.assign(gameState, {
             slimeDamage: savedUpgrades.slimeDamage,
             slimeRegen: savedUpgrades.slimeRegen,
+            precisionLevel: savedUpgrades.precisionLevel,
             digestionLevel: savedUpgrades.digestionLevel,
             incubationLevel: savedUpgrades.incubationLevel,
             autoEatLevel: savedUpgrades.autoEatLevel,
@@ -1088,6 +1090,7 @@ export function resetGameFull({ startWave = true, preserveUpgrades = false } = {
     } else {
         gameState.slimeDamage = 1;
         gameState.slimeRegen = 0;
+        gameState.precisionLevel = 0;
         gameState.digestionLevel = 0;
         gameState.incubationLevel = 0;
         gameState.autoEatLevel = 0;
@@ -1104,6 +1107,7 @@ export function resetGameFull({ startWave = true, preserveUpgrades = false } = {
             division: false,
             ascension: false,
             augmentation: false,
+            precision: false,
             regen: false,
             digestion: false,
             incubation: false,
@@ -1120,7 +1124,7 @@ export function resetGameFull({ startWave = true, preserveUpgrades = false } = {
     gameState.waveSnapshots = {};
     const initialName = 'Gooey';
     const permanentHp = 10 + (gameState.fortificationLevel || 0) + (gameState.alchemistEnduranceLevel || 0);
-    const permanentCrit = gameState.alchemistLuckLevel || 0;
+    const permanentCrit = (gameState.alchemistLuckLevel || 0) + (gameState.precisionLevel || 0);
     const permanentRegen = gameState.alchemistRegenLevel || 0;
     const permanentDamage = 1 + (gameState.alchemistRageLevel || 0);
     gameState.bestRoster = [
@@ -1572,19 +1576,16 @@ export function updateEnemies(deltaSeconds) {
             enemy.effects.freezeTimer = 0;
             enemy.effects.stunTimer = 0;
         }
-        let isFrozen = false;
-        if (!isControlImmune && enemy.effects.freezeTimer > 0) {
-            enemy.effects.freezeTimer -= deltaSeconds;
-            isFrozen = true;
-        }
-
         let isStunned = false;
         if (!isControlImmune && enemy.effects.stunTimer > 0) {
             enemy.effects.stunTimer -= deltaSeconds;
             isStunned = true;
         }
 
-        const isDisabled = isFrozen || isStunned;
+        // Frost only slows movement to 20% speed (stun is what fully disables an enemy).
+        const isFrozen = !isControlImmune && enemy.effects.freezeTimer > 0;
+        if (isFrozen) enemy.effects.freezeTimer -= deltaSeconds;
+        const moveSpeedMultiplier = isFrozen ? 0.2 : 1;
 
         // --- 2. Process Fire (Stackable Burn DoT: 1 damage per stack per 0.5s) Effect ---
         if (enemy.effects.burnTimer > 0) {
@@ -1636,16 +1637,16 @@ export function updateEnemies(deltaSeconds) {
 
         // --- 3. Movement Phase ---
         // Rushs never stop: they run through the battlefield and leave from the left edge.
-        if (!isDisabled && enemy.type === 'rush') {
-            enemy.x -= enemy.speed * deltaSeconds;
+        if (!isStunned && enemy.type === 'rush') {
+            enemy.x -= enemy.speed * moveSpeedMultiplier * deltaSeconds;
             if (enemy.x < -50) {
                 if (enemy.el) enemy.el.remove();
                 activeEnemies.splice(i, 1);
                 checkWaveCompletion();
                 continue;
             }
-        } else if (!isDisabled && enemy.x > enemy.targetX) {
-            enemy.x -= enemy.speed * deltaSeconds;
+        } else if (!isStunned && enemy.x > enemy.targetX) {
+            enemy.x -= enemy.speed * moveSpeedMultiplier * deltaSeconds;
             if (enemy.x <= enemy.targetX) {
                 enemy.x = enemy.targetX;
                 const attackInterval = enemy.attackSpeed > 0 ? 1 / enemy.attackSpeed : 0;
@@ -1665,8 +1666,8 @@ export function updateEnemies(deltaSeconds) {
             }
         }
 
-        // --- 4. State-Specific Attack Executions (Paused if disabled) ---
-        if (!isDisabled) {
+        // --- 4. State-Specific Attack Executions (Paused only if stunned; frozen enemies still attack) ---
+        if (!isStunned) {
             if (enemy.state === 'attacking') {
                 enemy.attackTimer += deltaSeconds;
                 if (enemy.attackTimer >= (1 / enemy.attackSpeed)) {

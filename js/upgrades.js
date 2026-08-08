@@ -12,6 +12,9 @@ import {
     getSlimeDamage,
     getAugmentationUpgradeCost,
     buyAugmentationUpgrade,
+    getPrecisionLevel,
+    getPrecisionUpgradeCost,
+    buyPrecisionUpgrade,
     getSlimeRegen,
     getRegenMax,
     getRegenUpgradeCost,
@@ -116,6 +119,7 @@ export function updateUpgradesUI() {
     const upgradeArmySizeCardEl = document.getElementById('upgradeArmySizeCard');
     const upgradeAscensionCardEl = document.getElementById('upgradeAscensionCard');
     const upgradeAugmentationCardEl = document.getElementById('upgradeAugmentationCard');
+    const upgradePrecisionCardEl = document.getElementById('upgradePrecisionCard');
     const upgradeRegenCardEl = document.getElementById('upgradeRegenCard');
     const upgradeDigestionCardEl = document.getElementById('upgradeDigestionCard');
     const upgradeIgnitionCardEl = document.getElementById('upgradeIgnitionCard');
@@ -126,6 +130,7 @@ export function updateUpgradesUI() {
             division: false,
             ascension: false,
             augmentation: false,
+            precision: false,
             regen: false,
             digestion: false,
             ignition: false,
@@ -140,6 +145,7 @@ export function updateUpgradesUI() {
             division: true,
             ascension: true,
             augmentation: true,
+            precision: true,
             regen: true,
             digestion: true,
             incubation: true,
@@ -206,6 +212,11 @@ export function updateUpgradesUI() {
     if (upgradeAugmentationCardEl) {
         if (gameState.unlockedUpgrades.augmentation) upgradeAugmentationCardEl.classList.remove('hidden');
         else upgradeAugmentationCardEl.classList.add('hidden');
+    }
+
+    if (upgradePrecisionCardEl) {
+        if (gameState.unlockedUpgrades.precision) upgradePrecisionCardEl.classList.remove('hidden');
+        else upgradePrecisionCardEl.classList.add('hidden');
     }
 
     if (upgradeRegenCardEl) {
@@ -351,6 +362,31 @@ export function updateUpgradesUI() {
             btnUpgradeAugmentationEl.setAttribute('disabled', 'disabled');
             btnUpgradeAugmentationEl.classList.add('disabled');
             btnUpgradeAugmentationEl.classList.remove('affordable');
+        }
+    }
+
+    // Upgrade: Precision
+    const upgradePrecisionValueEl = document.getElementById('upgradePrecisionValue');
+    const upgradePrecisionCostEl = document.getElementById('upgradePrecisionCost');
+    const btnUpgradePrecisionEl = document.getElementById('btnUpgradePrecision');
+
+    if (upgradePrecisionValueEl && upgradePrecisionCostEl && btnUpgradePrecisionEl) {
+        const currentPrecision = getPrecisionLevel();
+        const costPrecision = getPrecisionUpgradeCost();
+
+        upgradePrecisionValueEl.textContent = `+${currentPrecision}%`;
+        setUpgradeLevelZero(upgradePrecisionCardEl, currentPrecision <= 0);
+        upgradePrecisionCostEl.innerHTML = `${costPrecision} ${SCRAP_ICON}`;
+
+        const canAffordPrecision = (gameState.scraps || 0) >= costPrecision;
+        if (canAffordPrecision) {
+            btnUpgradePrecisionEl.removeAttribute('disabled');
+            btnUpgradePrecisionEl.classList.remove('disabled');
+            btnUpgradePrecisionEl.classList.add('affordable');
+        } else {
+            btnUpgradePrecisionEl.setAttribute('disabled', 'disabled');
+            btnUpgradePrecisionEl.classList.add('disabled');
+            btnUpgradePrecisionEl.classList.remove('affordable');
         }
     }
 
@@ -747,6 +783,16 @@ export function initUpgradesModule() {
     if (btnUpgradeAugmentationEl) {
         btnUpgradeAugmentationEl.addEventListener('click', () => {
             const success = buyAugmentationUpgrade();
+            if (success) {
+                updateUI();
+            }
+        });
+    }
+
+    const btnUpgradePrecisionEl = document.getElementById('btnUpgradePrecision');
+    if (btnUpgradePrecisionEl) {
+        btnUpgradePrecisionEl.addEventListener('click', () => {
+            const success = buyPrecisionUpgrade();
             if (success) {
                 updateUI();
             }

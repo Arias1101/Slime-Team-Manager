@@ -50,13 +50,7 @@ export function showFloatingDamageNumber(x, y, damageVal, type = 'enemy-dmg') {
     floatEl.style.left = `${x + jitterX}px`;
     floatEl.style.top = `${y}px`;
 
-    if (type === 'burn-dmg') {
-        floatEl.textContent = `🔥 ${damageVal}`;
-    } else if (type === 'poison-dmg') {
-        floatEl.textContent = `🧪 ${damageVal}`;
-    } else if (type === 'crit-dmg') {
-        floatEl.textContent = `💥 ${damageVal}`;
-    } else if (type === 'heal') {
+    if (type === 'heal') {
         floatEl.textContent = '+' + damageVal;
     } else {
         floatEl.textContent = `-${damageVal}`;
@@ -64,7 +58,7 @@ export function showFloatingDamageNumber(x, y, damageVal, type = 'enemy-dmg') {
 
     overlay.appendChild(floatEl);
 
-    const durationMs = (type === 'burn-dmg' || type === 'poison-dmg' || type === 'crit-dmg') ? 800 : 600;
+    const durationMs = (type === 'burn-dmg' || type === 'poison-dmg' || type === 'crit-dmg' || type === 'mega-crit-dmg') ? 800 : 600;
     setTimeout(() => {
         if (floatEl && floatEl.parentNode) floatEl.remove();
     }, durationMs);
@@ -271,12 +265,13 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
         const remainingDistance = targetEnemy.x - targetX;
         const isFrozen = (targetEnemy.effects?.freezeTimer || 0) > 0;
         const isRush = targetEnemy.type === 'rush';
-        const isStillWalking = targetEnemy.state === 'walking' && !isFrozen && (isRush || remainingDistance > stopBufferPx);
+        const isStunned = (targetEnemy.effects?.stunTimer || 0) > 0;
+        const isStillWalking = targetEnemy.state === 'walking' && !isStunned && (isRush || remainingDistance > stopBufferPx);
         let predictedX = targetEnemy.x;
 
         // Only lead targets that are still moving; Rushs have no stopping point.
         if (isStillWalking) {
-            const enemyTravel = (targetEnemy.speed || 0) * estDurationSec;
+            const enemyTravel = (targetEnemy.speed || 0) * (isFrozen ? 0.2 : 1) * estDurationSec;
             predictedX = isRush ? Math.max(90, targetEnemy.x - enemyTravel) : Math.max(targetX, targetEnemy.x - enemyTravel);
         }
 
@@ -324,17 +319,27 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
             hasDealtDamage = true;
             let currentDamage = slimeObj ? calculateSlimeDamage(slimeObj) : (gameState.slimeDamage || 1);
             let isCrit = false;
+            let isMegaCrit = false;
 
             const critChance = slimeObj ? (slimeObj.critChance || 0) : 0;
             if (critChance > 0) {
-                const roll = Math.random() * 100;
-                if (roll < critChance) {
-                    isCrit = true;
-                    currentDamage = currentDamage * 2;
+                // Crit beyond 100% grants a guaranteed multiplier tier plus an overflow
+                // chance for the next tier: 110% => always x2, 10% chance of x4; 210% => always x4, 10% chance of x8.
+                const critTier = Math.floor(critChance / 100);
+                const overflowChance = critChance % 100;
+                let critMultiplier = Math.pow(2, critTier);
+                if (overflowChance > 0 && Math.random() * 100 < overflowChance) {
+                    critMultiplier *= 2;
+                }
+                // Only overflow beyond a guaranteed 100% tier is a mega crit (x4+).
+                isMegaCrit = critMultiplier >= 4;
+                isCrit = critMultiplier > 1;
+                if (isCrit) {
+                    currentDamage = currentDamage * critMultiplier;
                 }
             }
 
-            dealTargetEnemyDamage(targetEnemy, currentDamage, slimeConfig, isCrit, slimeObj);
+            dealTargetEnemyDamage(targetEnemy, currentDamage, slimeConfig, isCrit, slimeObj, isMegaCrit);
             // If no target enemies are in range (x <= 450), slime performs jump animation without dealing damage
 
             // Rebound talent: Fighter slimes get a 10% chance to interrupt this jump and immediately
@@ -376,7 +381,7 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
 /**
  * Deal damage & apply elemental status effects (Fire Burn / Frost Freeze) to target enemy.
  */
-function dealTargetEnemyDamage(targetEnemy, damageAmount, slimeConfig, isCrit = false, slimeObj = null) {
+function dealTargetEnemyDamage(targetEnemy, damageAmount, slimeConfig, isCrit = false, slimeObj = null, isMegaCrit = false) {
     // If the jump attack was launched without a target in range, deal no damage
     if (!targetEnemy) return;
 
@@ -401,7 +406,9 @@ function dealTargetEnemyDamage(targetEnemy, damageAmount, slimeConfig, isCrit = 
     currentTarget.hp -= damageToApply;
 
     // Pop floating pixel art damage number on currentTarget (golden glowing crit-dmg for critical hits)
-    if (isCrit) {
+    if (isMegaCrit) {
+        showFloatingDamageNumber(currentTarget.x + 8, currentTarget.y - 14, damageToApply, 'mega-crit-dmg');
+    } else if (isCrit) {
         showFloatingDamageNumber(currentTarget.x + 8, currentTarget.y - 14, damageToApply, 'crit-dmg');
     } else {
         showFloatingDamageNumber(currentTarget.x + 8, currentTarget.y - 12, damageToApply, 'enemy-dmg');
@@ -429,11 +436,17 @@ function dealTargetEnemyDamage(targetEnemy, damageAmount, slimeConfig, isCrit = 
         currentTarget.effects.poisonTimer = 3.0;
     }
     if (hitEffects.freeze > 0 && !isControlImmune) {
-        currentTarget.effects.freezeTimer = 0.5 * hitEffects.freeze;
-        showFloatingStatusText(currentTarget, String.fromCodePoint(0x2744, 0xFE0F), 'freeze-text');
+        currentTarget.effects.freezeTimer = 1 * hitEffects.freeze;
+        const freezeDmg = 3 * hitEffects.freeze;
+        const freezeDmgDealt = Math.min(currentTarget.hp, freezeDmg);
+        if (freezeDmgDealt > 0) {
+            currentTarget.hp -= freezeDmgDealt;
+            showFloatingDamageNumber(currentTarget.x - 8, currentTarget.y - 20, freezeDmgDealt, 'freeze-dmg');
+            showFloatingStatusText(currentTarget, String.fromCodePoint(0x2744, 0xFE0F), 'freeze-text');
+        }
     }
     if (hitEffects.stun > 0 && !isControlImmune) {
-        currentTarget.effects.stunTimer = 0.4 * hitEffects.stun;
+        currentTarget.effects.stunTimer = 0.5 * hitEffects.stun;
         showFloatingStatusText(currentTarget, String.fromCodePoint(0x1F4AB), 'stun-text');
     }
     // Visual WHITE hit flash on currentTarget sprite
@@ -524,10 +537,11 @@ function computeJumpImpactX(refStartX, target) {
     const remainingDistance = target.x - targetX;
     const isFrozen = (target.effects?.freezeTimer || 0) > 0;
     const isRush = target.type === 'rush';
-    const isStillWalking = target.state === 'walking' && !isFrozen && (isRush || remainingDistance > stopBufferPx);
+    const isStunned = (target.effects?.stunTimer || 0) > 0;
+    const isStillWalking = target.state === 'walking' && !isStunned && (isRush || remainingDistance > stopBufferPx);
     let predictedX = target.x;
     if (isStillWalking) {
-        const enemyTravel = (target.speed || 0) * estDurationSec;
+        const enemyTravel = (target.speed || 0) * (isFrozen ? 0.2 : 1) * estDurationSec;
         predictedX = isRush ? Math.max(90, target.x - enemyTravel) : Math.max(targetX, target.x - enemyTravel);
     }
     return Math.min(450, Math.max(refStartX + 20, predictedX - 4));
