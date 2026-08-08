@@ -2,7 +2,7 @@
  * Enemy Management & AI Behaviors
  */
 
-import { gameState, addScraps, saveStateToLocal, saveWaveSnapshot, restoreBestRoster, SLIME_TYPES, getSlimeTotalRegen, getSlimeSpecialization } from './state.js';
+import { gameState, addScraps, saveStateToLocal, saveWaveSnapshot, restoreBestRoster, SLIME_TYPES, getSlimeTotalRegen, getSlimeSpecialization, setEquipmentDefinitionResolver } from './state.js';
 import { healAllSlimes, initAscendedAutoAttacks, clearAscendedAutoAttacks, showFloatingDamageNumber, showFloatingHealingNumber, showFloatingStatusTextAt, showBattlefieldWaveBanner, triggerSlimeEatLoot } from './slimes.js';
 import { updateUI, updateLootHUD, requestUIRefresh, playSlimeRainRespawnAnimation } from './ui.js';
 import { openShopModal } from './shop.js';
@@ -228,7 +228,7 @@ export const ENEMY_TYPES = {
         loot_name: 'Burning Torch',
         loot_effect: [
             { stat: 'burn', value: 1 },
-            { stat: 'hp', value: -3 }
+            { stat: 'damage', value: 1 }
         ],
         loot_priority: 'fighter'
     },
@@ -575,7 +575,7 @@ export const ENEMY_TYPES = {
         moveSpeed: 0.65,
         targetX: 180,
         loot_name: 'Talking Head',
-        loot_effect: [{ stat: 'regen', value: 3 }, { stat: 'hp', value: -5 }],
+        loot_effect: [{ stat: 'regen', value: 4 }, { stat: 'damage', value: 1 }],
         loot_priority: 'support',
     },
     bigzombi: {
@@ -670,6 +670,8 @@ export const ENEMY_TYPES = {
         loot_priority: 'tank',
     },
 };
+
+setEquipmentDefinitionResolver((id) => ENEMY_TYPES[id] || null);
 
 export const PROJECTILE_TYPES = {
     arrow: {

@@ -277,8 +277,34 @@ export function getEquipmentMultiplier(item) {
     return 1 + getEquipmentQuality(item);
 }
 
+/**
+ * Live definition lookup. Equipment is stored as { id, quality } only; all
+ * presentational and mechanical data is re-derived from the enemy definition
+ * registered here (ENEMY_TYPES) so edits to enemies.js apply to saved items.
+ */
+let equipmentDefinitionResolver = null;
+export function setEquipmentDefinitionResolver(resolver) {
+    equipmentDefinitionResolver = resolver;
+}
+
+export function getEquipmentDefinition(item) {
+    const id = item?.id || item?.enemyKey;
+    if (!id || !equipmentDefinitionResolver) return null;
+    return equipmentDefinitionResolver(id) || null;
+}
+
+/** Normalize a loot_effect value (array, single effect, or { effects: [...] }) to an array. */
+export function getEquipmentEffects(item) {
+    const def = getEquipmentDefinition(item);
+    const raw = def?.loot_effect !== undefined ? def.loot_effect : item?.effects;
+    if (Array.isArray(raw)) return raw;
+    if (raw?.effects) return Array.isArray(raw.effects) ? raw.effects : [raw.effects];
+    if (raw) return [raw];
+    return [];
+}
+
 export function getScaledEquipmentEffects(item) {
-    const rawEffects = Array.isArray(item?.effects) ? item.effects : (item?.effects ? [item.effects] : [item]);
+    const rawEffects = getEquipmentEffects(item);
     const multiplier = getEquipmentMultiplier(item);
     return rawEffects.filter(Boolean).map(effect => ({
         ...effect,
@@ -291,9 +317,15 @@ export function getEquipmentSellMultiplier(item) {
 }
 
 export function getEquipmentDisplayName(item) {
-    const baseName = item?.name || item?.id || 'Equipment';
+    const def = getEquipmentDefinition(item);
+    const baseName = def?.loot_name || item?.name || item?.id || 'Equipment';
     const quality = getEquipmentQuality(item);
     return quality > 0 ? `${baseName} +${quality}` : baseName;
+}
+
+export function getEquipmentSprite(item) {
+    const id = item?.id || item?.enemyKey;
+    return item?.sprite || (id ? `images/loots/${id}.png` : 'images/loots/boot.png');
 }
 /** Sum innate elemental effects and quality-scaled equipment effects for one hit. */
 export function getSlimeHitEffects(slime) {
@@ -351,12 +383,58 @@ export function getSlimeMaxHp(slime) {
 export function refreshSlimeMaxHp(slime) {
     if (!slime) return 10;
     const previousMaxHp = Math.max(1, Number(slime.maxHp || 10));
-    if (slime.baseMaxHp === undefined) slime.baseMaxHp = previousMaxHp;
+    if (slime.baseMaxHp === undefined) {
+        // Legacy saves lack baseMaxHp; if the maxHp already includes the Tank
+        // multiplier, reverse it so getSlimeMaxHp does not apply it twice.
+        slime.baseMaxHp = getSlimeSpecialization(slime) === 'tank'
+            ? Math.max(1, Math.round(previousMaxHp / 1.2))
+            : previousMaxHp;
+    }
     const nextMaxHp = getSlimeMaxHp(slime);
     slime.maxHp = nextMaxHp;
     if (slime.hp === undefined) slime.hp = nextMaxHp;
     else slime.hp = Math.min(nextMaxHp, Math.max(0, slime.hp + Math.max(0, nextMaxHp - previousMaxHp)));
     return nextMaxHp;
+}
+
+/** Total bonus granted by a Slime's equipped items for one stat (quality-scaled). */
+export function getSlimeEquipmentStatBonus(slime, stat) {
+    return (slime?.equipment || []).reduce((total, item) => {
+        getScaledEquipmentEffects(item).forEach(effect => {
+            if (effect?.stat === stat) total += Math.max(1, Number(effect.value) || 1);
+        });
+        return total;
+    }, 0);
+}
+
+/** Total HP bonus granted by a Slime's equipped items (quality-scaled). */
+export function getSlimeEquipmentHpBonus(slime) {
+    return getSlimeEquipmentStatBonus(slime, 'hp');
+}
+
+/**
+ * Recompute a Slime's maximum HP from the full formula:
+ * base (10) + Alchemist Endurance + Fortification + equipped HP bonuses.
+ * Used when loading a save to repair drifted/inflated HP.
+ */
+export function recalculateSlimeMaxHp(slime) {
+    if (!slime) return 10;
+    const baseHp = 10 + (gameState.alchemistEnduranceLevel || 0) + (gameState.fortificationLevel || 0);
+    slime.baseMaxHp = Math.max(1, baseHp + getSlimeEquipmentHpBonus(slime));
+    return refreshSlimeMaxHp(slime);
+}
+
+/**
+ * Recompute every derived stat on the character sheet from its full formula:
+ * base + global upgrades + Alchemist bonuses + equipped bonuses.
+ * Used when loading a save to repair drifted/inflated stats.
+ */
+export function recalculateSlimeStats(slime) {
+    if (!slime) return;
+    recalculateSlimeMaxHp(slime);
+    slime.critChance = Math.max(0, (gameState.alchemistLuckLevel || 0) + getSlimeEquipmentStatBonus(slime, 'crit'));
+    slime.regen = Math.max(0, (gameState.alchemistRegenLevel || 0) + getSlimeEquipmentStatBonus(slime, 'regen'));
+    refreshSlimeDamage(slime);
 }
 
 /** Total per-wave regeneration, including the global upgrade and Support bonus. */
@@ -1093,6 +1171,18 @@ export function migrateSpecializedSlimes() {
         savedSlime.wavesClearedSinceDeath = Number(activeSlime.wavesClearedSinceDeath || 0);
     });
 }
+/**
+ * Strip legacy equipment entries to the canonical { id, quality } shape. All
+ * display/mechanical data is re-derived live from the registered definition.
+ */
+function normalizeEquipmentList(items) {
+    if (!Array.isArray(items)) return [];
+    return items.map(item => {
+        const id = item?.id || item?.enemyKey;
+        return { id, quality: getEquipmentQuality(item) };
+    }).filter(item => item.id != null && item.id !== '');
+}
+
 export function loadStateFromLocal() {
     const saved = localStorage.getItem('slm_army_save');
     if (saved) {
@@ -1110,6 +1200,10 @@ export function loadStateFromLocal() {
         gameState = { ...defaultState };
         syncSlimesArray();
     }
+    (gameState.slimes || []).forEach(slime => { slime.equipment = normalizeEquipmentList(slime.equipment); });
+    (gameState.bestRoster || []).forEach(slime => { slime.equipment = normalizeEquipmentList(slime.equipment); });
+    (gameState.villageRoster || []).forEach(slime => { slime.equipment = normalizeEquipmentList(slime.equipment); });
+    gameState.villageInventory = normalizeEquipmentList(gameState.villageInventory);
     migrateSpecializedSlimes();
     // A Slime kept in the Village (Common House) is not part of the army. Prune
     // it from the historical roster so it is never rendered as a dead RIP slot.
@@ -1121,7 +1215,8 @@ export function loadStateFromLocal() {
         gameState.afkLastAwayAt = saved ? (gameState.lastSavedTimestamp || Date.now()) : Date.now();
     }
     syncSlimesArray();
-    refreshAllSlimeDamage();
+    (gameState.slimes || []).forEach(recalculateSlimeStats);
+    (gameState.bestRoster || []).forEach(recalculateSlimeStats);
     saveStateToLocal();
 }
 

@@ -2,7 +2,7 @@
  * Application Main Initializer
  */
 
-import { loadStateFromLocal, addScraps, gameState, getFortificationLevel, getFortificationUpgradeCost, buyFortificationUpgrade, getSlimeRegen, getRegenMax, markAfkStart, claimAfkScraps, previewAfkScraps, updateBestRoster, calculateSlimeDamage, saveStateToLocal, getScaledEquipmentEffects, getEquipmentQuality, getEquipmentDisplayName, ALCHEMIST_UPGRADES, getAlchemistUpgradeLevel, getAlchemistUpgradeCost, buyAlchemistUpgrade, getSlimeDeathSprite, getSlimeJumpSprite, getSlimeSpecialization } from './state.js';
+import { loadStateFromLocal, addScraps, gameState, getFortificationLevel, getFortificationUpgradeCost, buyFortificationUpgrade, getSlimeRegen, getRegenMax, markAfkStart, claimAfkScraps, previewAfkScraps, updateBestRoster, calculateSlimeDamage, saveStateToLocal, getScaledEquipmentEffects, getEquipmentQuality, getEquipmentDisplayName, getEquipmentSprite, refreshSlimeMaxHp, ALCHEMIST_UPGRADES, getAlchemistUpgradeLevel, getAlchemistUpgradeCost, buyAlchemistUpgrade, getSlimeDeathSprite, getSlimeJumpSprite, getSlimeSpecialization } from './state.js';
 import { initAuth, loginWithGoogle, logoutUser } from './auth.js';
 import { startEngine, setGamePaused, isGamePaused } from './engine.js';
 import { updateUI, setAuthScreenState, showFirebaseNotice, playSlimeRainRespawnAnimation, initSlimeModalListeners, initMainTabsListeners, openSlimeInspectorModal, renderSlimeRosterLanes } from './ui.js';
@@ -237,20 +237,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!Array.isArray(gameState.villageInventory)) gameState.villageInventory = [];
         return gameState.villageInventory;
     };
-    const getVillageItemKey = (item) => JSON.stringify([item.id, item.name, item.sprite, item.effects || item.effectText || '', getEquipmentQuality(item)]);
-    // Convert the previous { stat: 'effect', effectType: 'stun' } format when the Forge touches an item.
-    const normalizeLegacyItemEffects = (item) => {
-        if (!item) return item;
-        const rawEffects = Array.isArray(item.effects) ? item.effects : (item.effects ? [item.effects] : []);
-        if (!rawEffects.length) return item;
-        item.effects = rawEffects.map(effect => {
-            if (!effect || effect.stat !== 'effect' || !effect.effectType) return effect;
-            const { effectType, ...rest } = effect;
-            return { ...rest, stat: effectType, value: Number(effect.value ?? 1) || 1 };
-        });
-        return item;
-    };
-    const getVillageMergeKey = (item) => JSON.stringify([item.id, item.name, item.sprite, item.effects || item.effectText || '']);
+    const getVillageItemKey = (item) => JSON.stringify([item.id, getEquipmentQuality(item)]);
+    const getVillageMergeKey = (item) => String(item.id);
     const canMergeVillageInventory = (inventory) => {
         const counts = new Map();
         inventory.forEach(item => {
@@ -264,7 +252,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const mergeVillageInventory = (inventory) => {
         const families = new Map();
         inventory.forEach(item => {
-            normalizeLegacyItemEffects(item);
             const key = getVillageMergeKey(item);
             if (!families.has(key)) families.set(key, [[], [], [], [], []]);
             families.get(key)[getEquipmentQuality(item)].push(item);
@@ -275,7 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 while (qualities[quality].length >= 5) {
                     const source = qualities[quality].shift();
                     qualities[quality].splice(0, 4);
-                    qualities[quality + 1].push({ ...JSON.parse(JSON.stringify(source)), quality: quality + 1 });
+                    qualities[quality + 1].push({ id: source.id, quality: quality + 1 });
                 }
             }
             qualities.forEach(items => merged.push(...items));
@@ -299,13 +286,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!slime.equipment) slime.equipment = [];
         if (slime.equipment.some(equipment => equipment.id === item.id)) return false;
 
-        const equippedItem = JSON.parse(JSON.stringify(item));
+        const equippedItem = { id: item.id, quality: getEquipmentQuality(item) };
         const effects = getScaledEquipmentEffects(equippedItem);
         effects.forEach(effect => {
             const value = Number(effect?.value ?? 1);
             if (effect?.stat === 'hp') {
-                slime.maxHp = Math.max(1, (slime.maxHp || 10) + value);
-                slime.hp = Math.max(1, Math.min(slime.maxHp, (slime.hp ?? slime.maxHp) + value));
+                slime.baseMaxHp = Math.max(1, (slime.baseMaxHp ?? slime.maxHp ?? 10) + value);
+                refreshSlimeMaxHp(slime);
             } else if (effect?.stat === 'regen') {
                 slime.regen = Math.max(0, (slime.regen || 0) + value);
             } else if (effect?.stat === 'crit') {
@@ -348,13 +335,13 @@ document.addEventListener('DOMContentLoaded', () => {
             .sort((a, b) => String(a.item.name || a.item.id || '').localeCompare(String(b.item.name || b.item.id || '')));
         inventoryEl.innerHTML = groupedItems.length ? groupedItems.map(({ item, count }, groupIndex) => {
             const effectText = formatLootEffects(getScaledEquipmentEffects(item));
-            const icon = item.sprite || `images/loots/${item.id}.png`;
+            const icon = getEquipmentSprite(item);
             const quality = getEquipmentQuality(item);
             const displayName = getEquipmentDisplayName(item);
             const lootPriority = item.loot_priority || ENEMY_TYPES[item.id]?.loot_priority || '';
             const specBtn = (spec, label) => `<button class="btn-forge-spec-priority ${lootPriority === spec ? 'selected' : ''}" data-forge-item-id="${item.id}" data-forge-priority="${spec}" title="Equip ${label}s in priority"><img src="images/logos/${spec}.png" alt="${label}"></button>`;
             const actions = `<div class="forge-item-actions forge-item-actions-spec">${specBtn('support', 'Support')}${specBtn('fighter', 'Fighter')}${specBtn('tank', 'Tank')}</div>`;
-            return `<article class="forge-inventory-item"><img src="${icon}" alt="${item.name}"><div class="forge-item-details"><strong class="forge-item-quality-${quality}">${displayName}</strong><span>${effectText}</span></div><b class="forge-item-count">x${count}</b>${actions}</article>`;
+            return `<article class="forge-inventory-item"><img src="${icon}" alt="${displayName}"><div class="forge-item-details"><strong class="forge-item-quality-${quality}">${displayName}</strong><span>${effectText}</span></div><b class="forge-item-count">x${count}</b>${actions}</article>`;
         }).join('') : '<p class="forge-empty-text">No equipment is stored in the Village Inventory.</p>';
         inventoryEl.querySelectorAll('.btn-forge-spec-priority').forEach(button => {
             button.addEventListener('click', () => {
@@ -424,7 +411,8 @@ document.addEventListener('DOMContentLoaded', () => {
             (gameState.slimes || []).forEach(slime => {
                 (slime.equipment || []).forEach(item => inventory.push(JSON.parse(JSON.stringify(item))));
                 slime.equipment = [];
-                slime.maxHp = 10 + (gameState.fortificationLevel || 0) + (gameState.alchemistEnduranceLevel || 0);
+                slime.baseMaxHp = 10 + (gameState.fortificationLevel || 0) + (gameState.alchemistEnduranceLevel || 0);
+                slime.maxHp = slime.baseMaxHp;
                 slime.hp = slime.maxHp;
                 slime.regen = gameState.alchemistRegenLevel || 0;
                 slime.critChance = gameState.alchemistLuckLevel || 0;

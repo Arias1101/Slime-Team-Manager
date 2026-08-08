@@ -2,7 +2,7 @@
  * User Interface & Authentication Screen Renderer
  */
 
-import { gameState, SLIME_TYPES, killSlime, syncSlimesArray, rerollSlimeType, calculateSlimeDamage, getScaledEquipmentEffects, getEquipmentDisplayName, saveStateToLocal, getSlimeHitEffects, getEquipmentQuality, getSlimeTotalRegen, sortRosterBySpecialization, updateBestRoster, getSlimeJumpSprite, canSlimeBuyNextTalent } from './state.js';
+import { gameState, SLIME_TYPES, killSlime, syncSlimesArray, rerollSlimeType, calculateSlimeDamage, getScaledEquipmentEffects, getEquipmentDisplayName, getEquipmentSprite, saveStateToLocal, getSlimeHitEffects, getEquipmentQuality, getSlimeTotalRegen, sortRosterBySpecialization, updateBestRoster, getSlimeJumpSprite, canSlimeBuyNextTalent } from './state.js';
 import { updateUpgradesUI } from './upgrades.js';
 import { activeGroundLoots, formatLootEffects } from './enemies.js';
 import { setGamePaused, isGamePaused } from './engine.js';
@@ -830,7 +830,7 @@ function renderSlimeTalentTree(slime) {
         chosenMessage.classList.toggle('hidden', !unlocked || !specialization);
         const specializationBonuses = { tank: '(+20% HP 💗)', support: '(+20% Regen 💚)', fighter: '(+20% Damage ⚔️)' };
         const specializationLabel = String(specialization).toLowerCase();
-        chosenMessage.textContent = specialization ? `Specialization: ${specializationLabel} ${specializationBonuses[specializationLabel] || ''}`.trim() : '';
+        chosenMessage.textContent = specialization ? `${specializationLabel} ${specializationBonuses[specializationLabel] || ''}`.trim() : '';
     }
     if (specializationTalents) {
         const normalizedSpecialization = String(specialization).toLowerCase();
@@ -982,12 +982,13 @@ export function openSlimeInspectorModal(slime) {
 
     if (slime.equipment && slime.equipment.length > 0) {
         slime.equipment.forEach(eq => {
-            if (eq.stat === 'effect' || eq.effectType || ['burn', 'poison', 'freeze', 'stun'].includes(eq.stat)) {
-                if ((eq.effectType || eq.stat) === 'burn' && !activeEffects.includes('🔥 Burn')) activeEffects.push('🔥 Burn');
-                else if ((eq.effectType || eq.stat) === 'poison' && !activeEffects.includes('🧪 Poison')) activeEffects.push('🧪 Poison');
-                else if ((eq.effectType || eq.stat) === 'freeze' && !activeEffects.includes('❄️ Freeze')) activeEffects.push('❄️ Freeze');
-                else if ((eq.effectType || eq.stat) === 'stun' && !activeEffects.includes('💫 Stun')) activeEffects.push('💫 Stun');
-            }
+            getScaledEquipmentEffects(eq).forEach(effect => {
+                const effectType = effect?.stat === 'effect' ? effect?.effectType : effect?.stat;
+                if (effectType === 'burn' && !activeEffects.includes('🔥 Burn')) activeEffects.push('🔥 Burn');
+                else if (effectType === 'poison' && !activeEffects.includes('🧪 Poison')) activeEffects.push('🧪 Poison');
+                else if (effectType === 'freeze' && !activeEffects.includes('❄️ Freeze')) activeEffects.push('❄️ Freeze');
+                else if (effectType === 'stun' && !activeEffects.includes('💫 Stun')) activeEffects.push('💫 Stun');
+            });
         });
     }
 
@@ -1014,7 +1015,7 @@ export function openSlimeInspectorModal(slime) {
                 badge.title = getEquipmentDisplayName(item) + ': ' + effectText;
 
                 badge.innerHTML = `
-                    <img src="${item.sprite}" alt="${getEquipmentDisplayName(item)}" class="equipment-icon-img"
+                    <img src="${getEquipmentSprite(item)}" alt="${getEquipmentDisplayName(item)}" class="equipment-icon-img"
                          onerror="this.onerror=null; this.src='images/loots/boot.png';">
                     <div class="equipment-item-info">
                         <span class="equipment-item-name equipment-quality-${getEquipmentQuality(item)}">${getEquipmentDisplayName(item)}</span>

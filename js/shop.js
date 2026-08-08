@@ -2,7 +2,7 @@
  * Shop Module - Mid-Game Merchant Market (Appears every 10 waves)
  */
 
-import { gameState, saveStateToLocal, updateBestRoster, addScraps, calculateSlimeDamage, getScaledEquipmentEffects, getEquipmentDisplayName, getEquipmentSellMultiplier, getEquipmentQuality, refreshSlimeMaxHp, getSlimeJumpSprite } from './state.js';
+import { gameState, saveStateToLocal, updateBestRoster, addScraps, calculateSlimeDamage, getScaledEquipmentEffects, getEquipmentDisplayName, getEquipmentSprite, getEquipmentSellMultiplier, getEquipmentQuality, refreshSlimeMaxHp, getSlimeJumpSprite } from './state.js';
 import { ENEMY_TYPES, calculateLootValue, formatLootEffects } from './enemies.js';
 import { SLIME_TYPES } from './state.js';
 import { updateUI, renderSlimeRosterLanes } from './ui.js';
@@ -207,14 +207,14 @@ function renderSelectedSlimeSheet() {
         selectedSlime.equipment.forEach((eq, index) => {
             const enemyKey = eq.id;
             const enemyDef = ENEMY_TYPES[enemyKey];
-            const lootVal = eq.lootValue || calculateLootValue(enemyDef?.loot_effect);
+            const lootVal = calculateLootValue(enemyDef?.loot_effect);
             const sellPrice = Math.max(1, Math.floor(lootVal * getEquipmentSellMultiplier(eq) * 0.5));
             const displayName = getEquipmentDisplayName(eq);
 
             html += `
                 <div class="shop-equipment-row equipment-item-card">
                     <div class="shop-eq-left">
-                        <img src="${eq.sprite || `images/loots/${eq.id}.png`}" class="shop-eq-icon equipment-icon-img" alt="${displayName}">
+                        <img src="${getEquipmentSprite(eq)}" class="shop-eq-icon equipment-icon-img" alt="${displayName}">
                         <div class="shop-eq-details equipment-item-info">
                             <span class="shop-eq-name equipment-item-name equipment-quality-${getEquipmentQuality(eq)}">${displayName}</span>
                             <span class="shop-eq-effect equipment-item-effect">${formatLootEffects(getScaledEquipmentEffects(eq))}</span>
@@ -251,7 +251,7 @@ function sellSlimeEquipment(slime, eqIndex) {
     const itemToSell = slime.equipment[eqIndex];
     const enemyKey = itemToSell.id;
     const enemyDef = ENEMY_TYPES[enemyKey];
-    const lootVal = itemToSell.lootValue || calculateLootValue(enemyDef?.loot_effect);
+    const lootVal = calculateLootValue(enemyDef?.loot_effect);
     const sellPrice = Math.max(1, Math.floor(lootVal * getEquipmentSellMultiplier(itemToSell) * 0.5));
 
     // Remove item from slime equipment array
@@ -373,8 +373,8 @@ function buyShopItem(item) {
             const effectStat = eff.stat || 'hp';
             const effectValue = eff.value || 1;
             if (effectStat === 'hp') {
-                selectedSlime.maxHp = Math.max(1, selectedSlime.maxHp - effectValue);
-                selectedSlime.hp = Math.max(1, Math.min(selectedSlime.hp, selectedSlime.maxHp));
+                selectedSlime.baseMaxHp = Math.max(1, (selectedSlime.baseMaxHp ?? selectedSlime.maxHp ?? 10) - effectValue);
+                refreshSlimeMaxHp(selectedSlime);
             } else if (effectStat === 'regen') {
                 selectedSlime.regen = Math.max(0, (selectedSlime.regen || 0) - effectValue);
             } else if (effectStat === 'crit') {
@@ -389,14 +389,14 @@ function buyShopItem(item) {
     item.bought = true;
 
     // Apply item stat bonuses
-    const scaledEffects = getScaledEquipmentEffects({ effects: item.effectsList, quality: item.quality || 0 });
+    const scaledEffects = getScaledEquipmentEffects({ id: item.enemyKey, quality: item.quality || 0 });
     scaledEffects.forEach(eff => {
         const effectStat = eff.stat || 'hp';
         const effectValue = eff.value || 1;
 
         if (effectStat === 'hp') {
-            selectedSlime.maxHp = Math.max(1, (selectedSlime.maxHp || 10) + effectValue);
-            selectedSlime.hp = Math.max(1, Math.min(selectedSlime.hp !== undefined ? selectedSlime.hp : 10, selectedSlime.maxHp));
+            selectedSlime.baseMaxHp = Math.max(1, (selectedSlime.baseMaxHp ?? selectedSlime.maxHp ?? 10) + effectValue);
+            refreshSlimeMaxHp(selectedSlime);
         } else if (effectStat === 'damage') {
             // Damage is derived after the item is added below.
         } else if (effectStat === 'regen') {
@@ -409,11 +409,6 @@ function buyShopItem(item) {
     // Add item to equipment list
     selectedSlime.equipment.push({
         id: item.enemyKey,
-        name: item.name,
-        sprite: item.sprite,
-        effectText: item.effectText,
-        effects: item.effectsList,
-        lootValue: item.lootValue,
         quality: item.quality || 0
     });
 

@@ -3591,6 +3591,213 @@ body.modal-open {
     transform: scale(2.5);
 }
 
+/* ===== Pixel-style Slime Character Sheet (matches .pixel-popup theme) ===== */
+.slime-inspector-modal {
+    background: #1b1c21;
+    border: 2px solid #E0C564;
+    border-radius: 0;
+    box-shadow: 6px 6px 0 #0a0b0d;
+    color: #e2e2e0;
+}
+
+.slime-inspector-modal .slime-modal-header {
+    border-bottom: 2px solid #0b0c0e;
+}
+
+.slime-inspector-modal .slime-modal-portrait-wrapper {
+    border: 2px solid #E0C564;
+    border-radius: 0;
+    background: #24262b;
+    box-shadow: none;
+}
+
+.slime-inspector-modal .slime-modal-name {
+    color: #e3c765;
+}
+
+.slime-inspector-modal .slime-modal-type-badge {
+    background: #2a2d34;
+    border: 1px solid #0b0c0e;
+    border-radius: 0;
+    color: #e3c765;
+}
+
+.slime-inspector-modal .slime-sheet-tabs {
+    border-bottom: 2px solid #0b0c0e;
+}
+
+.slime-inspector-modal .slime-sheet-tab {
+    color: #c8cbcf;
+}
+
+.slime-inspector-modal .slime-sheet-tab.active {
+    background: #24262b;
+    border: 1px solid #0b0c0e;
+    border-bottom: 2px solid #e3c765;
+    color: #e3c765;
+}
+
+.slime-inspector-modal .slime-stat-card {
+    background: #24262b;
+    border: 2px solid #0b0c0e;
+    border-radius: 0;
+}
+
+.slime-inspector-modal .slime-stat-card:hover {
+    background: #2a2d34;
+    border-color: #e3c765;
+}
+
+.slime-inspector-modal .slime-stat-card .stat-label {
+    color: #a1a1aa;
+}
+
+.slime-inspector-modal .slime-stat-card .stat-value {
+    color: #e2e2e0;
+}
+
+.slime-inspector-modal .slime-hit-effect-stat .stat-value {
+    color: #e3c765;
+}
+
+.slime-inspector-modal .slime-modal-meta {
+    color: #a1a1aa;
+}
+
+.slime-inspector-modal .slime-modal-meta strong {
+    color: #e3c765;
+}
+
+.slime-inspector-modal .slime-modal-section {
+    background: #24262b;
+    border: 2px solid #0b0c0e;
+    border-radius: 0;
+}
+
+.slime-inspector-modal .slime-modal-section .section-title {
+    font-family: var(--font-heading);
+    font-size: 0.5rem;
+    font-weight: normal;
+    color: #c8cbcf;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.slime-inspector-modal .equipment-item-card {
+    background: #24262b;
+    border: 2px solid #0b0c0e;
+    border-radius: 0;
+}
+
+.slime-inspector-modal .equipment-item-card:hover {
+    border-color: #e3c765;
+    background: #2a2d34;
+}
+
+.slime-inspector-modal .equipment-item-name {
+    font-size: 0.52rem;
+}
+
+.slime-inspector-modal .equipment-empty-text {
+    font-size: 0.55rem;
+}
+
+.slime-inspector-modal .slime-talent-choice {
+    border: 2px solid #0b0c0e;
+    border-radius: 0;
+    background: #24262b;
+}
+
+.slime-inspector-modal .slime-talent-choice:hover,
+.slime-inspector-modal .slime-talent-choice:focus-visible {
+    border-color: #e3c765;
+    background: #2a2d34;
+}
+
+.slime-inspector-modal .slime-specialization-talent {
+    border: 2px solid #0b0c0e;
+    border-radius: 0;
+    background: #24262b;
+}
+
+.slime-inspector-modal .slime-specialization-talent.available {
+    border-color: #e3c765;
+}
+
+.slime-inspector-modal .slime-specialization-talent:disabled {
+    border-color: #0b0c0e;
+    background: #1b1c21;
+}
+
+.slime-inspector-modal .slime-specialization-talent.unlocked {
+    border: 2px solid #e3c765;
+    background: #2a2d34;
+}
+
+.slime-inspector-modal .modal-header-actions .modal-kill-btn {
+    border: 0;
+    border-radius: 0;
+    background: #2a2d34;
+    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, 4px 4px 0 rgba(0, 0, 0, 0.28), inset 0px 3px rgba(255, 255, 255, 0.25);
+}
+
+/* Reuse the shared pixel close button (.village-popup-close) but keep it in the
+   flex header-actions row instead of its default absolute corner placement. */
+.slime-inspector-modal .modal-header-actions .village-popup-close {
+    position: static;
+}
+
+.slime-inspector-modal .modal-header-actions .modal-kill-btn:hover:not(.disabled) {
+    background: #7f1d1d;
+    color: #fca5a5;
+    transform: scale(1.1) rotate(-10deg);
+    box-shadow: none;
+}
+
+.slime-inspector-modal .modal-reroll-btn {
+    height: 32px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 0;
+    background: #2a2d34;
+    color: #e3c765;
+    font-family: var(--font-heading);
+    font-size: 0.5rem;
+    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, 4px 4px 0 rgba(0, 0, 0, 0.28), inset 0px 3px rgba(255, 255, 255, 0.25);
+}
+
+.slime-inspector-modal .modal-reroll-btn:hover:not(.disabled):not([disabled]) {
+    background: #e3c765;
+    color: #1b1c21;
+    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, 4px 4px 0 rgba(0, 0, 0, 0.28), inset 0px 3px rgba(255, 255, 255, 0.6);
+    transform: scale(1.05);
+    outline: none;
+}
+
+.slime-inspector-modal .slime-modal-body,
+.slime-inspector-modal .slime-talent-content {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+}
+
+.slime-inspector-modal .slime-modal-body::-webkit-scrollbar,
+.slime-inspector-modal .slime-talent-content::-webkit-scrollbar {
+    width: 9px;
+    border-radius: 0;
+}
+
+.slime-inspector-modal .slime-modal-body::-webkit-scrollbar-track,
+.slime-inspector-modal .slime-talent-content::-webkit-scrollbar-track {
+    border-radius: 0;
+    background: #1b1c21;
+}
+
+.slime-inspector-modal .slime-modal-body::-webkit-scrollbar-thumb,
+.slime-inspector-modal .slime-talent-content::-webkit-scrollbar-thumb {
+    border: 2px solid #1b1c21;
+    border-radius: 0;
+    background: #e3c765;
+}
 
 /* Medium desktop: keep both panels visible, with one readable upgrades column. */
 @media (min-width: 901px) and (max-width: 1259px) {
@@ -4849,9 +5056,10 @@ body.new-game-plus .village-buildings {
     white-space: nowrap;
 }
 
-.forge-item-details span {
+.forge-item-details span,
+.slime-inspector-modal .equipment-item-effect {
     color: #94a3b8;
-    font-size: 0.48rem;
+    font-size: 0.4rem;
     line-height: 1.45;
 }
 

@@ -9,7 +9,7 @@
  *                 Only slimes from one side can be selected at once.
  */
 
-import { gameState, SLIME_TYPES, getSlimeJumpSprite, saveStateToLocal, updateBestRoster } from './state.js';
+import { gameState, SLIME_TYPES, getSlimeJumpSprite, saveStateToLocal, updateBestRoster, getEquipmentQuality } from './state.js';
 import { renderSlimeRosterLanes, updateUI } from './ui.js';
 
 const MAX_MAIN_ROSTER = 60;
@@ -131,7 +131,7 @@ function moveSelectedSlimesToVillage() {
 
     toMove.forEach(slime => {
         (slime.equipment || []).forEach(item => {
-            gameState.villageInventory.push(JSON.parse(JSON.stringify(item)));
+            gameState.villageInventory.push({ id: item.id, quality: getEquipmentQuality(item) });
         });
         slime.equipment = [];
         gameState.villageRoster.push(slime);

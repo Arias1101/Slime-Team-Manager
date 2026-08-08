@@ -714,10 +714,7 @@ function dispatchSingleSlimeToEat() {
 
                 slimeObj.equipment.push({
                     id: lootKey,
-                    name: targetLoot.name || lootKey,
-                    sprite: targetLoot.sprite || `images/loots/${lootKey}.png`,
-                    effectText: combinedText,
-                    effects: effectsList
+                    quality: 0
                 });
 
                 slimeObj.damage = calculateSlimeDamage(slimeObj);
