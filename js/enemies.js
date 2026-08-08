@@ -1262,8 +1262,8 @@ function checkWaveCompletion() {
             });
         }
 
-        // XP is the number of waves survived since this Slime last died.
-        (gameState.slimes || []).forEach(s => { s.wavesClearedSinceDeath = (s.wavesClearedSinceDeath || 0) + 1; });
+        // Coins are earned for each wave survived since this Slime last died.
+        (gameState.slimes || []).forEach(s => { s.coins = (s.coins || 0) + 1; });
         // Give airborne slimes time to land before sending one to eat.
         if ((gameState.autoEatLevel || 0) > 0) {
             setTimeout(() => {
@@ -2240,12 +2240,12 @@ export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg', 
 
             if (slime.hp <= 0) {
                 gameState.hasSlimeDied = true;
-                // Dying to the "death" enemy is the only exception: XP is preserved.
-                // Any other death resets the slime's XP (wavesClearedSinceDeath) to 0.
+                // Dying to the "death" enemy is the only exception: coins are preserved.
+                // Any other death resets the slime's coins to 0.
                 if (sourceEnemy?.typeId !== 'death') {
-                    slime.wavesClearedSinceDeath = 0;
+                    slime.coins = 0;
                     const savedSlime = (gameState.bestRoster || []).find(entry => String(entry.id || entry.name) === String(slime.id || slime.name));
-                    if (savedSlime) savedSlime.wavesClearedSinceDeath = 0;
+                    if (savedSlime) savedSlime.coins = 0;
                 }
                 // Instantly remove dead slime from memory array
                 gameState.slimes = gameState.slimes.filter(s => s.id !== slime.id);
@@ -2269,11 +2269,11 @@ export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg', 
                 updateUI();
             }
         } else if (slime.hp <= 0) {
-            // Dying to the "death" enemy is the only exception: XP is preserved.
+            // Dying to the "death" enemy is the only exception: coins are preserved.
             if (sourceEnemy?.typeId !== 'death') {
-                slime.wavesClearedSinceDeath = 0;
+                slime.coins = 0;
                 const savedSlime = (gameState.bestRoster || []).find(entry => String(entry.id || entry.name) === String(slime.id || slime.name));
-                if (savedSlime) savedSlime.wavesClearedSinceDeath = 0;
+                if (savedSlime) savedSlime.coins = 0;
             }
             gameState.slimes = gameState.slimes.filter(s => s.id !== slime.id);
             gameState.armySize = gameState.slimes.length;

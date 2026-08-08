@@ -1,4 +1,12 @@
 Patch Notes:
+v0.19
+- Adjusted loot font.
+- Added a Create Slime buttons in common house.
+- Improved selected slimes info in common house.
+- Removed "xp" from the game (Main talents now all cost 1 coin).
+- Added Common House button to bulk kill Slimes.
+- Added Common House buttons to bulk change Slime Types.
+
 v0.18
 - Restyled Whole App.
 - Implemented Precision upgrade.

@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
         text.textContent = 'Slimes struggled without you, but they found some Scraps nonetheless.';
         const claim = document.createElement('button');
         claim.className = 'afk-reward-claim';
-        claim.innerHTML = `<span aria-hidden="true">🍖</span> Claim ${reward.scraps} scraps`;
+        claim.innerHTML = `<img src="images/logos/scrap.png" alt="" class="afk-reward-scrap-icon" aria-hidden="true"> Claim ${reward.scraps} scraps`;
         claim.addEventListener('click', () => {
             const claimed = claimAfkScraps();
             if (claimed.scraps > 0) updateUI();

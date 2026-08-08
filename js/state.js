@@ -451,8 +451,8 @@ export function canSlimeBuyNextTalent(slime) {
     if ((gameState.newGamePlusCompletions || 0) <= 0) return false;
     const specialization = getSlimeSpecialization(slime);
     if (!['support', 'tank', 'fighter'].includes(specialization)) return false;
-    const xp = Number(slime?.wavesClearedSinceDeath || 0);
-    if (xp < 5) return false;
+    const coins = Number(slime?.coins || 0);
+    if (coins < 1) return false;
     if (specialization === 'support' && slime?.talents?.graft) return false;
     if (specialization === 'tank' && slime?.talents?.block) return false;
     if (specialization === 'fighter' && slime?.talents?.rebound) return false;
@@ -533,7 +533,7 @@ export function recalculateSlimeMaxHp(slime) {
 export function recalculateSlimeStats(slime) {
     if (!slime) return;
     recalculateSlimeMaxHp(slime);
-    slime.critChance = Math.max(0, getBaseCritChance() + getSlimeEquipmentStatBonus(slime, 'crit') + getSlimeSubTalentBonus(slime).crit);
+    slime.critChance = Math.max(0, getBaseCritChance() + getSlimeEquipmentStatBonus(slime, 'crit') + getSlimeSubTalentBonus(slime).critPct);
     slime.regen = Math.max(0, (gameState.alchemistRegenLevel || 0) + getSlimeEquipmentStatBonus(slime, 'regen'));
     refreshSlimeDamage(slime);
 }
@@ -621,7 +621,7 @@ export function syncSlimesArray() {
         s.damage = calculateSlimeDamage(s);
         if (s.critChance === undefined) s.critChance = 0;
         if (s.regen === undefined) s.regen = 0;
-        if (s.wavesClearedSinceDeath === undefined) s.wavesClearedSinceDeath = 0;
+        if (s.coins === undefined) s.coins = 0;
 
         if (s.slotIndex === undefined || s.slotIndex === null || usedSlots.has(s.slotIndex)) {
             let nextSlot = 0;
@@ -1068,6 +1068,15 @@ export function killSlime(slimeId) {
     if (!gameState.slimes || gameState.slimes.length <= 1) return false;
     if (!slimeId) return false;
 
+    const target = gameState.slimes.find(s => (s.id || s.name) === slimeId);
+    if (!target) return false;
+
+    // Send the sacrificed Slime's equipment to the Village Forge Inventory first.
+    if (!Array.isArray(gameState.villageInventory)) gameState.villageInventory = [];
+    (target.equipment || []).forEach(item => {
+        gameState.villageInventory.push({ id: item.id, quality: getEquipmentQuality(item) });
+    });
+
     // Remove targeted slime from active army
     gameState.slimes = gameState.slimes.filter(s => (s.id || s.name) !== slimeId);
     gameState.armySize = gameState.slimes.length;
@@ -1165,7 +1174,7 @@ export function updateBestRoster() {
             ascended: !!activeSlime.ascended,
             specialization: getSlimeSpecialization(activeSlime),
             talents: activeSlime.talents ? JSON.parse(JSON.stringify(activeSlime.talents)) : {},
-            wavesClearedSinceDeath: Number(activeSlime.wavesClearedSinceDeath || 0),
+            coins: Number(activeSlime.coins || 0),
             slotIndex: activeSlime.slotIndex !== undefined ? activeSlime.slotIndex : getNextAvailableSlotIndex(),
             equipment: activeSlime.equipment ? JSON.parse(JSON.stringify(activeSlime.equipment)) : []
         };
@@ -1208,7 +1217,7 @@ export function restoreBestRoster() {
         ascended: !!s.ascended,
         specialization: getSlimeSpecialization(s),
         talents: s.talents ? JSON.parse(JSON.stringify(s.talents)) : {},
-        wavesClearedSinceDeath: Number(s.wavesClearedSinceDeath || 0),
+        coins: Number(s.coins || 0),
         slotIndex: s.slotIndex !== undefined ? s.slotIndex : idx,
         equipment: s.equipment ? JSON.parse(JSON.stringify(s.equipment)) : []
     }));
@@ -1316,7 +1325,7 @@ export function migrateSpecializedSlimes() {
         if (!savedSlime) return;
         savedSlime.specialization = getSlimeSpecialization(activeSlime);
         savedSlime.talents = activeSlime.talents ? JSON.parse(JSON.stringify(activeSlime.talents)) : {};
-        savedSlime.wavesClearedSinceDeath = Number(activeSlime.wavesClearedSinceDeath || 0);
+        savedSlime.coins = Number(activeSlime.coins || 0);
     });
 }
 /**

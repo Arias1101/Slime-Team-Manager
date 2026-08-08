@@ -1,25 +1,40 @@
 ------------- NOW ----------------
+- Menus to mass change slime types / spec
 
 ------------- TESTS PENDING  ----------------
-OpenCode+BigPickle
 
-KiloCode+Hy3
 
 ------------------ LATER -----------------
-- Menus to mass change slime types / spec
 - Trophies with Coin rewards:
 Ideas:
-Holy Trinity: Start a Run with 20 Supports / 20 Fighters / 20 Tanks in your Roster.
-The Great Wall: Start a Run with 60 Tanks in your Roster.
-The Best Defense: Start a Run with 60 Fighters in your Roster.
-Why Not?: Start a Run with 60 Supports in your Roster.
+Run, You Fools: Beat the Mage.
+Outnumbered: Beat the Alchemist & Berserker duo.
+Siege Engines Won't Cut It: Beat the Catapult.
+Slime is Harder Than Stone: Beat the Golem.
+Bone Eaters: Beat the Lich.
+I Am The Danger: Beat Death.
+It's Alive !: Ascend Your First Slime.
+FUEGO !!: Get a Fire Slime.
+Ice Cream: Get an Ice Slime.
+Muks & Grimers: Get a Poison Slime.
+Rocks & Rolls: Get a Stone Slime.
+Full House: Get 60 Slimes in your main Roster.
+Crowded: Get 240 Slimes in total.
+Legendary: Get a +4 Item.
+Opposable Thumbs: Merge equipments for the first time.
+Holy Trinity: Finish a Run with 20 Supports / 20 Fighters / 20 Tanks in your Roster.
+The Great Wall: Finish a Run with 60 Tanks in your Roster.
+The Best Defense: Finish a Run with 60 Fighters in your Roster.
+Why Not?: Finish a Run with 60 Supports in your Roster.
 Iron Man: Finish a Run without wiping once.
 Paper Thin: Finish a Run in wich you wipped at every Tier.
-I am the Danger: Kill Death.
 You Have No Idea How Fast I Am: Kill the F40.
 Poor Guy: Wipe to the first Beggar.
 Stun Locked: Kill the Golem before it passes half of the Battlefield.
 Winter is Coming: Start a Run with 60 Ice Slimes in your Roster.
-Blazing Hot: Start a Run with 60 Fire Slimes in your Roster.
-Stonehead: Start a Run with 60 Stone Slimes in your Roster.
-Toxicity: Start a Run with 60 Poison Slimes in your Roster.
+Blazing Hot: Finish a Run with 60 Fire Slimes in your Roster.
+Stonehead: Finish a Run with 60 Stone Slimes in your Roster.
+Toxicity: Finish a Run with 60 Poison Slimes in your Roster.
+
+OpenCode+BigPickle
+KiloCode+Hy3

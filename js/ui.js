@@ -2,7 +2,7 @@
  * User Interface & Authentication Screen Renderer
  */
 
-import { gameState, SLIME_TYPES, killSlime, syncSlimesArray, rerollSlimeType, calculateSlimeDamage, getScaledEquipmentEffects, getEquipmentDisplayName, getEquipmentSprite, saveStateToLocal, getSlimeHitEffects, getEquipmentQuality, getSlimeTotalRegen, sortRosterBySpecialization, updateBestRoster, getSlimeJumpSprite, canSlimeBuyNextTalent, TALENT_SUBTALENTS, ensureSlimeSubTalents, getSlimeSubTalent, refreshSlimeMaxHp } from './state.js';
+import { gameState, SLIME_TYPES, killSlime, syncSlimesArray, rerollSlimeType, calculateSlimeDamage, getScaledEquipmentEffects, getEquipmentDisplayName, getEquipmentSprite, saveStateToLocal, getSlimeHitEffects, getEquipmentQuality, getSlimeTotalRegen, sortRosterBySpecialization, updateBestRoster, getSlimeJumpSprite, canSlimeBuyNextTalent, TALENT_SUBTALENTS, ensureSlimeSubTalents, getSlimeSubTalent, recalculateSlimeStats } from './state.js';
 import { updateUpgradesUI } from './upgrades.js';
 import { activeGroundLoots, formatLootEffects } from './enemies.js';
 import { setGamePaused, isGamePaused } from './engine.js';
@@ -850,8 +850,8 @@ function renderSlimeTalentTree(slime) {
     if (specializationTalents) {
         const normalizedSpecialization = String(specialization).toLowerCase();
         const icon = normalizedSpecialization ? `images/logos/${normalizedSpecialization}.png` : 'images/logos/support.png';
-        const xp = Number(slime.wavesClearedSinceDeath || 0);
-        const costs = [5, 15, 25];
+        const coins = Number(slime.coins || 0);
+        const costs = [1, 1, 1];
         // Keep the section visible as soon as Specializations are unlocked (or the
         // Slime is already specialized) so the Talent columns and sub-talent
         // placeholders are always on display.
@@ -876,7 +876,7 @@ function renderSlimeTalentTree(slime) {
             const talentName = normalizedSpecialization
                 ? (isFirst ? (talentNames[normalizedSpecialization] || 'Talent1') : `Talent${index + 1}`)
                 : genericTalentNames[index];
-            const button = `<button type="button" class="slime-specialization-talent ${isFirst && normalizedSpecialization && xp >= cost ? 'available' : ''}" title="${normalizedSpecialization ? '' : 'Specialize to unlock'}" ${isFirst && normalizedSpecialization && xp >= cost ? '' : 'disabled'}><img src="${iconSource}" alt="${talentName}"><span>${normalizedSpecialization ? `${xp}/${cost}` : '🔒'}</span></button>`;
+            const button = `<button type="button" class="slime-specialization-talent ${isFirst && normalizedSpecialization && coins >= cost ? 'available' : ''}" title="${normalizedSpecialization ? '' : 'Specialize to unlock'}" ${isFirst && normalizedSpecialization && coins >= cost ? '' : 'disabled'}><img src="${iconSource}" alt="${talentName}"><span>${normalizedSpecialization ? `${coins}/${cost}` : '🔒'}</span></button>`;
             const hasTooltip = isFirst && (normalizedSpecialization === 'support' || normalizedSpecialization === 'tank' || normalizedSpecialization === 'fighter');
             const mainButton = hasTooltip
                 ? `<span class="talent-tooltip-glass">${button}<span class="talent-tooltip-glass-box"><strong>${talentNames[normalizedSpecialization]}</strong><br>${talentDescriptions[normalizedSpecialization]}</span></span>`
@@ -901,8 +901,8 @@ function renderSlimeTalentTree(slime) {
                 const subIndex = Number(subButton.dataset.subtalentIndex);
                 const subTalents = ensureSlimeSubTalents(slime);
                 subTalents[talentIndex] = subTalents[talentIndex] === subIndex ? null : subIndex;
-                // Endurance changes Max HP / Regen; refresh the live Slime stats.
-                refreshSlimeMaxHp(slime);
+                // Sub-talents can change Max HP, Regen, Damage and Crit; recompute all.
+                recalculateSlimeStats(slime);
                 updateBestRoster();
                 saveStateToLocal();
                 openSlimeInspectorModal(slime);
@@ -915,8 +915,8 @@ function renderSlimeTalentTree(slime) {
                 if (firstButton) { firstButton.classList.add('unlocked'); firstButton.disabled = false; const progress = firstButton.querySelector('span'); if (progress) progress.textContent = '✔️'; }
             } else if (firstButton) {
                 firstButton.addEventListener('click', () => {
-                    if (xp < costs[0]) return;
-                    slime.wavesClearedSinceDeath = xp - costs[0];
+                    if (coins < costs[0]) return;
+                    slime.coins = coins - costs[0];
                     slime.talents = { ...(slime.talents || {}), [flag]: true };
                     updateBestRoster();
                     saveStateToLocal();
@@ -1026,7 +1026,7 @@ export function openSlimeInspectorModal(slime) {
         if (element) element.textContent = String(hitEffects[type] || 0);
     });
 
-    if (xpEl) xpEl.textContent = `${slime.wavesClearedSinceDeath || 0}`;
+    if (xpEl) xpEl.textContent = `${slime.coins || 0}`;
 
     const activeEffects = [];
     if (slimeConfig.effect === 'burn') activeEffects.push('🔥 Burn');

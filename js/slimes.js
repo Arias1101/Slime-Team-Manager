@@ -578,7 +578,7 @@ export function showFloatingStatusTextAt(x, y, text, extraClass = '') {
     floatEl.className = `floating-text ${extraClass}`;
     floatEl.style.left = `${x}px`;
     floatEl.style.top = `${y - 12}px`;
-    floatEl.textContent = text;
+    floatEl.innerHTML = text;
     overlay.appendChild(floatEl);
 
     setTimeout(() => {
@@ -703,8 +703,8 @@ function dispatchSingleSlimeToEat() {
         updateLootHUD();
         requestUIRefresh();
 
-        // 1. Immediately pop +N 🍖 food scrap floating text (floats straight up)
-        showFloatingStatusTextAt(targetLoot.x, targetLoot.y, `+${targetLoot.value} 🍖`, 'loot-text');
+        // 1. Immediately pop +N food scrap floating text (floats straight up)
+        showFloatingStatusTextAt(targetLoot.x, targetLoot.y, `+${targetLoot.value} <img src="images/logos/scrap.png" alt="scrap" class="loot-text-icon">`, 'loot-text');
 
         // 2. Character Sheet & Equipment Unique Effect Logic
         if (slimeObj) {
@@ -747,7 +747,7 @@ function dispatchSingleSlimeToEat() {
 
                 // Staggered 300ms delay & leftward arc curve so equipment popup floats AFTER food popup without overlapping!
                 setTimeout(() => {
-                    showFloatingStatusTextAt(targetLoot.x - 10, targetLoot.y - 12, `🎒 ${lootDisplayName} (${combinedText})!`, 'equipment-loot-text');
+                    showFloatingStatusTextAt(targetLoot.x - 10, targetLoot.y - 12, `<img src="images/logos/anvil.png" alt="forge" class="loot-text-icon"> ${lootDisplayName} (${combinedText})!`, 'equipment-loot-text');
                 }, 300);
             }
         }
