@@ -9,7 +9,7 @@
  *                 Only slimes from one side can be selected at once.
  */
 
-import { gameState, SLIME_TYPES, getSlimeJumpSprite, getSlimeSpecialization, calculateSlimeDamage, getBaseCritChance, generateUniqueSlimeName, getNextAvailableSlotIndex, saveStateToLocal, updateBestRoster, getEquipmentQuality, sortRosterBySpecialization } from './state.js';
+import { gameState, SLIME_TYPES, getSlimeJumpSprite, getSlimeSpecialization, calculateSlimeDamage, getBaseCritChance, generateUniqueSlimeName, getNextAvailableSlotIndex, saveStateToLocal, updateBestRoster, getEquipmentQuality, sortRosterBySpecialization, TALENT_SUBTALENTS, ensureSlimeSubTalents, getSlimeSubTalent, recalculateSlimeStats } from './state.js';
 import { renderSlimeRosterLanes, updateUI } from './ui.js';
 
 const MAX_MAIN_ROSTER = 60;
@@ -40,7 +40,7 @@ export function openCommonHousePopup() {
     popup.className = 'common-house-popup pixel-popup';
     popup.innerHTML = `
         <button class="village-popup-close" aria-label="Close">&times;</button>
-        <h3 class="common-house-title"><img class="common-house-title-icon" src="images/slimes/army.png" alt="Common House"> Common House</h3>
+        <h3 class="common-house-title"><img class="common-house-title-icon" src="images/slimes/army.png" alt="Common House"> Common House<span class="common-house-coins" id="chCoinsDisplay"><img src="images/logos/coin.png" alt="Village Coin" class="village-coin-icon"> <strong>${gameState.villageCoins || 0}</strong></span></h3>
         <div class="common-house-half">
             <div class="shop-section-title">Rosters</div>
             <div class="common-house-body">
@@ -240,6 +240,8 @@ function renderCommonHouse() {
     renderVillageRoster();
     renderSelectedSlimeCard();
     updateCreateButtons();
+    const coinsEl = document.getElementById('chCoinsDisplay');
+    if (coinsEl) coinsEl.querySelector('strong').textContent = gameState.villageCoins || 0;
 }
 
 /** Disable each toolbar's Create button when its roster is at max capacity. */
@@ -430,6 +432,22 @@ const SPEC_BUTTONS = [
     { id: 'tank', label: 'Tank', icon: 'images/logos/tank.png' }
 ];
 
+/** Talent display data, reused from the character-sheet Talent sheet. */
+const TALENT_NAMES = { support: 'Graft', fighter: 'Rebound', tank: 'Block' };
+const TALENT_DESCRIPTIONS = {
+    support: 'Sacrifice 20% of HP to Heal twice that amount to a Slime in need (Can\'t target other Support Slimes).',
+    fighter: '10% chance to re-jump on the second closest ennemy when dealing damage.',
+    tank: '10% chance to ignore incoming damage.'
+};
+const TALENT_FLAG = { support: 'graft', fighter: 'rebound', tank: 'block' };
+
+/** Whether a Slime already owns the first Talent of its specialization. */
+function hasFirstTalent(slime) {
+    const spec = getSlimeSpecialization(slime);
+    const flag = TALENT_FLAG[spec];
+    return Boolean(flag && slime.talents?.[flag]);
+}
+
 /**
  * The 12 possible element+specialization class combos, in display order. Each
  * Talent row shows the 3 Talent buttons for that combo (placeholder spec icon).
@@ -449,9 +467,9 @@ const TALENT_COMBOS = [
     { element: 'stone',   spec: 'tank',    typeId: 'stoneTank' }
 ];
 
-/** Per Talent row: 3 visible (+6 hidden reserving space). */
+/** Per Talent row: 3 talent buttons, each with 3 sub-talent buttons. */
 const TALENT_VISIBLE = 3;
-const TALENT_TOTAL = 9;
+const SUBTALENTS_PER_TALENT = 3;
 
 /**
  * Build the single 4-column action grid for the Selected Slime area. Rows:
@@ -502,17 +520,69 @@ function getActionButtonsHtml(selectedSlimes) {
     `;
 
     const talentRows = TALENT_COMBOS.map(combo => {
-        const specDef = SPEC_BUTTONS.find(s => s.id === combo.spec) || SPEC_BUTTONS[0];
+        const spec = combo.spec;
+        const specDef = SPEC_BUTTONS.find(s => s.id === spec) || SPEC_BUTTONS[0];
+        const specLabel = specDef.label;
+        const talentName = TALENT_NAMES[spec] || 'Talent';
+        const talentDesc = TALENT_DESCRIPTIONS[spec] || '';
         const hidden = activeCombo === combo.typeId ? '' : ' hidden-row';
-        const talents = Array.from({ length: TALENT_TOTAL }, (_, i) => {
-            const visible = i < TALENT_VISIBLE;
+        const talentCols = Array.from({ length: TALENT_VISIBLE }, (_, t) => {
+            // Main Talent icon: first Talent uses its dedicated file
+            // (e.g. supportgraft.png); Talents 2/3 use ${spec}Talent${n}.png.
+            const talentIcon = t === 0
+                ? `images/talents/${spec}${talentName.toLowerCase()}.png`
+                : `images/talents/${spec}Talent${t + 1}.png`;
+            const talentTitle = `${talentName} (Talent ${t + 1}): ${talentDesc}`;
+
+            // First Talent: show the cost (slimes still needing it) bottom-right,
+            // or a ✔️ when every selected Slime already owns it (then unlocked+disabled).
+            let talentBadge = '';
+            let talentExtraClass = '';
+            let talentDisabled = '';
+            if (t === 0) {
+                const ownedCount = selectedSlimes.filter(hasFirstTalent).length;
+                const cost = selectedSlimes.length - ownedCount;
+                if (cost === 0) {
+                    talentBadge = '✔️';
+                    talentExtraClass = ' unlocked';
+                    talentDisabled = ' disabled';
+                } else {
+                    talentBadge = `${cost}<img src="images/logos/coin.png" alt="" class="talent-cost-coin">`;
+                }
+            } else {
+                // Talents 2/3 are not implemented yet: lock the button and its sub-talents.
+                talentExtraClass = ' locked';
+                talentDisabled = ' disabled';
+                talentBadge = '🔒';
+            }
+
+            const subDisabled = t === 0 ? '' : ' disabled';
+            // A sub-talent is "selected" only when every selected Slime already
+            // has the same one enabled (otherwise none are highlighted).
+            const sharedSub = (() => {
+                if (t !== 0 || !selectedSlimes.length) return null;
+                const first = getSlimeSubTalent(selectedSlimes[0], t);
+                const allSame = selectedSlimes.every(s => getSlimeSubTalent(s, t) === first);
+                return allSame ? first : null;
+            })();
+            const subtalents = Array.from({ length: SUBTALENTS_PER_TALENT }, (_, s) => {
+                const subDef = TALENT_SUBTALENTS[spec]?.[t]?.[s];
+                const subTitle = subDef ? `${subDef.name}: ${subDef.description}` : `${talentName} Sub-talent ${t + 1}.${s + 1}`;
+                const subSelected = sharedSub === s ? ' selected' : '';
+                return `
+                    <button type="button" class="common-house-subtalent-btn${subSelected}" data-talent="${t}" data-subtalent="${s}" data-combo="${combo.typeId}" title="${subTitle}" aria-label="${subTitle}" tabindex="-1"${subDisabled}><img src="${specDef.icon}" alt="${specLabel}"></button>
+                `;
+            }).join('');
             return `
-                <button type="button" class="common-house-talent-btn${visible ? '' : ' hidden-slot'}" data-talent="${i}" data-combo="${combo.typeId}" title="${specDef.label} Talent ${i + 1}" aria-label="${specDef.label} Talent ${i + 1}"${visible ? '' : ' tabindex="-1"'}>${visible ? `<img src="${specDef.icon}" alt="${specDef.label}">` : ''}</button>
+                <div class="common-house-talent-col">
+                    <button type="button" class="common-house-talent-btn${talentExtraClass}" data-talent="${t}" data-combo="${combo.typeId}" title="${talentTitle}" aria-label="${talentTitle}"${talentDisabled}><img src="${talentIcon}" alt="${talentName}"><span class="common-house-talent-cost">${talentBadge}</span></button>
+                    <div class="common-house-subtalent-row">${subtalents}</div>
+                </div>
             `;
         }).join('');
         return `
             <div class="common-house-grid-row common-house-talent-row${hidden}" data-row="talent" data-combo="${combo.typeId}">
-                ${talents}
+                ${talentCols}
             </div>
         `;
     }).join('');
@@ -586,11 +656,51 @@ function wireTypeButtons(container) {
         });
     });
 
-    const talentButtons = container.querySelectorAll('.common-house-talent-btn:not(.hidden-slot)');
+    const talentButtons = container.querySelectorAll('.common-house-talent-btn:not([disabled])');
     talentButtons.forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
-            // Talent purchasing is wired later; placeholders for now.
+            const talentIndex = Number(btn.dataset.talent);
+            // Only the first Talent is purchasable for now (mass-buy for the whole selection).
+            if (talentIndex !== 0) return;
+            const selectedSlimes = getSelectedSlimes();
+            if (!selectedSlimes.length) return;
+            const spec = getSlimeSpecialization(selectedSlimes[0]);
+            const flag = TALENT_FLAG[spec];
+            if (!flag) return;
+            selectedSlimes.forEach(slime => {
+                if (!hasFirstTalent(slime)) {
+                    if (!slime.talents || typeof slime.talents !== 'object') slime.talents = {};
+                    slime.talents[flag] = true;
+                }
+            });
+            updateBestRoster();
+            saveStateToLocal();
+            updateUI();
+            renderCommonHouse();
+        });
+    });
+
+    const subtalentButtons = container.querySelectorAll('.common-house-subtalent-btn:not([disabled])');
+    subtalentButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const talentIndex = Number(btn.dataset.talent);
+            if (talentIndex !== 0) return;
+            const subIndex = Number(btn.dataset.subtalent);
+            const selectedSlimes = getSelectedSlimes();
+            if (!selectedSlimes.length) return;
+            // Enable this sub-talent for every selected Slime (toggle off if all already have it).
+            const allHave = selectedSlimes.every(s => getSlimeSubTalent(s, talentIndex) === subIndex);
+            selectedSlimes.forEach(slime => {
+                const subTalents = ensureSlimeSubTalents(slime);
+                subTalents[talentIndex] = allHave ? null : subIndex;
+                recalculateSlimeStats(slime);
+            });
+            updateBestRoster();
+            saveStateToLocal();
+            updateUI();
+            renderCommonHouse();
         });
     });
 }

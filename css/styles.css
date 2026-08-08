@@ -1587,7 +1587,7 @@ body.modal-open {
 
 .upgrade-card-title {
     font-family: var(--font-heading);
-    font-size: 0.95rem;
+    font-size: 1.05rem;
     font-weight: 700;
     color: #f8fafc;
     margin: 0;
@@ -1595,14 +1595,14 @@ body.modal-open {
 }
 
 .upgrade-current {
-    font-size: 0.78rem;
+    font-size: 0.85rem;
     font-weight: 500;
     color: #94a3b8;
     white-space: nowrap;
 }
 
 .upgrade-text {
-    font-size: 0.82rem;
+    font-size: 0.9rem;
     color: #cbd5e1;
     font-weight: 400;
     line-height: 1.25;
@@ -1611,7 +1611,7 @@ body.modal-open {
 .upgrade-value {
     color: #34d399;
     font-weight: 700;
-    font-size: 0.85rem;
+    font-size: 0.92rem;
     padding: 0 1px;
 }
 
@@ -1627,7 +1627,7 @@ body.modal-open {
 
 .upgrade-cost {
     font-family: var(--font-heading);
-    font-size: 0.68rem;
+    font-size: 0.78rem;
     font-weight: 600;
     color: #fbbf24;
     background: rgba(245, 158, 11, 0.08);
@@ -4592,6 +4592,22 @@ body.new-game-plus .village-buildings {
     image-rendering: pixelated;
 }
 
+/* Available Village Coins, pushed to the top-right of the popup title. */
+.common-house-coins {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: #fde68a;
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-shadow: 1px 1px 0 #000;
+}
+
+.common-house-coins strong {
+    color: #fff;
+}
+
 .common-house-body {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
@@ -4735,6 +4751,7 @@ body.new-game-plus .village-buildings {
     justify-content: center;
     margin-left: auto;
     padding-right: 40px;
+    transform: translateX(-50px);
 }
 
 .common-house-grid-row {
@@ -4833,6 +4850,7 @@ body.new-game-plus .village-buildings {
 }
 
 .common-house-talent-btn {
+    position: relative;
     width: 44px;
     height: 44px;
     padding: 5px;
@@ -4855,7 +4873,51 @@ body.new-game-plus .village-buildings {
     background: #e3c765;
 }
 
-.common-house-talent-btn:hover {
+/* First-Talent cost badge: bottom-right of the button. */
+.common-house-talent-cost {
+    position: absolute;
+    right: 1px;
+    bottom: 0px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #fff3c4;
+    text-shadow: 1px 1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000;
+    pointer-events: none;
+    line-height: 1;
+}
+
+.common-house-talent-btn.unlocked {
+    background: #e3c765;
+    cursor: default;
+    border: 2px solid #fff;
+}
+
+/* Not-yet-implemented Talents (2/3): locked, not pressable, no hover. */
+.common-house-talent-btn.locked {
+    background: #1f2126;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.common-house-talent-btn.locked .common-house-talent-cost {
+    color: #9aa0a6;
+}
+
+.common-house-talent-btn.unlocked .common-house-talent-cost {
+    color: #fff;
+}
+
+/* A fully unlocked main Talent must not react to hover/active (not pressable). */
+.common-house-talent-btn.unlocked:hover,
+.common-house-talent-btn.unlocked:active,
+.common-house-talent-btn.unlocked:focus-visible {
+    background: #e3c765;
+    transform: none;
+    box-shadow: 0px 2px #000, 0px -2px #000, 2px 0px #000, -2px 0px #000, inset 0px 2px rgba(255, 255, 255, 0.38);
+    outline: none;
+}
+
+.common-house-talent-btn:not(.unlocked):hover {
     background: #3a3d44;
     transform: scale(1.1);
     outline: none;
@@ -4865,7 +4927,7 @@ body.new-game-plus .village-buildings {
     background: #ecd57f;
 }
 
-.common-house-talent-btn:active {
+.common-house-talent-btn:not(.unlocked):active {
     transform: translateY(2px) !important;
     box-shadow: 0px 1px #000, 0px -1px #000, 1px 0px #000, -1px 0px #000, inset 0px 2px rgba(0, 0, 0, 0.2);
     background: #23262c;
@@ -4875,13 +4937,62 @@ body.new-game-plus .village-buildings {
     background: #d4b954;
 }
 
-/* Hidden talent slots (6 of 9) keep their layout space but are invisible
-   and non-interactive, reserving room for future talents. */
-.common-house-talent-btn.hidden-slot {
-    visibility: hidden;
-    pointer-events: none;
-    background: transparent;
-    box-shadow: none;
+/* Coin icon shown after the cost number in the cost badge. */
+.common-house-talent-cost .talent-cost-coin {
+    width: 10px;
+    height: 10px;
+    margin-left: 1px;
+    vertical-align: -1px;
+    image-rendering: pixelated;
+}
+
+/* Each Talent column = one Talent button on top of its 3 small Sub-talent buttons. */
+.common-house-talent-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.common-house-subtalent-row {
+    display: flex;
+    flex-direction: row;
+    gap: 4px;
+}
+
+.common-house-subtalent-btn {
+    width: 25px;
+    height: 25px;
+    padding: 3px;
+    border: 0;
+    border-radius: 0;
+    background: #2a2d34;
+    box-shadow: 0px 2px #000, 0px -2px #000, 2px 0px #000, -2px 0px #000, inset 0px 2px rgba(255, 255, 255, 0.38);
+    cursor: pointer;
+    transition: transform 0.06s ease, box-shadow 0.06s ease, background 0.06s ease;
+}
+
+.common-house-subtalent-btn img {
+    width: 19px;
+    height: 19px;
+    display: block;
+    image-rendering: pixelated;
+}
+
+.common-house-subtalent-btn:hover {
+    background: #3a3d44;
+    transform: scale(1.1);
+    outline: none;
+}
+
+.common-house-subtalent-btn:active {
+    transform: translateY(2px) !important;
+    box-shadow: 0px 1px #000, 0px -1px #000, 1px 0px #000, -1px 0px #000, inset 0px 2px rgba(0, 0, 0, 0.2);
+    background: #23262c;
+}
+
+.common-house-subtalent-btn.selected {
+    background: #e3c765;
 }
 
 /* Sacrifice button, top-right corner of the Selected Slime card.
@@ -5184,21 +5295,21 @@ body.new-game-plus .village-buildings {
 
 .alchemist-building-popup .alchemist-upgrade-card .upgrade-card-title {
     font-family: var(--font-heading);
-    font-size: 0.78rem;
+    font-size: 0.9rem;
     color: #f0f0ee;
     white-space: normal;
     line-height: 1.2;
 }
 
 .alchemist-building-popup .alchemist-upgrade-card .upgrade-current {
-    font-size: 0.62rem;
+    font-size: 0.72rem;
     font-weight: normal;
     color: #9aa0a6;
 }
 
 .alchemist-building-popup .alchemist-upgrade-card .upgrade-text {
     color: #c8cbcf;
-    font-size: 0.62rem;
+    font-size: 0.72rem;
 }
 
 .alchemist-building-popup .alchemist-upgrade-card .upgrade-value {
@@ -5209,7 +5320,7 @@ body.new-game-plus .village-buildings {
 .alchemist-building-popup .alchemist-upgrade-card .upgrade-cost {
     color: #e3c765;
     font-family: var(--font-heading);
-    font-size: 0.6rem;
+    font-size: 0.7rem;
     font-weight: normal;
     background: #1b1c21;
     border: 2px solid #0b0c0e;
