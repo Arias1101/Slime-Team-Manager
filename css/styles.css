@@ -4808,7 +4808,7 @@ body.new-game-plus .village-buildings {
 
 /* ===== Pixel-style Forge (bold borders, sharp edges, no glass) ===== */
 .forge-building-popup {
-    border: 3px solid #0b0c0e;
+    border: 2px solid #E0C564;
     border-radius: 0;
     background: #1b1c21;
     box-shadow: 6px 6px 0 #0a0b0d;
