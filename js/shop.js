@@ -34,6 +34,12 @@ export function initShopModule() {
             closeShopModal();
         });
     }
+    const closeBtn = document.querySelector('#shopModal .village-popup-close');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            closeShopModal();
+        });
+    }
 }
 
 /**
@@ -97,13 +103,13 @@ export function openShopModal(currentWaveNum) {
         continueBtnEl.textContent = `Continue to Wave ${nextWaveNumber} ⚔️`;
     }
 
-    renderShopUI();
-
     if (backdropEl) {
         backdropEl.classList.remove('hidden');
         document.body.classList.add('modal-open');
         setGamePaused(true);
     }
+
+    renderShopUI();
 }
 
 /**
@@ -184,7 +190,9 @@ function renderSelectedSlimeSheet() {
 
     let html = `
         <div class="shop-slime-info-header">
-            <img src="${getSlimeJumpSprite(selectedSlime)}" class="shop-slime-portrait" alt="${selectedSlime.name}">
+            <div class="shop-slime-portrait-box">
+                <img src="${getSlimeJumpSprite(selectedSlime)}" class="shop-slime-portrait" alt="${selectedSlime.name}">
+            </div>
             <div class="shop-slime-info-text">
                 <div class="shop-slime-info-name">
                     ${selectedSlime.name}
@@ -220,8 +228,8 @@ function renderSelectedSlimeSheet() {
                             <span class="shop-eq-effect equipment-item-effect">${formatLootEffects(getScaledEquipmentEffects(eq))}</span>
                         </div>
                     </div>
-                    <button class="btn-sell-equipment" data-eq-index="${index}">
-                        Sell for ${sellPrice} 🍖
+                    <button class="btn-sell-equipment pixel-btn" data-eq-index="${index}">
+                        <img class="shop-scrap-icon" src="images/logos/scrap.png" alt="Scraps"> Sell for ${sellPrice}
                     </button>
                 </div>
             `;
@@ -322,8 +330,8 @@ function renderShopMarketItems() {
                 ${item.bought ? `
                     <span class="badge-bought">✓ SOLD OUT</span>
                 ` : `
-                    <button class="btn-buy-shop-item" ${(!canAfford || alreadyHasEqualOrBetterItem) ? 'disabled' : ''}>
-                        Buy for ${item.price} 🍖
+                    <button class="btn-buy-shop-item pixel-btn" ${(!canAfford || alreadyHasEqualOrBetterItem) ? 'disabled' : ''}>
+                        <img class="shop-scrap-icon" src="images/logos/scrap.png" alt="Scraps"> Buy for ${item.price}
                     </button>
                     ${alreadyHasEqualOrBetterItem ? '<span class="shop-owned-text">Already Owned</span>' : (replacesLowerQuality ? `<span class="shop-owned-text">Replaces ${getEquipmentDisplayName(ownedItem)}</span>` : '')}
                 `}

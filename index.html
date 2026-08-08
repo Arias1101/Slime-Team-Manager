@@ -598,13 +598,14 @@
 
             <!-- Wave Merchant Shop Modal -->
             <div id="shopModalBackdrop" class="modal-backdrop hidden" style="z-index: 9000;">
-                <div id="shopModal" class="shop-modal-container">
+                <div id="shopModal" class="shop-modal-container shop-building-popup pixel-popup">
+                    <button class="village-popup-close" aria-label="Close">&times;</button>
                     <div class="shop-header">
-                        <h2 class="shop-title">🛒 Merchant Shop</h2>
+                        <h3 class="common-house-title"><img class="common-house-title-icon" src="images/logos/shop.png" alt="Shop"> Merchant Shop</h3>
                         <div class="shop-header-scraps">
                             <span class="scraps-label">Scraps:</span>
                             <span id="shopScrapsCount" class="scraps-value">0</span>
-                            <span class="scraps-icon">🍖</span>
+                            <img class="scraps-icon" src="images/logos/scrap.png" alt="Scraps">
                         </div>
                     </div>
 
@@ -632,7 +633,7 @@
                     </div>
 
                     <div class="shop-footer">
-                        <button id="btnLeaveShop" class="btn-continue-wave">Continue ⚔️</button>
+                        <button id="btnLeaveShop" class="btn-continue-wave pixel-btn">Continue ⚔️</button>
                     </div>
                 </div>
             </div>

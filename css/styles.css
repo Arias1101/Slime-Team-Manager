@@ -2150,15 +2150,6 @@ body.modal-open {
     padding-bottom: 12px;
 }
 
-.shop-title {
-    font-size: 1.4rem;
-    font-weight: 800;
-    color: #f59e0b;
-    margin: 0;
-    letter-spacing: 0.5px;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-}
-
 .shop-header-scraps {
     display: flex;
     align-items: center;
@@ -2182,7 +2173,11 @@ body.modal-open {
 }
 
 .shop-header-scraps .scraps-icon {
-    font-size: 1rem;
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+    image-rendering: pixelated;
+    vertical-align: -3px;
 }
 
 .shop-body-split {
@@ -2234,6 +2229,7 @@ body.modal-open {
     border-radius: 10px;
     height: 105px;
     overflow-y: scroll;
+    overflow-x: hidden;
     scrollbar-gutter: stable;
 }
 
@@ -2318,13 +2314,26 @@ body.modal-open {
     object-fit: none;
     object-position: 0px 0px;
     transform: scale(2.2);
-    transform-origin: top left;
-    margin: 11px;
+    transform-origin: center;
+    margin: 0;
     image-rendering: pixelated;
     background: transparent;
     border: none;
     border-radius: 0;
     padding: 0;
+}
+
+.shop-slime-portrait-box {
+    width: 52px;
+    height: 52px;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(39, 39, 42, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
 }
 
 .shop-slime-info-text {
@@ -4689,7 +4698,11 @@ body.new-game-plus .village-buildings {
 .pixel-popup .forge-inventory-item,
 .pixel-popup .common-house-roster,
 .pixel-popup .common-house-selected-card,
-.pixel-popup .alchemist-upgrade-card {
+.pixel-popup .alchemist-upgrade-card,
+.pixel-popup .shop-slime-roster-grid,
+.pixel-popup .shop-selected-slime-card,
+.pixel-popup .shop-market-card,
+.pixel-popup .shop-equipment-row {
     border: 2px solid #0b0c0e;
     border-radius: 0;
     background: #24262b;
@@ -4719,32 +4732,37 @@ body.new-game-plus .village-buildings {
 
 /* Pixel scrollbar for the scrollable popup panels. */
 .pixel-popup .forge-inventory-list,
-.pixel-popup .shop-scrollbar {
+.pixel-popup .shop-scrollbar,
+.pixel-popup .shop-slime-equipment-list {
     scrollbar-width: auto;
     scrollbar-color: auto;
 }
 
 .pixel-popup .forge-inventory-list::-webkit-scrollbar,
-.pixel-popup .shop-scrollbar::-webkit-scrollbar {
+.pixel-popup .shop-scrollbar::-webkit-scrollbar,
+.pixel-popup .shop-slime-equipment-list::-webkit-scrollbar {
     width: 9px;
     border-radius: 0;
 }
 
 .pixel-popup .forge-inventory-list::-webkit-scrollbar-track,
-.pixel-popup .shop-scrollbar::-webkit-scrollbar-track {
+.pixel-popup .shop-scrollbar::-webkit-scrollbar-track,
+.pixel-popup .shop-slime-equipment-list::-webkit-scrollbar-track {
     border-radius: 0;
     background: #1b1c21;
 }
 
 .pixel-popup .forge-inventory-list::-webkit-scrollbar-thumb,
-.pixel-popup .shop-scrollbar::-webkit-scrollbar-thumb {
+.pixel-popup .shop-scrollbar::-webkit-scrollbar-thumb,
+.pixel-popup .shop-slime-equipment-list::-webkit-scrollbar-thumb {
     border: 2px solid #1b1c21;
     border-radius: 0;
     background: #e3c765;
 }
 
 /* ===== Pixel-style Common House (specifics on top of the shared classes) ===== */
-.common-house-popup .shop-section-title {
+.common-house-popup .shop-section-title,
+.shop-building-popup .shop-section-title {
     font-family: var(--font-heading);
     font-size: 0.5rem;
     font-weight: normal;
@@ -5258,6 +5276,230 @@ body.new-game-plus .village-buildings {
 
 .shop-market-card.shop-quality-4 .shop-market-item-name {
     color: #fb923c;
+}
+
+/* ===== Pixel-style Shop (specifics on top of the shared classes) ===== */
+.shop-building-popup {
+    position: relative;
+    height: min(640px, 92vh);
+    padding: 22px;
+    gap: 12px;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+.shop-building-popup .shop-header {
+    border-bottom: 2px solid #0b0c0e;
+    padding-bottom: 10px;
+    padding-right: 46px;
+}
+
+.shop-building-popup .shop-header .common-house-title {
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+.shop-building-popup .shop-header-scraps {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+}
+
+.shop-building-popup .shop-header-scraps .scraps-value {
+    color: #e3c765;
+    font-size: 0.8rem;
+}
+
+/* Selected Slime sheet */
+.shop-building-popup .shop-selected-slime-card {
+    padding: 12px;
+}
+
+.shop-building-popup .shop-slime-info-header {
+    border-bottom: 2px solid #0b0c0e;
+    padding-bottom: 8px;
+}
+
+.shop-building-popup .shop-slime-portrait-box {
+    border: 2px solid #E0C564;
+    border-radius: 0;
+    background: #24262b;
+}
+
+.shop-building-popup .shop-slime-info-name {
+    color: #f0f0ee;
+    font-family: var(--font-heading);
+    font-size: 0.6rem;
+}
+
+.shop-building-popup .shop-slime-info-name .ascended-badge {
+    font-size: 0.4rem;
+}
+
+.shop-building-popup .shop-slime-info-stats {
+    color: #c8cbcf;
+    font-size: 0.5rem;
+}
+
+.shop-building-popup .shop-slime-equipment-title {
+    color: #c8cbcf;
+    font-family: var(--font-heading);
+    font-size: 0.5rem;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+/* Equipment rows */
+.shop-building-popup .shop-equipment-row {
+    padding: 6px 8px;
+}
+
+.shop-building-popup .shop-eq-icon {
+    border: 2px solid #0b0c0e;
+    border-radius: 0;
+    background: #2a2d34;
+}
+
+.shop-building-popup .shop-eq-details {
+    gap: 4px;
+}
+
+.shop-building-popup .shop-eq-name {
+    font-family: var(--font-heading);
+    font-size: 0.5rem;
+}
+
+.shop-building-popup .shop-eq-effect {
+    color: #94a3b8;
+    font-size: 0.42rem;
+}
+
+.shop-building-popup .btn-sell-equipment {
+    background: #c62828;
+    color: #ffffff;
+    border-radius: 0;
+    font-size: 0.45rem;
+    padding: 6px 9px;
+    box-shadow: 0px 2px #000, 0px -2px #000, 2px 0px #000, -2px 0px #000, inset 0px 2px rgba(255, 255, 255, 0.2);
+}
+
+.shop-building-popup .shop-scrap-icon {
+    width: 14px;
+    height: 14px;
+    vertical-align: -2px;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
+.shop-building-popup .btn-sell-equipment:hover:not(:disabled) {
+    background: #e53935;
+    transform: scale(1.05);
+    filter: none;
+}
+
+.shop-building-popup .btn-sell-equipment:not(:disabled):active {
+    background: #8e1f1f;
+    transform: translateY(2px);
+    box-shadow: 0px 2px #000, 0px -2px #000, 2px 0px #000, -2px 0px #000, inset 0px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Market cards */
+.shop-building-popup .shop-market-card {
+    padding: 10px 12px;
+}
+
+.shop-building-popup .shop-market-card:hover:not(.bought) {
+    border-color: #e3c765;
+    box-shadow: 4px 4px 0 #0a0b0d;
+}
+
+.shop-building-popup .shop-market-card.selected:not(.bought) {
+    border-color: #e3c765;
+    box-shadow: inset 0 0 8px rgba(227, 199, 101, 0.25);
+}
+
+.shop-building-popup .shop-market-card.bought {
+    background: #1b1c21;
+    border-color: #0b0c0e;
+}
+
+.shop-building-popup .shop-market-item-icon {
+    border: 2px solid #0b0c0e;
+    border-radius: 0;
+    background: #2a2d34;
+}
+
+.shop-building-popup .shop-market-item-name {
+    font-family: var(--font-heading);
+    font-size: 0.55rem;
+    color: #f0f0ee;
+}
+
+.shop-building-popup .shop-market-item-effect {
+    color: #94a3b8;
+    font-size: 0.45rem;
+}
+
+.shop-building-popup .btn-buy-shop-item {
+    padding: 6px 12px;
+    font-size: 0.48rem;
+}
+
+.shop-building-popup .badge-bought {
+    color: #9aa0a6;
+}
+
+.shop-building-popup .shop-owned-text {
+    color: #ef4444;
+    font-size: 0.45rem;
+}
+
+/* Roster browser */
+.shop-building-popup .shop-slime-roster-grid {
+    height: 96px;
+    padding: 8px;
+}
+
+.shop-building-popup .shop-roster-grid-item.selected {
+    border-color: #e3c765;
+    background: rgba(227, 199, 101, 0.18);
+    box-shadow: 0 0 8px rgba(227, 199, 101, 0.45);
+}
+
+.shop-building-popup .shop-empty-text {
+    color: #9aa0a6;
+    font-size: 0.55rem;
+}
+
+.shop-building-popup .shop-footer {
+    border-top: 2px solid #0b0c0e;
+    padding-top: 10px;
+}
+
+.shop-building-popup .btn-continue-wave {
+    padding: 10px 22px;
+    font-size: 0.62rem;
+    font-family: var(--font-heading);
+    color: #1b1c21;
+    background: #e3c765;
+    border: 0;
+    border-radius: 0;
+    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, 4px 4px 0 rgba(0, 0, 0, 0.28), inset 0px 3px rgba(255, 255, 255, 0.6);
+}
+
+.shop-building-popup .btn-continue-wave:hover:not(:disabled) {
+    background: #ecd57f;
+    transform: scale(1.05);
+    filter: none;
+    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, 4px 4px 0 rgba(0, 0, 0, 0.28), inset 0px 3px rgba(255, 255, 255, 0.6);
+}
+
+.shop-building-popup .btn-continue-wave:not(:disabled):active {
+    background: #b49d4d;
+    transform: translateY(2px);
+    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, inset 0px 3px rgba(0, 0, 0, 0.2);
 }
 
 /* Alchemist: permanent Village Coin upgrades. */
