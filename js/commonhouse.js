@@ -37,7 +37,7 @@ export function openCommonHousePopup() {
     backdrop.id = 'commonHousePopup';
     backdrop.className = 'village-building-backdrop';
     const popup = document.createElement('div');
-    popup.className = 'common-house-popup';
+    popup.className = 'common-house-popup pixel-popup';
     popup.innerHTML = `
         <button class="village-popup-close" aria-label="Close">&times;</button>
         <h3 class="common-house-title"><img class="common-house-title-icon" src="images/slimes/army.png" alt="Common House"> Common House</h3>
@@ -63,8 +63,8 @@ export function openCommonHousePopup() {
                 <div id="chMainRoster" class="common-house-roster shop-scrollbar"></div>
             </div>
             <div class="common-house-control" aria-label="Roster swap controls">
-                <button class="common-house-btn" id="chSwapRight" title="Move selected slime to the Village">&gt;</button>
-                <button class="common-house-btn" id="chSwapLeft" title="Move selected slime to the Main">&lt;</button>
+                <button class="common-house-btn pixel-btn" id="chSwapRight" title="Move selected slime to the Village">&gt;</button>
+                <button class="common-house-btn pixel-btn" id="chSwapLeft" title="Move selected slime to the Main">&lt;</button>
             </div>
             <div class="common-house-col">
                 <div class="shop-section-title" id="chVillageRosterTitle">Village Roster (${gameState.villageRoster.length}/${MAX_VILLAGE_ROSTER})</div>

@@ -383,7 +383,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const level = getAlchemistUpgradeLevel(upgrade.key);
             const cost = getAlchemistUpgradeCost(upgrade.key);
             const affordable = (gameState.villageCoins || 0) >= cost;
-            return `<article class="upgrade-card alchemist-upgrade-card ${level === 0 ? 'level-zero' : ''}"><div class="upgrade-info"><img src="images/upgrades/${upgrade.icon}" alt="${upgrade.name}" class="upgrade-icon-img"><div class="upgrade-details"><h4 class="upgrade-card-title">${upgrade.name} <span class="upgrade-current">(Current: <strong>${level}</strong>)</span></h4><span class="upgrade-text">${upgrade.description}</span></div></div><div class="upgrade-action"><button class="btn-plus btn-alchemist-upgrade ${affordable ? 'affordable' : 'disabled'}" data-alchemist-upgrade="${upgrade.key}" ${affordable ? '' : 'disabled'}>+</button><span class="upgrade-cost">${cost} <img src="images/logos/coin.png" alt="Village Coin" class="village-coin-icon"></span></div></article>`;
+            return `<article class="upgrade-card alchemist-upgrade-card ${level === 0 ? 'level-zero' : ''}"><div class="upgrade-info"><img src="images/upgrades/${upgrade.icon}" alt="${upgrade.name}" class="upgrade-icon-img"><div class="upgrade-details"><h4 class="upgrade-card-title">${upgrade.name} <span class="upgrade-current">(Current: <strong>${level}</strong>)</span></h4><span class="upgrade-text">${upgrade.description}</span></div></div><div class="upgrade-action"><button class="btn-plus btn-alchemist-upgrade pixel-btn ${affordable ? 'affordable' : 'disabled'}" data-alchemist-upgrade="${upgrade.key}" ${affordable ? '' : 'disabled'}>+</button><span class="upgrade-cost">${cost} <img src="images/logos/coin.png" alt="Village Coin" class="village-coin-icon"></span></div></article>`;
         }).join('');
         cardsEl.querySelectorAll('[data-alchemist-upgrade]').forEach(button => {
             button.addEventListener('click', () => {
@@ -399,7 +399,7 @@ document.addEventListener('DOMContentLoaded', () => {
         backdrop.id = 'villageBuildingPopup';
         backdrop.className = 'village-building-backdrop';
         const popup = document.createElement('div');
-        popup.className = 'village-building-popup alchemist-building-popup';
+        popup.className = 'village-building-popup alchemist-building-popup pixel-popup';
         popup.innerHTML = `<button class="village-popup-close" aria-label="Close">&times;</button><h3 class="common-house-title"><img class="common-house-title-icon" src="images/logos/potion.png" alt="Alchemist"> Alchemist Shop</h3><p class="alchemist-coins">Village Coins: <strong>${gameState.villageCoins || 0}</strong> <img src="images/logos/coin.png" alt="Village Coin" class="village-coin-icon"></p><div class="alchemist-upgrades-list"></div>`;
         popup.querySelector('.village-popup-close').addEventListener('click', closeVillageBuildingPopup);
         backdrop.addEventListener('click', (event) => { if (event.target === backdrop) closeVillageBuildingPopup(); });
@@ -415,8 +415,8 @@ document.addEventListener('DOMContentLoaded', () => {
         backdrop.className = 'village-building-backdrop';
         backdrop.style.zIndex = '9000';
         const popup = document.createElement('div');
-        popup.className = 'village-building-popup forge-building-popup';
-        popup.innerHTML = `<button class="village-popup-close" aria-label="Close">&times;</button><h3 class="common-house-title"><img class="common-house-title-icon" src="images/logos/anvil.png" alt="Forge"> Forge</h3><div class="forge-section-header forge-roster-header"><h4>Current Slime Roster</h4></div><section class="forge-roster-section"><div class="forge-roster-list slime-roster-list"></div></section><section class="forge-inventory-section"><div class="forge-section-header"><h4>Village Inventory</h4><div><button class="btn-forge-unequip-all">Unequip All</button><button class="btn-forge-merge-all" title="Merge five matching items into one higher-quality item">Merge All</button><button class="btn-forge-auto-equip-all" title="Equip every available item across the roster">Auto Equip All</button></div></div><div class="forge-inventory-list"></div></section>`;
+        popup.className = 'village-building-popup forge-building-popup pixel-popup';
+        popup.innerHTML = `<button class="village-popup-close" aria-label="Close">&times;</button><h3 class="common-house-title"><img class="common-house-title-icon" src="images/logos/anvil.png" alt="Forge"> Forge</h3><div class="forge-section-header forge-roster-header"><h4>Current Slime Roster</h4></div><section class="forge-roster-section"><div class="forge-roster-list slime-roster-list"></div></section><section class="forge-inventory-section"><div class="forge-section-header"><h4>Village Inventory</h4><div><button class="btn-forge-unequip-all pixel-btn">Unequip All</button><button class="btn-forge-merge-all pixel-btn" title="Merge five matching items into one higher-quality item">Merge All</button><button class="btn-forge-auto-equip-all pixel-btn" title="Equip every available item across the roster">Auto Equip All</button></div></div><div class="forge-inventory-list"></div></section>`;
 
         popup.querySelector('.village-popup-close').addEventListener('click', closeVillageBuildingPopup);
         popup.querySelector('.btn-forge-unequip-all').addEventListener('click', () => {

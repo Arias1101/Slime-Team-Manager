@@ -73,7 +73,7 @@
                 <!-- Resource & Battle Stats Bar -->
                 <div class="stats-header-bar">
                     <div class="header-stat">
-                        <span class="stat-icon">🍖</span>
+                        <span class="stat-icon"><img src="images/logos/scrap.png" alt="Scraps" class="stat-icon-img"></span>
                         <span class="stat-value" id="scrapsCount">0</span>
                     </div>
 
@@ -151,15 +151,15 @@
                                     </div>
                                 </div>
                                 <div id="villageBuildings" class="village-buildings" aria-label="Village buildings">
-                                    <button class="village-door village-door-alchemist"
+                                    <button class="village-door village-door-alchemist pixel-btn"
                                         data-village-building="Alchemist Shop" title="Alchemist Shop"
                                         aria-label="Alchemist Shop"></button>
-                                    <button class="village-door village-door-common-house"
+                                    <button class="village-door village-door-common-house pixel-btn"
                                         data-village-building="Common House" title="Common House"
                                         aria-label="Common House"></button>
-                                    <button class="village-door village-door-forge" data-village-building="Forge"
+                                    <button class="village-door village-door-forge pixel-btn" data-village-building="Forge"
                                         title="Forge" aria-label="Forge"></button>
-                                    <button class="village-door village-door-tavern" data-village-building="Tavern"
+                                    <button class="village-door village-door-tavern pixel-btn" data-village-building="Tavern"
                                         title="Tavern (Coming soon)" aria-label="Tavern (Coming soon)"
                                         disabled></button>
 
@@ -168,7 +168,7 @@
 
                             <!-- Battle Wave Action Bar -->
                             <div class="battle-controls-bar">
-                                <button id="btnEat" class="btn-eat-main">🍖 Eat (<span
+                                <button id="btnEat" class="btn-eat-main"><img class="eat-icon" src="images/logos/scrap.png" alt=""> Eat (<span
                                         id="eatLootCount">0</span>)</button>
                             </div>
                         </div>
@@ -177,7 +177,7 @@
                     <aside class="slime-status-panel">
                         <div class="panel-header">
                             <h3><img src="images/slimes/army.png" class="badge-icon-img" alt="Army"> Slime Roster</h3>
-                            <span class="roster-count" id="rosterCount">2 Slimes</span>
+                            <span class="roster-count" id="rosterCount">0/60 Slimes</span>
                         </div>
                         <div class="slime-roster-list" id="slimeRosterList">
                             <!-- Dynamic list of slimes with 10 HP health bars -->

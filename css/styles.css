@@ -217,10 +217,8 @@ body.modal-open {
 
 .logo-title {
     font-family: var(--font-heading);
-    font-size: 1.05rem;
-    background: linear-gradient(135deg, #34d399, #a7f3d0);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    font-size: 0.95rem;
+    color: #e3c765;
 }
 
 /* Header Stats (Scraps, Wave, Army Size) */
@@ -366,17 +364,16 @@ body.modal-open {
 /* Slime Status Roster Panel (Always-Visible Top Horizontal Rows: 15 items per line) */
 .slime-status-panel {
     width: 500px;
-    max-width: 100%;
-    margin: 0 auto 10px auto;
+    margin: 0 0 10px 0;
     background: var(--bg-card);
     backdrop-filter: blur(12px);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-lg);
+    border: 2px solid #E0C564;
+    border-radius: 0;
     padding: 8px 10px;
     display: flex;
     flex-direction: column;
     gap: 4px;
-    box-shadow: var(--shadow-glow);
+    box-shadow: 6px 6px 0 #0a0b0d;
     box-sizing: border-box;
 }
 
@@ -391,16 +388,16 @@ body.modal-open {
 
 .panel-header h3 {
     font-family: var(--font-heading);
-    font-size: 0.82rem;
-    color: #34d399;
+    font-size: 0.5rem;
+    color: #c8cbcf;
     display: flex;
     align-items: center;
 }
 
 .roster-count {
-    font-size: 0.7rem;
-    color: var(--color-muted);
-    font-weight: 600;
+    font-family: var(--font-heading);
+    font-size: 0.5rem;
+    color: #c8cbcf;
 }
 
 .slime-roster-list {
@@ -418,9 +415,9 @@ body.modal-open {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: rgba(18, 19, 22, 0.65);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 4px;
+    background: #24262b;
+    border: 1px solid #0b0c0e;
+    border-radius: 0;
     padding: 1px 0;
     box-sizing: border-box;
     cursor: pointer;
@@ -530,9 +527,9 @@ body.modal-open {
     background-size: 100% 100%;
     background-position: center;
     background-repeat: no-repeat;
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    border: 1px solid var(--border-color);
-    box-shadow: var(--shadow-glow);
+    border-radius: 0;
+    border: 2px solid #E0C564;
+    box-shadow: 6px 6px 0 #0a0b0d;
     overflow: hidden;
     position: relative;
     display: flex;
@@ -2636,23 +2633,32 @@ body.modal-open {
     width: 100%;
     padding: 10px 22px;
     border-top: none;
-    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    border-radius: 0;
+    font-family: var(--font-heading);
     font-size: 0.95rem;
-    font-weight: 800;
+    font-weight: normal;
+    letter-spacing: 0.3px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: transform 0.06s ease, box-shadow 0.06s ease, background 0.06s ease;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
-    letter-spacing: 0.3px;
+}
+
+.btn-eat-main .eat-icon {
+    width: 18px;
+    height: 18px;
+    vertical-align: -3px;
+    object-fit: contain;
+    image-rendering: pixelated;
 }
 
 /* state-empty: Nothing to eat, grayed out/disabled style */
 .btn-eat-main.state-empty,
 .btn-eat-main[disabled] {
-    background: rgba(30, 41, 59, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: #1b1c21;
+    border: 1px solid #0b0c0e;
     border-top: none;
     color: rgba(255, 255, 255, 0.25);
     cursor: not-allowed;
@@ -2660,45 +2666,46 @@ body.modal-open {
     pointer-events: none;
 }
 
-/* state-moderate: 1 to 5 items, enabled but subtle */
+/* state-moderate: 1 to 9 items, enabled but subtle */
 .btn-eat-main.state-moderate {
-    background: rgba(30, 41, 59, 0.85);
-    border: 1px solid rgba(251, 191, 36, 0.35);
+    background: #24262b;
+    border: 1px solid #e3c765;
     border-top: none;
-    color: #fbbf24;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    color: #e3c765;
+    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000;
 }
 
 .btn-eat-main.state-moderate:hover {
-    background: rgba(245, 158, 11, 0.15);
-    border-color: rgba(251, 191, 36, 0.6);
-    color: #f59e0b;
+    background: #2a2d34;
+    border-color: #ecd57f;
+    color: #ecd57f;
 }
 
 .btn-eat-main.state-moderate:active {
-    background: rgba(245, 158, 11, 0.3);
-    color: #fbbf24;
+    background: #2a2d34;
+    color: #ecd57f;
+    transform: translateY(2px);
+    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, inset 0px 3px rgba(0, 0, 0, 0.2);
 }
 
-/* state-abundant: More than 5 items, vibrant yellow/orange gradient */
+/* state-abundant: 10+ items, golden pixel primary */
 .btn-eat-main.state-abundant {
-    background: linear-gradient(135deg, #f59e0b, #d97706);
-    border: 1px solid #fbbf24;
+    background: #e3c765;
+    border: 1px solid #e3c765;
     border-top: none;
-    color: #0f172a;
-    box-shadow: 0 2px 10px rgba(245, 158, 11, 0.25);
+    color: #1b1c21;
+    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, 4px 4px 0 rgba(0, 0, 0, 0.28), inset 0px 3px rgba(255, 255, 255, 0.6);
 }
 
 .btn-eat-main.state-abundant:hover {
-    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.4);
-    filter: brightness(1.1);
+    background: #ecd57f;
 }
 
 .btn-eat-main.state-abundant:active {
-    background: linear-gradient(135deg, #ea580c, #c2410c);
-    border-color: #f97316;
-    color: #ffffff;
-    box-shadow: 0 1px 4px rgba(234, 88, 12, 0.5);
+    background: #b49d4d;
+    border-color: #e3c765;
+    transform: translateY(2px);
+    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, inset 0px 3px rgba(0, 0, 0, 0.2);
 }
 
 .btn-eat-main.pulse-eat-btn {
@@ -2707,16 +2714,16 @@ body.modal-open {
 
 @keyframes eatPulseGlow {
     0% {
-        box-shadow: 0 0 10px rgba(245, 158, 11, 0.4), 0 4px 14px rgba(245, 158, 11, 0.25);
+        box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, 4px 4px 0 rgba(0, 0, 0, 0.28), inset 0px 3px rgba(255, 255, 255, 0.6);
     }
 
     50% {
-        box-shadow: 0 0 25px rgba(245, 158, 11, 0.8), 0 8px 25px rgba(245, 158, 11, 0.5);
-        border-color: #fef08a;
+        box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, 4px 4px 0 rgba(0, 0, 0, 0.28), inset 0px 3px rgba(255, 255, 255, 0.6), 0 0 25px rgba(245, 158, 11, 0.8);
+        border-color: #ecd57f;
     }
 
     100% {
-        box-shadow: 0 0 10px rgba(245, 158, 11, 0.4), 0 4px 14px rgba(245, 158, 11, 0.25);
+        box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, 4px 4px 0 rgba(0, 0, 0, 0.28), inset 0px 3px rgba(255, 255, 255, 0.6);
     }
 }
 
@@ -3034,6 +3041,14 @@ body.modal-open {
 
 .main-tab-content {
     width: 100%;
+}
+
+/* Centered column for the battle tab: both the battlefield and the roster
+   stay perfectly centered, even when they are wider than the viewport. */
+.desktop-left-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 #tabContentUpgrades.main-tab-content {
@@ -3819,7 +3834,7 @@ body.modal-open {
 
     .desktop-left-col .slime-status-panel {
         order: 2;
-        width: 1068px;
+        width: 1076px;
         max-width: 100%;
         margin: 0 auto;
     }
@@ -4446,8 +4461,8 @@ body.new-game-plus .village-buildings {
     }
 }
 
-/* ===== Pixel-style Common House (mirrors the Forge) ===== */
-.common-house-popup {
+/* ===== Pixel-style popups (shared Forge / Common House / Alchemist) ===== */
+.pixel-popup {
     border: 2px solid #E0C564;
     border-radius: 0;
     background: #1b1c21;
@@ -4455,10 +4470,73 @@ body.new-game-plus .village-buildings {
     color: #e2e2e0;
 }
 
-.common-house-popup .common-house-title {
+.pixel-popup .common-house-title {
+    margin: 0 36px 14px 0;
     color: #e3c765;
+    font-size: 0.95rem;
 }
 
+/* Shared square dark panels across the pixel popups. */
+.pixel-popup .forge-roster-section,
+.pixel-popup .forge-roster-slime,
+.pixel-popup .forge-inventory-item,
+.pixel-popup .common-house-roster,
+.pixel-popup .common-house-selected-card,
+.pixel-popup .alchemist-upgrade-card {
+    border: 2px solid #0b0c0e;
+    border-radius: 0;
+    background: #24262b;
+}
+
+/* Square, pixel-styled close button shared by all pixel popups. */
+.pixel-popup .village-popup-close {
+    border: 0;
+    border-radius: 0;
+    background: #2a2d34;
+    color: #c8cbcf;
+    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, 4px 4px 0 rgba(0, 0, 0, 0.28), inset 0px 3px rgba(255, 255, 255, 0.25);
+    transition: transform 0.06s ease, box-shadow 0.06s ease, background 0.06s ease;
+}
+
+.pixel-popup .village-popup-close:hover {
+    background: #3a3d44;
+    color: #ef4444;
+    transform: scale(1.1);
+    outline: none;
+}
+
+.pixel-popup .village-popup-close:active {
+    transform: translateY(2px);
+    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, inset 0px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Pixel scrollbar for the scrollable popup panels. */
+.pixel-popup .forge-inventory-list,
+.pixel-popup .shop-scrollbar {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+}
+
+.pixel-popup .forge-inventory-list::-webkit-scrollbar,
+.pixel-popup .shop-scrollbar::-webkit-scrollbar {
+    width: 9px;
+    border-radius: 0;
+}
+
+.pixel-popup .forge-inventory-list::-webkit-scrollbar-track,
+.pixel-popup .shop-scrollbar::-webkit-scrollbar-track {
+    border-radius: 0;
+    background: #1b1c21;
+}
+
+.pixel-popup .forge-inventory-list::-webkit-scrollbar-thumb,
+.pixel-popup .shop-scrollbar::-webkit-scrollbar-thumb {
+    border: 2px solid #1b1c21;
+    border-radius: 0;
+    background: #e3c765;
+}
+
+/* ===== Pixel-style Common House (specifics on top of the shared classes) ===== */
 .common-house-popup .shop-section-title {
     font-family: var(--font-heading);
     font-size: 0.5rem;
@@ -4466,14 +4544,6 @@ body.new-game-plus .village-buildings {
     text-transform: none;
     letter-spacing: normal;
     color: #c8cbcf;
-}
-
-/* Square dark panels for rosters and the selected-slime card. */
-.common-house-popup .common-house-roster,
-.common-house-popup .common-house-selected-card {
-    border: 2px solid #0b0c0e;
-    border-radius: 0;
-    background: #24262b;
 }
 
 .common-house-popup .common-house-portrait-wrapper {
@@ -4525,26 +4595,6 @@ body.new-game-plus .village-buildings {
     background: #0b0c0e;
 }
 
-/* Square pixel swap buttons (>, <). */
-.common-house-popup .common-house-btn {
-    border: 0;
-    border-radius: 0;
-    background: #e3c765;
-    color: #1b1c21;
-    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, 4px 4px 0 rgba(0, 0, 0, 0.28), inset 0px 3px rgba(255, 255, 255, 0.6);
-    transition: transform 0.06s ease, box-shadow 0.06s ease, background 0.06s ease;
-}
-
-.common-house-popup .common-house-btn:hover {
-    background: #ecd57f;
-    transform: scale(1.1);
-}
-
-.common-house-popup .common-house-btn:active {
-    transform: translateY(2px);
-    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, inset 0px 3px rgba(0, 0, 0, 0.2);
-}
-
 .common-house-popup .common-house-slime-name {
     color: #e3c765;
 }
@@ -4553,65 +4603,7 @@ body.new-game-plus .village-buildings {
     color: #c8cbcf;
 }
 
-/* Square, pixel-styled close button for this popup. */
-.common-house-popup .village-popup-close {
-    border: 0;
-    border-radius: 0;
-    background: #2a2d34;
-    color: #c8cbcf;
-    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, 4px 4px 0 rgba(0, 0, 0, 0.28), inset 0px 3px rgba(255, 255, 255, 0.25);
-    transition: transform 0.06s ease, box-shadow 0.06s ease, background 0.06s ease;
-}
-
-.common-house-popup .village-popup-close:hover {
-    background: #3a3d44;
-    color: #ef4444;
-    transform: scale(1.1);
-    outline: none;
-}
-
-.common-house-popup .village-popup-close:active {
-    transform: translateY(2px);
-    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, inset 0px 3px rgba(0, 0, 0, 0.2);
-}
-
-/* Pixel scrollbar for the Common House rosters. */
-.common-house-popup .shop-scrollbar {
-    scrollbar-width: auto;
-    scrollbar-color: auto;
-}
-
-.common-house-popup .shop-scrollbar::-webkit-scrollbar {
-    width: 9px;
-    border-radius: 0;
-}
-
-.common-house-popup .shop-scrollbar::-webkit-scrollbar-track {
-    border-radius: 0;
-    background: #1b1c21;
-}
-
-.common-house-popup .shop-scrollbar::-webkit-scrollbar-thumb {
-    border: 2px solid #1b1c21;
-    border-radius: 0;
-    background: #e3c765;
-}
-
-/* ===== Pixel-style Alchemist (mirrors the Forge) ===== */
-.alchemist-building-popup {
-    border: 2px solid #E0C564;
-    border-radius: 0;
-    background: #1b1c21;
-    box-shadow: 6px 6px 0 #0a0b0d;
-    color: #e2e2e0;
-}
-
-.alchemist-building-popup .common-house-title {
-    margin: 0 36px 14px 0;
-    color: #e3c765;
-    font-size: 0.95rem;
-}
-
+/* ===== Pixel-style Alchemist (specifics on top of the shared classes) ===== */
 .alchemist-building-popup .alchemist-coins {
     font-family: var(--font-heading);
     font-size: 0.5rem;
@@ -4622,11 +4614,7 @@ body.new-game-plus .village-buildings {
     color: #e3c765;
 }
 
-/* Square dark panels for the upgrade cards. */
 .alchemist-building-popup .alchemist-upgrade-card {
-    border: 2px solid #0b0c0e;
-    border-radius: 0;
-    background: #24262b;
     padding: 12px;
 }
 
@@ -4663,59 +4651,31 @@ body.new-game-plus .village-buildings {
     color: #e3c765;
 }
 
-/* Square pixel buy button (golden primary). */
-.alchemist-building-popup .btn-alchemist-upgrade {
-    border: 0;
-    border-radius: 0;
+/* Keep the golden pixel look even when affordable (overrides .btn-plus.affordable). */
+.alchemist-building-popup .btn-alchemist-upgrade.affordable {
     background: #e3c765;
     color: #1b1c21;
+    border-color: transparent;
     box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, 4px 4px 0 rgba(0, 0, 0, 0.28), inset 0px 3px rgba(255, 255, 255, 0.6);
-    transition: transform 0.06s ease, box-shadow 0.06s ease, background 0.06s ease;
-}
-
-.alchemist-building-popup .btn-alchemist-upgrade:hover:not(:disabled) {
-    background: #ecd57f;
-    transform: scale(1.1);
-    outline: none;
-}
-
-.alchemist-building-popup .btn-alchemist-upgrade:not(:disabled):active {
-    background: #b49d4d;
-    transform: translateY(2px);
-    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, inset 0px 3px rgba(0, 0, 0, 0.2);
-}
-
-/* Square, pixel-styled close button for this popup. */
-.alchemist-building-popup .village-popup-close {
-    border: 0;
-    border-radius: 0;
-    background: #2a2d34;
-    color: #c8cbcf;
-    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, 4px 4px 0 rgba(0, 0, 0, 0.28), inset 0px 3px rgba(255, 255, 255, 0.25);
-    transition: transform 0.06s ease, box-shadow 0.06s ease, background 0.06s ease;
-}
-
-.alchemist-building-popup .village-popup-close:hover {
-    background: #3a3d44;
-    color: #ef4444;
-    transform: scale(1.1);
-    outline: none;
-}
-
-.alchemist-building-popup .village-popup-close:active {
-    transform: translateY(2px);
-    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, inset 0px 3px rgba(0, 0, 0, 0.2);
 }
 
 /* The Eat control becomes the village's primary call to action. */
 .btn-eat-main.village-start-action {
-    background: linear-gradient(135deg, #d97706, #b45309);
-    border-color: rgba(253, 230, 138, 0.8);
-    color: #fff7d6;
+    background: #e3c765;
+    border: 1px solid #e3c765;
+    border-top: none;
+    color: #1b1c21;
+    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, 4px 4px 0 rgba(0, 0, 0, 0.28), inset 0px 3px rgba(255, 255, 255, 0.6);
 }
 
 .btn-eat-main.village-start-action:hover:not([disabled]) {
-    background: linear-gradient(135deg, #f59e0b, #d97706);
+    background: #ecd57f;
+}
+
+.btn-eat-main.village-start-action:not(:disabled):active {
+    background: #b49d4d;
+    transform: translateY(2px);
+    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, inset 0px 3px rgba(0, 0, 0, 0.2);
 }
 
 /* Forge: roster overview and persistent Village Inventory */
@@ -4755,16 +4715,12 @@ body.new-game-plus .village-buildings {
     font-size: 0.66rem;
 }
 
-/* Shared pixel-button style: Forge buttons, Merge All, and Village doors all
-   use the same square golden button with a thick black box-shadow border. */
-.forge-section-header button,
-.forge-item-actions button,
-.btn-forge-merge-all:not(:disabled),
-.village-door {
+/* Shared pixel button: golden square buttons used by Forge actions, Village
+   doors, Common House swap controls, and Alchemist buys. */
+.pixel-btn {
     position: relative;
     border: 0;
     border-radius: 0;
-    padding: 6px 10px;
     background: #e3c765;
     color: #1b1c21;
     font-family: var(--font-heading);
@@ -4773,36 +4729,23 @@ body.new-game-plus .village-buildings {
     transition: transform 0.06s ease, box-shadow 0.06s ease, background 0.06s ease;
 }
 
-.forge-section-header button:hover:not(:disabled),
-.forge-item-actions button:hover:not(:disabled),
-.btn-forge-merge-all:not(:disabled):hover,
-.village-door:hover,
-.village-door:focus-visible {
+.pixel-btn:hover:not(:disabled),
+.pixel-btn:focus-visible {
     background: #ecd57f;
     outline: none;
     transform: scale(1.1);
 }
 
-.forge-section-header button:not(:disabled):active,
-.forge-item-actions button:not(:disabled):active,
-.btn-forge-merge-all:not(:disabled):active,
-.village-door:not(:disabled):active {
+.pixel-btn:not(:disabled):active {
+    background: #b49d4d;
     transform: translateY(2px);
     box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, inset 0px 3px rgba(0, 0, 0, 0.2);
 }
 
-.forge-section-header button:disabled,
-.forge-item-actions button:disabled,
-.village-door:disabled {
+.pixel-btn:disabled {
     cursor: not-allowed;
     opacity: 0.40;
     filter: grayscale(1);
-}
-
-/* Village doors are icon-only buttons: no padding (the shared rule above
-   sets padding: 6px 10px for text buttons). */
-.village-door {
-    padding: 0;
 }
 
 .forge-roster-list {
@@ -4933,8 +4876,10 @@ body.new-game-plus .village-buildings {
     border: 0;
     border-radius: 0;
     background: #e3c765;
+    font-family: var(--font-heading);
+    cursor: pointer;
     box-shadow: 0px 2px #000, 0px -2px #000, 2px 0px #000, -2px 0px #000, inset 0px 2px rgba(255, 255, 255, 0.38);
-    transition: transform 0.06s ease, box-shadow 0.06s ease;
+    transition: transform 0.06s ease, box-shadow 0.06s ease, background 0.06s ease;
 }
 
 .forge-item-actions-spec .btn-forge-spec-priority img {
@@ -4949,6 +4894,12 @@ body.new-game-plus .village-buildings {
 
 .forge-item-actions-spec .btn-forge-spec-priority:not(.selected) {
     background: #2a2d34;
+}
+
+.forge-item-actions-spec .btn-forge-spec-priority:hover:not(:disabled) {
+    background: #ecd57f;
+    transform: scale(1.1);
+    outline: none;
 }
 
 .forge-item-actions-spec .btn-forge-spec-priority.selected:active {
@@ -5004,31 +4955,6 @@ body.new-game-plus .village-buildings {
     border-radius: 0;
 }
 
-.forge-inventory-list {
-    scrollbar-width: auto;
-    scrollbar-color: auto;
-}
-
-.forge-inventory-list::-webkit-scrollbar {
-    width: 9px;
-    border-radius: 0;
-}
-
-.forge-inventory-list::-webkit-scrollbar-track {
-    border-radius: 0;
-    background: rgba(15, 23, 42, 0.72);
-}
-
-.forge-inventory-list::-webkit-scrollbar-thumb {
-    border: 2px solid rgba(15, 23, 42, 0.72);
-    border-radius: 0;
-    background: rgba(251, 191, 36, 0.72);
-}
-
-.forge-inventory-list::-webkit-scrollbar-thumb:hover {
-    background: #fbbf24;
-}
-
 /* Clear Forge interaction feedback and newly equipped Slime highlight. */
 .forge-section-header button:not(:disabled):active,
 .forge-item-actions button:not(:disabled):active,
@@ -5066,21 +4992,7 @@ body.new-game-plus .village-buildings {
     color: #fb923c;
 }
 
-/* ===== Pixel-style Forge (bold borders, sharp edges, no glass) ===== */
-.forge-building-popup {
-    border: 2px solid #E0C564;
-    border-radius: 0;
-    background: #1b1c21;
-    box-shadow: 6px 6px 0 #0a0b0d;
-    color: #e2e2e0;
-}
-
-.forge-building-popup>h3 {
-    margin: 0 36px 14px 0;
-    color: #e3c765;
-    font-size: 0.95rem;
-}
-
+/* ===== Pixel-style Forge (specifics on top of the shared classes) ===== */
 .forge-roster-section {
     padding: 12px;
 }
@@ -5098,15 +5010,6 @@ body.new-game-plus .village-buildings {
 .forge-item-actions button {
     font-size: 0.45rem;
     padding: 6px 9px;
-}
-
-/* Shared dark panel background for Forge roster section, roster slimes, and inventory items. */
-.forge-roster-section,
-.forge-roster-slime,
-.forge-inventory-item {
-    border: 2px solid #0b0c0e;
-    border-radius: 0;
-    background: #24262b;
 }
 
 .forge-roster-slime b {
@@ -5130,43 +5033,6 @@ body.new-game-plus .village-buildings {
 
 .forge-item-count {
     color: #e3c765;
-}
-
-
-.forge-inventory-list {
-    scrollbar-color: auto;
-}
-
-.forge-inventory-list::-webkit-scrollbar-track {
-    border-radius: 0;
-    background: #1b1c21;
-}
-
-.forge-inventory-list::-webkit-scrollbar-thumb {
-    border: 2px solid #1b1c21;
-    border-radius: 0;
-    background: #e3c765;
-}
-
-/* Square, pixel-styled close button for this popup. */
-.forge-building-popup .village-popup-close {
-    border: 0;
-    border-radius: 0;
-    background: #2a2d34;
-    color: #c8cbcf;
-    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, 4px 4px 0 rgba(0, 0, 0, 0.28), inset 0px 3px rgba(255, 255, 255, 0.25);
-    transition: transform 0.06s ease, box-shadow 0.06s ease, background 0.06s ease;
-}
-
-.forge-building-popup .village-popup-close:hover {
-    background: #3a3d44;
-    color: #ef4444;
-    outline: none;
-}
-
-.forge-building-popup .village-popup-close:active {
-    transform: translateY(2px);
-    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, inset 0px 3px rgba(0, 0, 0, 0.2);
 }
 
 /* Merchant stock uses the same quality palette as forged equipment. */

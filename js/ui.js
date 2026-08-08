@@ -72,7 +72,7 @@ export function updateUI() {
         eatBtnEl.removeAttribute('disabled');
     } else if (eatBtnEl) {
         if (!eatLootCountEl) {
-            eatBtnEl.innerHTML = `${String.fromCodePoint(0x1F356)} Eat (<span id="eatLootCount">0</span>)`;
+            eatBtnEl.innerHTML = `<img class="eat-icon" src="images/logos/scrap.png" alt=""> Eat (<span id="eatLootCount">0</span>)`;
             eatLootCountEl = document.getElementById('eatLootCount');
         }
         eatBtnEl.classList.remove('village-start-action');
@@ -318,7 +318,7 @@ function updateSlimeRoster() {
     if (!rosterListEl) return;
 
     const activeSlimes = gameState.slimes || [];
-    if (rosterCountEl) rosterCountEl.textContent = `${activeSlimes.length} Slimes`;
+    if (rosterCountEl) rosterCountEl.textContent = `${activeSlimes.length}/60 Slimes`;
 
     const activeById = new Map(activeSlimes.map(slime => [String(slime.id || slime.name), slime]));
     const knownSlimes = [...(gameState.bestRoster || [])]
