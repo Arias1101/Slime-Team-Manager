@@ -4446,6 +4446,266 @@ body.new-game-plus .village-buildings {
     }
 }
 
+/* ===== Pixel-style Common House (mirrors the Forge) ===== */
+.common-house-popup {
+    border: 2px solid #E0C564;
+    border-radius: 0;
+    background: #1b1c21;
+    box-shadow: 6px 6px 0 #0a0b0d;
+    color: #e2e2e0;
+}
+
+.common-house-popup .common-house-title {
+    color: #e3c765;
+}
+
+.common-house-popup .shop-section-title {
+    font-family: var(--font-heading);
+    font-size: 0.5rem;
+    font-weight: normal;
+    text-transform: none;
+    letter-spacing: normal;
+    color: #c8cbcf;
+}
+
+/* Square dark panels for rosters and the selected-slime card. */
+.common-house-popup .common-house-roster,
+.common-house-popup .common-house-selected-card {
+    border: 2px solid #0b0c0e;
+    border-radius: 0;
+    background: #24262b;
+}
+
+.common-house-popup .common-house-portrait-wrapper {
+    border-radius: 0;
+    border: 2px solid #E0C564;
+    background: #24262b;
+    box-shadow: none;
+}
+
+.common-house-popup .common-house-roster-item {
+    border-radius: 0;
+    border: 1px solid #0b0c0e;
+    background: #24262b;
+}
+
+.common-house-popup .common-house-roster-item.selected {
+    outline: 2px solid #e3c765;
+    outline-offset: -1px;
+    border-radius: 0;
+}
+
+/* Square pixel toolbar buttons (icon-only, secondary style: grey turns yellow when pressed). */
+.common-house-popup .common-house-toolbar-btn {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: #2a2d34;
+    box-shadow: 0px 2px #000, 0px -2px #000, 2px 0px #000, -2px 0px #000, inset 0px 2px rgba(255, 255, 255, 0.38);
+    transition: transform 0.06s ease, box-shadow 0.06s ease, background 0.06s ease;
+}
+
+.common-house-popup .common-house-toolbar-btn:hover {
+    background: #3a3d44;
+    transform: scale(1.1);
+    outline: none;
+}
+
+.common-house-popup .common-house-toolbar-btn:active {
+    background: #e3c765;
+    transform: translateY(2px);
+    box-shadow: 0px 2px #000, 0px -2px #000, 2px 0px #000, -2px 0px #000, inset 0px 2px rgba(0, 0, 0, 0.2);
+}
+
+.common-house-popup .common-house-toolbar-divider {
+    height: 2px;
+    margin: 2px 0 4px;
+    background: #0b0c0e;
+}
+
+/* Square pixel swap buttons (>, <). */
+.common-house-popup .common-house-btn {
+    border: 0;
+    border-radius: 0;
+    background: #e3c765;
+    color: #1b1c21;
+    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, 4px 4px 0 rgba(0, 0, 0, 0.28), inset 0px 3px rgba(255, 255, 255, 0.6);
+    transition: transform 0.06s ease, box-shadow 0.06s ease, background 0.06s ease;
+}
+
+.common-house-popup .common-house-btn:hover {
+    background: #ecd57f;
+    transform: scale(1.1);
+}
+
+.common-house-popup .common-house-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, inset 0px 3px rgba(0, 0, 0, 0.2);
+}
+
+.common-house-popup .common-house-slime-name {
+    color: #e3c765;
+}
+
+.common-house-popup .common-house-slime-stat {
+    color: #c8cbcf;
+}
+
+/* Square, pixel-styled close button for this popup. */
+.common-house-popup .village-popup-close {
+    border: 0;
+    border-radius: 0;
+    background: #2a2d34;
+    color: #c8cbcf;
+    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, 4px 4px 0 rgba(0, 0, 0, 0.28), inset 0px 3px rgba(255, 255, 255, 0.25);
+    transition: transform 0.06s ease, box-shadow 0.06s ease, background 0.06s ease;
+}
+
+.common-house-popup .village-popup-close:hover {
+    background: #3a3d44;
+    color: #ef4444;
+    transform: scale(1.1);
+    outline: none;
+}
+
+.common-house-popup .village-popup-close:active {
+    transform: translateY(2px);
+    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, inset 0px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Pixel scrollbar for the Common House rosters. */
+.common-house-popup .shop-scrollbar {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+}
+
+.common-house-popup .shop-scrollbar::-webkit-scrollbar {
+    width: 9px;
+    border-radius: 0;
+}
+
+.common-house-popup .shop-scrollbar::-webkit-scrollbar-track {
+    border-radius: 0;
+    background: #1b1c21;
+}
+
+.common-house-popup .shop-scrollbar::-webkit-scrollbar-thumb {
+    border: 2px solid #1b1c21;
+    border-radius: 0;
+    background: #e3c765;
+}
+
+/* ===== Pixel-style Alchemist (mirrors the Forge) ===== */
+.alchemist-building-popup {
+    border: 2px solid #E0C564;
+    border-radius: 0;
+    background: #1b1c21;
+    box-shadow: 6px 6px 0 #0a0b0d;
+    color: #e2e2e0;
+}
+
+.alchemist-building-popup .common-house-title {
+    margin: 0 36px 14px 0;
+    color: #e3c765;
+    font-size: 0.95rem;
+}
+
+.alchemist-building-popup .alchemist-coins {
+    font-family: var(--font-heading);
+    font-size: 0.5rem;
+    color: #c8cbcf;
+}
+
+.alchemist-building-popup .alchemist-coins strong {
+    color: #e3c765;
+}
+
+/* Square dark panels for the upgrade cards. */
+.alchemist-building-popup .alchemist-upgrade-card {
+    border: 2px solid #0b0c0e;
+    border-radius: 0;
+    background: #24262b;
+    padding: 12px;
+}
+
+.alchemist-building-popup .alchemist-upgrade-card:hover {
+    background: #2a2d34;
+    border-color: #e3c765;
+}
+
+.alchemist-building-popup .alchemist-upgrade-card.level-zero {
+    border-color: #e3c765;
+    box-shadow: inset 0 0 8px rgba(227, 199, 101, 0.25);
+}
+
+.alchemist-building-popup .alchemist-upgrade-card .upgrade-card-title {
+    color: #f0f0ee;
+    font-size: 0.55rem;
+    line-height: 1.4;
+    white-space: normal;
+}
+
+.alchemist-building-popup .alchemist-upgrade-card .upgrade-current {
+    display: block;
+    margin-top: 4px;
+    color: #a1a1aa;
+    font-size: 0.55rem;
+}
+
+.alchemist-building-popup .alchemist-upgrade-card .upgrade-text {
+    color: #c8cbcf;
+    font-size: 0.68rem;
+}
+
+.alchemist-building-popup .alchemist-upgrade-card .upgrade-cost {
+    color: #e3c765;
+}
+
+/* Square pixel buy button (golden primary). */
+.alchemist-building-popup .btn-alchemist-upgrade {
+    border: 0;
+    border-radius: 0;
+    background: #e3c765;
+    color: #1b1c21;
+    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, 4px 4px 0 rgba(0, 0, 0, 0.28), inset 0px 3px rgba(255, 255, 255, 0.6);
+    transition: transform 0.06s ease, box-shadow 0.06s ease, background 0.06s ease;
+}
+
+.alchemist-building-popup .btn-alchemist-upgrade:hover:not(:disabled) {
+    background: #ecd57f;
+    transform: scale(1.1);
+    outline: none;
+}
+
+.alchemist-building-popup .btn-alchemist-upgrade:not(:disabled):active {
+    background: #b49d4d;
+    transform: translateY(2px);
+    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, inset 0px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Square, pixel-styled close button for this popup. */
+.alchemist-building-popup .village-popup-close {
+    border: 0;
+    border-radius: 0;
+    background: #2a2d34;
+    color: #c8cbcf;
+    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, 4px 4px 0 rgba(0, 0, 0, 0.28), inset 0px 3px rgba(255, 255, 255, 0.25);
+    transition: transform 0.06s ease, box-shadow 0.06s ease, background 0.06s ease;
+}
+
+.alchemist-building-popup .village-popup-close:hover {
+    background: #3a3d44;
+    color: #ef4444;
+    transform: scale(1.1);
+    outline: none;
+}
+
+.alchemist-building-popup .village-popup-close:active {
+    transform: translateY(2px);
+    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, inset 0px 3px rgba(0, 0, 0, 0.2);
+}
 
 /* The Eat control becomes the village's primary call to action. */
 .btn-eat-main.village-start-action {
