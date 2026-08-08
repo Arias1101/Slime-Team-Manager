@@ -1,6 +1,9 @@
 ------------- NOW ----------------
 
 ------------- TESTS PENDING  ----------------
+OpenCode+BigPickle
+
+KiloCode+Hy3
 
 ------------------ LATER -----------------
 - Menus to mass change slime types / spec

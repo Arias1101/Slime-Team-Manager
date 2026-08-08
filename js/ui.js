@@ -2,7 +2,7 @@
  * User Interface & Authentication Screen Renderer
  */
 
-import { gameState, SLIME_TYPES, killSlime, syncSlimesArray, rerollSlimeType, calculateSlimeDamage, getScaledEquipmentEffects, getEquipmentDisplayName, getEquipmentSprite, saveStateToLocal, getSlimeHitEffects, getEquipmentQuality, getSlimeTotalRegen, sortRosterBySpecialization, updateBestRoster, getSlimeJumpSprite, canSlimeBuyNextTalent } from './state.js';
+import { gameState, SLIME_TYPES, killSlime, syncSlimesArray, rerollSlimeType, calculateSlimeDamage, getScaledEquipmentEffects, getEquipmentDisplayName, getEquipmentSprite, saveStateToLocal, getSlimeHitEffects, getEquipmentQuality, getSlimeTotalRegen, sortRosterBySpecialization, updateBestRoster, getSlimeJumpSprite, canSlimeBuyNextTalent, TALENT_SUBTALENTS, ensureSlimeSubTalents, getSlimeSubTalent, refreshSlimeMaxHp } from './state.js';
 import { updateUpgradesUI } from './upgrades.js';
 import { activeGroundLoots, formatLootEffects } from './enemies.js';
 import { setGamePaused, isGamePaused } from './engine.js';
@@ -818,53 +818,96 @@ function renderSlimeTalentTree(slime) {
     const isBase = (slime.type || 'base') === 'base';
     const canSpecialize = !isBase && slime.ascended === true;
     const specialization = slime.specialization || '';
+    const isSpecialized = Boolean(specialization);
+    // Show the Talent sheet for specialized Slimes even without a New Game+ run,
+    // so their Talent columns (and sub-talent placeholders) are always visible.
+    const showTalentSheet = unlocked || isSpecialized;
 
     if (talentTab) {
-        talentTab.disabled = !unlocked;
-        talentTab.classList.toggle('disabled', !unlocked);
+        talentTab.disabled = !showTalentSheet;
+        talentTab.classList.toggle('disabled', !showTalentSheet);
         const talentAvailable = canSlimeBuyNextTalent(slime);
         talentTab.textContent = unlocked
             ? (talentAvailable ? 'Specialization (1)' : 'Specialization')
-            : 'Specialization (Available in New Game+)';
-        talentTab.title = unlocked ? 'Specialization' : 'Available in New Game+';
+            : (isSpecialized ? 'Specialization' : 'Specialization (Available in New Game+)');
+        talentTab.title = unlocked || isSpecialized ? 'Specialization' : 'Available in New Game+';
     }
-    if (gateMessage) gateMessage.classList.toggle('hidden', unlocked);
-    if (baseMessage) baseMessage.classList.toggle('hidden', !unlocked || canSpecialize || Boolean(specialization));
+    if (gateMessage) gateMessage.classList.toggle('hidden', showTalentSheet);
+    if (baseMessage) baseMessage.classList.toggle('hidden', showTalentSheet || canSpecialize || Boolean(specialization));
     if (choices) {
-        choices.classList.toggle('hidden', !unlocked || Boolean(specialization));
+        choices.classList.toggle('hidden', showTalentSheet || Boolean(specialization));
         choices.querySelectorAll('.slime-talent-choice').forEach(choice => {
             choice.disabled = !canSpecialize;
         });
     }
-    if (specializationWarning) specializationWarning.classList.toggle('hidden', !unlocked || !canSpecialize || Boolean(specialization));
+    if (specializationWarning) specializationWarning.classList.toggle('hidden', showTalentSheet || !canSpecialize || Boolean(specialization));
     if (chosenMessage) {
-        chosenMessage.classList.toggle('hidden', !unlocked || !specialization);
+        chosenMessage.classList.toggle('hidden', !showTalentSheet || !specialization);
         const specializationBonuses = { tank: '(+20% HP 💗)', support: '(+20% Regen 💚)', fighter: '(+20% Damage ⚔️)' };
         const specializationLabel = String(specialization).toLowerCase();
         chosenMessage.textContent = specialization ? `${specializationLabel} ${specializationBonuses[specializationLabel] || ''}`.trim() : '';
     }
     if (specializationTalents) {
         const normalizedSpecialization = String(specialization).toLowerCase();
-        const icon = normalizedSpecialization ? `images/logos/${normalizedSpecialization === 'fighter' ? 'damage' : normalizedSpecialization}.png` : '';
+        const icon = normalizedSpecialization ? `images/logos/${normalizedSpecialization}.png` : 'images/logos/support.png';
         const xp = Number(slime.wavesClearedSinceDeath || 0);
         const costs = [5, 15, 25];
-        specializationTalents.classList.toggle('hidden', !unlocked || !specialization);
+        // Keep the section visible as soon as Specializations are unlocked (or the
+        // Slime is already specialized) so the Talent columns and sub-talent
+        // placeholders are always on display.
+        specializationTalents.classList.toggle('hidden', !showTalentSheet);
         const talentNames = { support: 'Graft', fighter: 'Rebound', tank: 'Block' };
+        const genericTalentNames = ['Talent1', 'Talent2', 'Talent3'];
         const talentDescriptions = {
             support: 'Sacrifice 20% of HP to Heal twice that amount to a Slime in need (Can\'t target other Support Slimes).',
             fighter: '10% chance to re-jump on the second closest ennemy when dealing damage.',
             tank: '10% chance to ignore incoming damage.'
         };
         const talentFlag = { support: 'graft', fighter: 'rebound', tank: 'block' };
-        specializationTalents.innerHTML = specialization ? costs.map((cost, index) => {
-            const dedicatedIcon = index === 0 ? talentNames[normalizedSpecialization]?.toLowerCase() : null;
+        const subTalentsPerTalent = 3;
+        // A Talent column is "unlocked" once its main Talent has been purchased
+        // (only the first, dedicated Talent can be bought for now). Locked Talent
+        // columns hide their sub-talent buttons entirely.
+        const dedicatedUnlocked = normalizedSpecialization ? Boolean(slime.talents?.[talentFlag[normalizedSpecialization]]) : false;
+        const columns = costs.map((cost, index) => {
+            const isFirst = index === 0;
+            const dedicatedIcon = isFirst && normalizedSpecialization ? talentNames[normalizedSpecialization]?.toLowerCase() : null;
             const iconSource = dedicatedIcon ? `images/talents/${normalizedSpecialization}${dedicatedIcon}.png` : icon;
-            const talentName = index === 0 ? (talentNames[normalizedSpecialization] || 'Talent1') : `Talent${index + 1}`;
-            const button = `<button type="button" class="slime-specialization-talent ${index === 0 && xp >= cost ? 'available' : ''}" title="" ${index === 0 && xp >= cost ? '' : 'disabled'}><img src="${iconSource}" alt="${talentName}"><span>${xp}/${cost}</span></button>`;
-            const hasTooltip = index === 0 && (normalizedSpecialization === 'support' || normalizedSpecialization === 'tank' || normalizedSpecialization === 'fighter');
-            if (!hasTooltip) return button;
-            return `<span class="talent-tooltip-glass">${button}<span class="talent-tooltip-glass-box"><strong>${talentNames[normalizedSpecialization]}</strong><br>${talentDescriptions[normalizedSpecialization]}</span></span>`;
-        }).join('') : '';
+            const talentName = normalizedSpecialization
+                ? (isFirst ? (talentNames[normalizedSpecialization] || 'Talent1') : `Talent${index + 1}`)
+                : genericTalentNames[index];
+            const button = `<button type="button" class="slime-specialization-talent ${isFirst && normalizedSpecialization && xp >= cost ? 'available' : ''}" title="${normalizedSpecialization ? '' : 'Specialize to unlock'}" ${isFirst && normalizedSpecialization && xp >= cost ? '' : 'disabled'}><img src="${iconSource}" alt="${talentName}"><span>${normalizedSpecialization ? `${xp}/${cost}` : '🔒'}</span></button>`;
+            const hasTooltip = isFirst && (normalizedSpecialization === 'support' || normalizedSpecialization === 'tank' || normalizedSpecialization === 'fighter');
+            const mainButton = hasTooltip
+                ? `<span class="talent-tooltip-glass">${button}<span class="talent-tooltip-glass-box"><strong>${talentNames[normalizedSpecialization]}</strong><br>${talentDescriptions[normalizedSpecialization]}</span></span>`
+                : button;
+            const columnUnlocked = isFirst ? dedicatedUnlocked : false;
+            const subButtons = columnUnlocked
+                ? Array.from({ length: subTalentsPerTalent }, (_, subIndex) => {
+                    const subLabel = `${talentName} sub-talent ${subIndex + 1}`;
+                    const subDef = TALENT_SUBTALENTS[normalizedSpecialization]?.[index]?.[subIndex];
+                    const selected = columnUnlocked && getSlimeSubTalent(slime, index) === subIndex;
+                    const selectedClass = selected ? ' selected' : '';
+                    return `<button type="button" class="slime-specialization-subtalent${selectedClass}" title="${subDef ? `${subDef.name}: ${subDef.description}` : subLabel}" aria-label="${subLabel}" data-talent-index="${index}" data-subtalent-index="${subIndex}" ${columnUnlocked ? '' : 'disabled'}><img src="${icon}" alt="${talentName}"></button>`;
+                }).join('')
+                : '';
+            return `<div class="slime-specialization-talent-column">${mainButton}<div class="slime-specialization-subtalents">${subButtons}</div></div>`;
+        }).join('');
+        specializationTalents.innerHTML = unlocked ? columns : '';
+        // Wire sub-talent selection (only available once the Talent column is unlocked).
+        specializationTalents.querySelectorAll('.slime-specialization-subtalent:not([disabled])').forEach(subButton => {
+            subButton.addEventListener('click', () => {
+                const talentIndex = Number(subButton.dataset.talentIndex);
+                const subIndex = Number(subButton.dataset.subtalentIndex);
+                const subTalents = ensureSlimeSubTalents(slime);
+                subTalents[talentIndex] = subTalents[talentIndex] === subIndex ? null : subIndex;
+                // Endurance changes Max HP / Regen; refresh the live Slime stats.
+                refreshSlimeMaxHp(slime);
+                updateBestRoster();
+                saveStateToLocal();
+                openSlimeInspectorModal(slime);
+            });
+        });
         if (normalizedSpecialization === 'support' || normalizedSpecialization === 'tank' || normalizedSpecialization === 'fighter') {
             const flag = talentFlag[normalizedSpecialization];
             const firstButton = specializationTalents.querySelector('.slime-specialization-talent');
@@ -882,7 +925,7 @@ function renderSlimeTalentTree(slime) {
             }
         }
     }
-    if (!unlocked) activeSlimeSheetTab = 'stats';
+    if (!showTalentSheet) activeSlimeSheetTab = 'stats';
 }
 
 function specializeInspectedSlime(specialization) {

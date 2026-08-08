@@ -357,6 +357,95 @@ export function getSlimeSpecialization(slime) {
     return String(slime?.specialization || '').toLowerCase();
 }
 
+/**
+ * Sub-talent definitions for each Specialization's Talent columns.
+ * Keyed by specialization, then by Talent column index (0 = dedicated Talent,
+ * 1 = Talent2, 2 = Talent3). Each column lists up to 3 selectable sub-talents.
+ * The chosen sub-talent index for a Slime is stored on
+ * `slime.talents.subTalents[talentIndex]` (or null when unchosen).
+ */
+export const TALENT_SUBTALENTS = {
+    support: [
+        [
+            { id: 'flashGraft', name: 'Flash Graft', description: 'Graft costs 25% less HP (heal unchanged).' },
+            { id: 'megaGraft', name: 'Mega Graft', description: 'Graft cost and heal are doubled.' },
+            { id: 'endurance', name: 'Endurance', description: '+10% Max HP, +10% HP Regen.' }
+        ],
+        [],
+        []
+    ],
+    tank: [
+        [
+            { id: 'shieldMaster', name: 'Shield Master', description: 'Increases the chance to Block to 20%.' },
+            { id: 'perfectBlock', name: 'Perfect Block', description: 'When Blocking, heal back to full life.' },
+            { id: 'thickSlime', name: 'Thick Slime', description: '+20% Max HP.' }
+        ],
+        [],
+        []
+    ],
+    fighter: [
+        [
+            { id: 'chaos', name: 'Chaos', description: 'Rebound targets a random enemy instead of the second closest.' },
+            { id: 'momentum', name: 'Momentum', description: 'Rebound deals +50% damage to its target.' },
+            { id: 'training', name: 'Training', description: '+10% Damage, +5% Crit Chance.' }
+        ],
+        [],
+        []
+    ]
+};
+
+/** Normalize a Slime's stored sub-talent choices, creating the map if missing. */
+export function ensureSlimeSubTalents(slime) {
+    if (!slime) return {};
+    if (!slime.talents || typeof slime.talents !== 'object') slime.talents = {};
+    if (!slime.talents.subTalents || typeof slime.talents.subTalents !== 'object') {
+        slime.talents.subTalents = { 0: null, 1: null, 2: null };
+    }
+    return slime.talents.subTalents;
+}
+
+/** Index of the sub-talent chosen for a given Talent column, or null. */
+export function getSlimeSubTalent(slime, talentIndex) {
+    const subTalents = slime?.talents?.subTalents;
+    if (!subTalents) return null;
+    const value = subTalents[talentIndex];
+    return (typeof value === 'number' || typeof value === 'string') ? Number(value) : null;
+}
+
+/** The chosen sub-talent definition object for a Talent column, or null. */
+export function getSlimeSubTalentDef(slime, talentIndex) {
+    const chosen = getSlimeSubTalent(slime, talentIndex);
+    if (chosen === null) return null;
+    const specialization = getSlimeSpecialization(slime);
+    const column = TALENT_SUBTALENTS[specialization]?.[talentIndex];
+    return column?.[chosen] || null;
+}
+
+/** Aggregate percentage bonuses (0-100 scale) granted by chosen sub-talents. */
+export function getSlimeSubTalentBonus(slime) {
+    const bonus = { maxHpPct: 0, regenPct: 0, damagePct: 0, critPct: 0 };
+    const specialization = getSlimeSpecialization(slime);
+    const columns = TALENT_SUBTALENTS[specialization];
+    if (!columns) return bonus;
+    for (let talentIndex = 0; talentIndex < columns.length; talentIndex++) {
+        const def = getSlimeSubTalentDef(slime, talentIndex);
+        if (!def) continue;
+        if (def.id === 'endurance') { bonus.maxHpPct += 10; bonus.regenPct += 10; }
+        if (def.id === 'training') { bonus.damagePct += 10; bonus.critPct += 5; }
+        if (def.id === 'thickSlime') { bonus.maxHpPct += 20; }
+    }
+    return bonus;
+}
+
+/** Graft multipliers from chosen Support sub-talents: { cost, heal }. */
+export function getSlimeGraftMultipliers(slime) {
+    const def = getSlimeSubTalentDef(slime, 0);
+    if (!def) return { cost: 1, heal: 1 };
+    if (def.id === 'flashGraft') return { cost: 0.75, heal: 1 };
+    if (def.id === 'megaGraft') return { cost: 2, heal: 2 };
+    return { cost: 1, heal: 1 };
+}
+
 /** Whether a Slime can purchase its next specialization talent (enough XP, not already bought). */
 export function canSlimeBuyNextTalent(slime) {
     if ((gameState.newGamePlusCompletions || 0) <= 0) return false;
@@ -386,7 +475,9 @@ export function getSlimeJumpSprite(slime) {
 }
 export function getSlimeMaxHp(slime) {
     const baseMaxHp = Math.max(1, Number(slime?.baseMaxHp ?? slime?.maxHp ?? 10));
-    return getSlimeSpecialization(slime) === 'tank' ? Math.round(baseMaxHp * 1.2) : baseMaxHp;
+    const subPct = getSlimeSubTalentBonus(slime).maxHpPct;
+    const raw = baseMaxHp * (1 + subPct / 100);
+    return getSlimeSpecialization(slime) === 'tank' ? Math.round(raw * 1.2) : Math.round(raw);
 }
 
 /** Refresh derived Tank HP while preserving any newly gained maximum HP as current HP. */
@@ -442,7 +533,7 @@ export function recalculateSlimeMaxHp(slime) {
 export function recalculateSlimeStats(slime) {
     if (!slime) return;
     recalculateSlimeMaxHp(slime);
-    slime.critChance = Math.max(0, getBaseCritChance() + getSlimeEquipmentStatBonus(slime, 'crit'));
+    slime.critChance = Math.max(0, getBaseCritChance() + getSlimeEquipmentStatBonus(slime, 'crit') + getSlimeSubTalentBonus(slime).crit);
     slime.regen = Math.max(0, (gameState.alchemistRegenLevel || 0) + getSlimeEquipmentStatBonus(slime, 'regen'));
     refreshSlimeDamage(slime);
 }
@@ -455,7 +546,9 @@ export function getBaseCritChance() {
 /** Total per-wave regeneration, including the global upgrade and Support bonus. */
 export function getSlimeTotalRegen(slime) {
     const total = (gameState.slimeRegen || 0) + (slime?.regen || 0);
-    return getSlimeSpecialization(slime) === 'support' ? Math.round(total * 1.2) : total;
+    const subPct = getSlimeSubTalentBonus(slime).regenPct;
+    const adjusted = total * (1 + subPct / 100);
+    return getSlimeSpecialization(slime) === 'support' ? Math.round(adjusted * 1.2) : Math.round(adjusted);
 }
 /** Reassign persistent roster slots by battlefield role while preserving order within each role. */
 export function sortRosterBySpecialization() {
@@ -489,8 +582,10 @@ export function calculateSlimeDamage(slime) {
             effect?.stat === 'damage' ? sum + (Number(effect.value) || 0) : sum
         ), 0)
     ), 0);
+    const subPct = getSlimeSubTalentBonus(slime).damagePct;
     const totalDamage = (gameState.slimeDamage || 1) + (gameState.alchemistRageLevel || 0) + equipmentDamage;
-    return Math.max(1, Math.round(totalDamage * (getSlimeSpecialization(slime) === 'fighter' ? 1.2 : 1)));
+    const withSub = totalDamage * (1 + subPct / 100);
+    return Math.max(1, Math.round(withSub * (getSlimeSpecialization(slime) === 'fighter' ? 1.2 : 1)));
 }
 
 export function refreshSlimeDamage(slime) {
@@ -1253,9 +1348,9 @@ export function loadStateFromLocal() {
         gameState = { ...defaultState };
         syncSlimesArray();
     }
-    (gameState.slimes || []).forEach(slime => { slime.equipment = normalizeEquipmentList(slime.equipment); });
-    (gameState.bestRoster || []).forEach(slime => { slime.equipment = normalizeEquipmentList(slime.equipment); });
-    (gameState.villageRoster || []).forEach(slime => { slime.equipment = normalizeEquipmentList(slime.equipment); });
+    (gameState.slimes || []).forEach(slime => { slime.equipment = normalizeEquipmentList(slime.equipment); ensureSlimeSubTalents(slime); });
+    (gameState.bestRoster || []).forEach(slime => { slime.equipment = normalizeEquipmentList(slime.equipment); ensureSlimeSubTalents(slime); });
+    (gameState.villageRoster || []).forEach(slime => { slime.equipment = normalizeEquipmentList(slime.equipment); ensureSlimeSubTalents(slime); });
     gameState.villageInventory = normalizeEquipmentList(gameState.villageInventory);
     migrateSpecializedSlimes();
     // A Slime kept in the Village (Common House) is not part of the army. Prune

@@ -3,7 +3,7 @@
  */
 
 import { activeEnemies, triggerLootDrop, activeGroundLoots, formatLootEffects } from './enemies.js';
-import { gameState, SLIME_TYPES, addScraps, updateBestRoster, saveStateToLocal, calculateSlimeDamage, getScaledEquipmentEffects, getSlimeHitEffects, refreshSlimeMaxHp, getSlimeJumpSprite, getSlimeSpecialization } from './state.js';
+import { gameState, SLIME_TYPES, addScraps, updateBestRoster, saveStateToLocal, calculateSlimeDamage, getScaledEquipmentEffects, getSlimeHitEffects, refreshSlimeMaxHp, getSlimeJumpSprite, getSlimeSpecialization, getSlimeGraftMultipliers, getSlimeSubTalentDef } from './state.js';
 import { updateUI, requestUIRefresh, updateLootHUD } from './ui.js';
 /**
  * Convert viewport measurements back into the battlefield's native 500px coordinate space.
@@ -157,8 +157,9 @@ function trySupportGraft(unitEl, support) {
     }
 
     setTimeout(() => {
-        const sacrificedAmount = Math.ceil(support.maxHp * .2);
-        const intendedHealing = sacrificedAmount * 2;
+        const graftMult = getSlimeGraftMultipliers(support);
+        const sacrificedAmount = Math.ceil(support.maxHp * .2 * graftMult.cost);
+        const intendedHealing = sacrificedAmount * 2 * graftMult.heal;
         const restoredAmount = Math.min(target.maxHp - target.hp, intendedHealing);
         const overhealAmount = Math.max(0, intendedHealing - restoredAmount);
         const overhealRecovery = Math.round(overhealAmount / 2);
@@ -346,8 +347,9 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
             // rejump at the second closest target, looping back to frame 2 of the jump spritesheet.
             // Only roll when there is actually a second target available.
             if (getSlimeSpecialization(slimeObj) === 'fighter' && slimeObj?.talents?.rebound) {
-                const reboundTarget = pickReboundTarget();
+                const reboundTarget = pickReboundTarget(slimeObj);
                 if (reboundTarget && Math.random() < 0.1) {
+                    const momentum = getSlimeSubTalentDef(slimeObj, 0)?.id === 'momentum' ? 1.5 : 1;
                     const currentArmyX = startX + dx;
                     const rebound = computeReboundTrajectory(currentArmyX, reboundTarget);
                     baseX = dx;
@@ -362,6 +364,7 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
                     spriteFrame = 2;
                     imgEl.style.objectPosition = `${-(2 - 1) * 19}px 0px`;
                     showFloatingStatusText(reboundTarget, String.fromCodePoint(0x21AA), 'rebound-text');
+                    if (momentum !== 1) currentDamage = currentDamage * momentum;
                 }
             }
         }
@@ -437,7 +440,7 @@ function dealTargetEnemyDamage(targetEnemy, damageAmount, slimeConfig, isCrit = 
     }
     if (hitEffects.freeze > 0 && !isControlImmune) {
         currentTarget.effects.freezeTimer = 1 * hitEffects.freeze;
-        const freezeDmg = 3 * hitEffects.freeze;
+        const freezeDmg = 5 * hitEffects.freeze;
         const freezeDmgDealt = Math.min(currentTarget.hp, freezeDmg);
         if (freezeDmgDealt > 0) {
             currentTarget.hp -= freezeDmgDealt;
@@ -520,11 +523,16 @@ function dealImpactDamage(impactDx, damage, slimeConfig) {
  * Pick the second closest alive enemy in range (closest to the slimes first).
  * Used by the Fighter Rebound talent to rejump at the next target after a hit.
  */
-function pickReboundTarget() {
+function pickReboundTarget(slimeObj) {
     const candidates = activeEnemies
         .filter(e => e.hp > 0 && e.x >= 90 && e.x <= 450)
         .sort((a, b) => a.x - b.x);
-    return candidates.length >= 2 ? candidates[1] : null;
+    if (candidates.length < 2) return null;
+    if (getSlimeSubTalentDef(slimeObj, 0)?.id === 'chaos') {
+        // Chaos: hit a random valid enemy instead of the second closest.
+        return candidates[Math.floor(Math.random() * candidates.length)];
+    }
+    return candidates[1];
 }
 
 /**

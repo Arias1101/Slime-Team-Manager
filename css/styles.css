@@ -3792,6 +3792,27 @@ body.modal-open {
     background: #2a2d34;
 }
 
+/* Inspector sub-talents reuse the Forge specialization button look, but in the
+   inspector's pixel palette (dark body, black outline, gold when activated). */
+.slime-inspector-modal .slime-specialization-subtalent {
+    border: 0;
+    border-radius: 0;
+    background: #2a2d34;
+    box-shadow: 0px 2px #000, 0px -2px #000, 2px 0px #000, -2px 0px #000, inset 0px 2px rgba(255, 255, 255, 0.25);
+}
+
+.slime-inspector-modal .slime-specialization-subtalent:disabled {
+    background: #2a2d34;
+}
+
+.slime-inspector-modal .slime-specialization-subtalent.selected {
+    background: #e3c765;
+}
+
+.slime-inspector-modal .slime-specialization-subtalent:not(:disabled):hover {
+    background: #ecd57f;
+}
+
 .slime-inspector-modal .modal-header-actions .modal-kill-btn {
     border: 0;
     border-radius: 0;
@@ -5896,9 +5917,70 @@ body.new-game-plus .village-buildings {
 
 .slime-specialization-talents {
     display: flex;
-    gap: 12px;
+    gap: 34px;
     justify-content: center;
+    align-items: flex-start;
     margin-top: 16px;
+}
+
+/* One main Talent button plus its column of small sub-talent buttons. */
+.slime-specialization-talent-column {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.slime-specialization-subtalents {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 9px;
+}
+
+/* Match the pixel-art specialization buttons used for loot priority in the Forge. */
+.slime-specialization-subtalent {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+    line-height: 0;
+    width: 25px;
+    height: 25px;
+    border: 0;
+    border-radius: 0;
+    box-shadow: 0px 2px #000, 0px -2px #000, 2px 0px #000, -2px 0px #000, inset 0px 2px rgba(255, 255, 255, 0.38);
+    background: #2a2d34;
+    cursor: default;
+    transition: transform 0.06s ease, box-shadow 0.06s ease, background 0.06s ease;
+}
+
+.slime-specialization-subtalent img {
+    width: 21px;
+    height: 21px;
+    display: block;
+    image-rendering: pixelated;
+}
+
+.slime-specialization-subtalent:disabled {
+    background: #2a2d34;
+}
+
+/* Selected sub-talent uses the Forge gold "selected" treatment. */
+.slime-specialization-subtalent.selected {
+    background: #e3c765;
+}
+
+.slime-specialization-subtalent:not(:disabled) {
+    cursor: pointer;
+}
+
+.slime-specialization-subtalent:not(:disabled):hover {
+    background: #ecd57f;
+    transform: scale(1.1);
+    outline: none;
 }
 
 .slime-specialization-talent {
@@ -5929,11 +6011,13 @@ body.new-game-plus .village-buildings {
     color: #e2e8f0;
 }
 
-.slime-specialization-talent:not(:last-child)::after {
+/* Arrow between Talents stays centered on the 62px main buttons, not on the
+   full column height that now includes the sub-talent buttons. */
+.slime-specialization-talent-column:not(:last-child)::after {
     content: '>';
     position: absolute;
-    left: calc(100% + 5px);
-    top: 50%;
+    left: calc(100% + 17px);
+    top: 31px;
     transform: translateY(-50%);
     color: #94a3b8;
     font-weight: 800;

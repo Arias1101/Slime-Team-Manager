@@ -6,6 +6,7 @@ v0.18
 - Drasticaly reduced upgrade costs scalings.
 - Reworked Freeze to inflict bonus damage, but slow instead of stun.
 - Reworked damage numbers display methods.
+- Implemented Sub-Talents for Support/Fighter/Tank first Main Talents.
 
 v0.17
 - Fixed Roster Display. Hopefully for good.

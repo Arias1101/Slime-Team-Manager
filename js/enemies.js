@@ -2,7 +2,7 @@
  * Enemy Management & AI Behaviors
  */
 
-import { gameState, addScraps, saveStateToLocal, saveWaveSnapshot, restoreBestRoster, SLIME_TYPES, getSlimeTotalRegen, getSlimeSpecialization, setEquipmentDefinitionResolver } from './state.js';
+import { gameState, addScraps, saveStateToLocal, saveWaveSnapshot, restoreBestRoster, SLIME_TYPES, getSlimeTotalRegen, getSlimeSpecialization, setEquipmentDefinitionResolver, getSlimeSubTalentDef, getSlimeMaxHp } from './state.js';
 import { healAllSlimes, initAscendedAutoAttacks, clearAscendedAutoAttacks, showFloatingDamageNumber, showFloatingHealingNumber, showFloatingStatusTextAt, showBattlefieldWaveBanner, triggerSlimeEatLoot } from './slimes.js';
 import { updateUI, updateLootHUD, requestUIRefresh, playSlimeRainRespawnAnimation } from './ui.js';
 import { openShopModal } from './shop.js';
@@ -2187,11 +2187,18 @@ function spawnBlockEffect(slime) {
 export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg', sourceEnemy = null, allowBlock = true) {
     if (!slime || slime.hp <= 0) return null;
 
-    // Tank Block talent: 10% chance to ignore incoming damage.
+    // Tank Block talent: base 10% chance to ignore incoming damage.
+    // Shield Master raises it to 20%. Perfect Block heals to full on a successful block.
     // Status effect DoT ticks (burn/poison) pass allowBlock=false and can never be blocked.
-    if (allowBlock && getSlimeSpecialization(slime) === 'tank' && slime.talents?.block && Math.random() < 0.1) {
-        spawnBlockEffect(slime);
-        return null;
+    if (allowBlock && getSlimeSpecialization(slime) === 'tank' && slime.talents?.block) {
+        const blockChance = getSlimeSubTalentDef(slime, 0)?.id === 'shieldMaster' ? 0.2 : 0.1;
+        if (Math.random() < blockChance) {
+            spawnBlockEffect(slime);
+            if (getSlimeSubTalentDef(slime, 0)?.id === 'perfectBlock') {
+                slime.hp = getSlimeMaxHp(slime);
+            }
+            return null;
+        }
     }
 
     slime.hp = Math.max(0, slime.hp - damageAmount);
