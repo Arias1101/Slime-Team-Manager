@@ -6,6 +6,7 @@ v0.19
 - Removed "xp" from the game (Main talents now all cost 1 coin).
 - Added Common House button to bulk kill Slimes.
 - Added Common House buttons to bulk change Slime Types.
+- Added Common House buttons to bulk assign Slime Specializations.
 
 v0.18
 - Restyled Whole App.

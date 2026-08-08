@@ -9,7 +9,7 @@
  *                 Only slimes from one side can be selected at once.
  */
 
-import { gameState, SLIME_TYPES, getSlimeJumpSprite, getSlimeSpecialization, calculateSlimeDamage, getBaseCritChance, generateUniqueSlimeName, getNextAvailableSlotIndex, saveStateToLocal, updateBestRoster, getEquipmentQuality } from './state.js';
+import { gameState, SLIME_TYPES, getSlimeJumpSprite, getSlimeSpecialization, calculateSlimeDamage, getBaseCritChance, generateUniqueSlimeName, getNextAvailableSlotIndex, saveStateToLocal, updateBestRoster, getEquipmentQuality, sortRosterBySpecialization } from './state.js';
 import { renderSlimeRosterLanes, updateUI } from './ui.js';
 
 const MAX_MAIN_ROSTER = 60;
@@ -41,7 +41,9 @@ export function openCommonHousePopup() {
     popup.innerHTML = `
         <button class="village-popup-close" aria-label="Close">&times;</button>
         <h3 class="common-house-title"><img class="common-house-title-icon" src="images/slimes/army.png" alt="Common House"> Common House</h3>
-        <div class="common-house-body">
+        <div class="common-house-half">
+            <div class="shop-section-title">Rosters</div>
+            <div class="common-house-body">
             <div class="common-house-col">
                 <div class="shop-section-title" id="chMainRosterTitle">Main Roster (${(gameState.slimes || []).length}/${MAX_MAIN_ROSTER})</div>
                 <div class="common-house-toolbar">
@@ -89,7 +91,8 @@ export function openCommonHousePopup() {
                 <div id="chVillageRoster" class="common-house-roster shop-scrollbar"></div>
             </div>
         </div>
-        <div class="common-house-selected">
+        </div>
+        <div class="common-house-half">
             <div class="shop-section-title">Selected Slime</div>
             <div id="chSelectedSlimeCard" class="common-house-selected-card"></div>
         </div>
@@ -420,29 +423,105 @@ const TYPE_BUTTONS = [
     { id: 'stone', label: 'Stone', icon: 'images/upgrades/petrification.png' }
 ];
 
+/** The three Specialization buttons shown for non-specialized selections. */
+const SPEC_BUTTONS = [
+    { id: 'support', label: 'Support', icon: 'images/logos/support.png' },
+    { id: 'fighter', label: 'Fighter', icon: 'images/logos/fighter.png' },
+    { id: 'tank', label: 'Tank', icon: 'images/logos/tank.png' }
+];
+
 /**
- * Build the row of elemental Type buttons for the Selected Slime area.
- * - Hidden entirely if ANY selected Slime is specialized.
- * - Otherwise shown for the non-specialized selection; the matching element button
- *   is marked "selected" only when every selected Slime shares that single element
- *   (otherwise none are selected, e.g. multiple types or Basic slimes).
+ * The 12 possible element+specialization class combos, in display order. Each
+ * Talent row shows the 3 Talent buttons for that combo (placeholder spec icon).
  */
-function getTypeButtonsHtml(selectedSlimes) {
+const TALENT_COMBOS = [
+    { element: 'fire',    spec: 'support', typeId: 'fireSupport' },
+    { element: 'fire',    spec: 'fighter', typeId: 'fireFighter' },
+    { element: 'fire',    spec: 'tank',    typeId: 'fireTank' },
+    { element: 'ice',     spec: 'support', typeId: 'iceSupport' },
+    { element: 'ice',     spec: 'fighter', typeId: 'iceFighter' },
+    { element: 'ice',     spec: 'tank',    typeId: 'iceTank' },
+    { element: 'poison',  spec: 'support', typeId: 'poisonSupport' },
+    { element: 'poison',  spec: 'fighter', typeId: 'poisonFighter' },
+    { element: 'poison',  spec: 'tank',    typeId: 'poisonTank' },
+    { element: 'stone',   spec: 'support', typeId: 'stoneSupport' },
+    { element: 'stone',   spec: 'fighter', typeId: 'stoneFighter' },
+    { element: 'stone',   spec: 'tank',    typeId: 'stoneTank' }
+];
+
+/** Per Talent row: 3 visible (+6 hidden reserving space). */
+const TALENT_VISIBLE = 3;
+const TALENT_TOTAL = 9;
+
+/**
+ * Build the single 4-column action grid for the Selected Slime area. Rows:
+ *   0: 4 elemental Type buttons   (non-specialized selection)
+ *   1: 3 Specialize buttons        (non-specialized selection)
+ *   2-13: 12 Talent rows (one per element+spec combo) for specialized slimes.
+ * Rows are shown/hidden per the current selection; non-matching rows get the
+ * `hidden-row` class. The matching element Type button is marked "selected" only
+ * when every selected Slime shares one element. The Spec row is disabled when any
+ * selected Slime is Basic. Talent rows appear only when all selected Slimes share
+ * the same exact type+specialization combo.
+ */
+function getActionButtonsHtml(selectedSlimes) {
     const anySpecialized = selectedSlimes.some(s => getSlimeSpecialization(s) !== '');
-    if (anySpecialized) return '';
+    const allSpecialized = selectedSlimes.length > 0 && selectedSlimes.every(s => getSlimeSpecialization(s) !== '');
 
     const elements = new Set(
-        selectedSlimes
-            .map(s => elementOf(s))
-            .filter(el => el === 'fire' || el === 'ice' || el === 'poison' || el === 'stone')
+        selectedSlimes.map(s => elementOf(s)).filter(el => el === 'fire' || el === 'ice' || el === 'poison' || el === 'stone')
     );
-    const selectedType = elements.size === 1 ? [...elements][0] : null;
+    const selectedType = (!anySpecialized && elements.size === 1) ? [...elements][0] : null;
 
-    return `
-        <div class="common-house-type-buttons">
+    const hasBasic = selectedSlimes.some(s => elementOf(s) === '');
+    const specDisabled = hasBasic ? ' disabled' : '';
+
+    const sameType = selectedSlimes.length > 0 && selectedSlimes.every(s => (s.type || 'base') === (selectedSlimes[0].type || 'base'));
+    const sameSpec = selectedSlimes.length > 0 && selectedSlimes.every(s => getSlimeSpecialization(s) === getSlimeSpecialization(selectedSlimes[0]));
+    const activeCombo = (allSpecialized && sameType && sameSpec)
+        ? `${elementOf(selectedSlimes[0])}${getSlimeSpecialization(selectedSlimes[0]).charAt(0).toUpperCase()}${getSlimeSpecialization(selectedSlimes[0]).slice(1)}`
+        : null;
+
+    const typeRowHidden = anySpecialized ? ' hidden-row' : '';
+    const specRowHidden = anySpecialized ? ' hidden-row' : '';
+
+    const typeRow = `
+        <div class="common-house-grid-row common-house-type-row${typeRowHidden}" data-row="type">
             ${TYPE_BUTTONS.map(t => `
                 <button type="button" class="common-house-type-btn${selectedType === t.id ? ' selected' : ''}" data-type="${t.id}" title="${t.label}" aria-label="${t.label}"><img src="${t.icon}" alt="${t.label}"></button>
             `).join('')}
+        </div>
+    `;
+
+    const specRow = `
+        <div class="common-house-grid-row common-house-spec-row${specRowHidden}" data-row="spec">
+            ${SPEC_BUTTONS.map(s => `
+                <button type="button" class="common-house-spec-btn" data-spec="${s.id}" title="${s.label}" aria-label="${s.label}"${specDisabled}><img src="${s.icon}" alt="${s.label}"></button>
+            `).join('')}
+        </div>
+    `;
+
+    const talentRows = TALENT_COMBOS.map(combo => {
+        const specDef = SPEC_BUTTONS.find(s => s.id === combo.spec) || SPEC_BUTTONS[0];
+        const hidden = activeCombo === combo.typeId ? '' : ' hidden-row';
+        const talents = Array.from({ length: TALENT_TOTAL }, (_, i) => {
+            const visible = i < TALENT_VISIBLE;
+            return `
+                <button type="button" class="common-house-talent-btn${visible ? '' : ' hidden-slot'}" data-talent="${i}" data-combo="${combo.typeId}" title="${specDef.label} Talent ${i + 1}" aria-label="${specDef.label} Talent ${i + 1}"${visible ? '' : ' tabindex="-1"'}>${visible ? `<img src="${specDef.icon}" alt="${specDef.label}">` : ''}</button>
+            `;
+        }).join('');
+        return `
+            <div class="common-house-grid-row common-house-talent-row${hidden}" data-row="talent" data-combo="${combo.typeId}">
+                ${talents}
+            </div>
+        `;
+    }).join('');
+
+    return `
+        <div class="common-house-action-buttons">
+            ${typeRow}
+            ${specRow}
+            ${talentRows}
         </div>
     `;
 }
@@ -478,6 +557,42 @@ function wireTypeButtons(container) {
             renderCommonHouse();
         });
     });
+
+    const specButtons = container.querySelectorAll('.common-house-spec-btn:not([disabled])');
+    specButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const newSpec = btn.dataset.spec;
+            const selectedSlimes = getSelectedSlimes();
+            if (!selectedSlimes.length || !newSpec) return;
+
+            selectedSlimes.forEach(slime => {
+                // Only typed (non-basic, non-specialized) Slimes can specialize.
+                if (getSlimeSpecialization(slime) !== '') return;
+                const element = elementOf(slime);
+                if (!element) return;
+                const typeId = `${element}${newSpec.charAt(0).toUpperCase()}${newSpec.slice(1)}`;
+                if (SLIME_TYPES[typeId]) {
+                    slime.type = typeId;
+                    slime.specialization = newSpec;
+                }
+            });
+
+            sortRosterBySpecialization();
+            updateBestRoster();
+            saveStateToLocal();
+            updateUI();
+            renderCommonHouse();
+        });
+    });
+
+    const talentButtons = container.querySelectorAll('.common-house-talent-btn:not(.hidden-slot)');
+    talentButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            // Talent purchasing is wired later; placeholders for now.
+        });
+    });
 }
 
 /**
@@ -501,7 +616,7 @@ function renderSelectedSlimeCard() {
         return;
     }
 
-    const typeButtonsHtml = getTypeButtonsHtml(selectedSlimes);
+    const actionButtonsHtml = getActionButtonsHtml(selectedSlimes);
 
     if (selectedSlimes.length === 1) {
         const slime = selectedSlimes[0];
@@ -526,7 +641,9 @@ function renderSelectedSlimeCard() {
                 <div class="common-house-slime-stat"><span class="ch-stat-label">Specialization:</span> ${specLabel}</div>
                 <div class="common-house-slime-stat"><span class="ch-stat-label">Type:</span> ${typeName}</div>
             </div>
-            ${typeButtonsHtml}
+            <div class="common-house-action-buttons">
+                ${actionButtonsHtml}
+            </div>
         `;
 
         const killBtn = container.querySelector('.common-house-kill-btn');
@@ -563,7 +680,9 @@ function renderSelectedSlimeCard() {
             <div class="common-house-slime-name">Selected (${selectedSlimes.length})</div>
             ${lines.map(line => `<div class="common-house-slime-stat">${line}</div>`).join('')}
         </div>
-        ${typeButtonsHtml}
+        <div class="common-house-action-buttons">
+            ${actionButtonsHtml}
+        </div>
     `;
 
     const killBtn = container.querySelector('.common-house-kill-btn');

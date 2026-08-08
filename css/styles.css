@@ -4566,8 +4566,11 @@ body.new-game-plus .village-buildings {
     border-radius: var(--radius-lg);
     background: rgba(18, 19, 22, 0.97);
     box-shadow: 0 16px 42px rgba(0, 0, 0, 0.6);
-    display: flex;
-    flex-direction: column;
+    /* One grid owns the whole vertical space: title (auto) then the two
+       proportional regions. minmax(0, Nfr) lets each track shrink below its
+       content so inner panels scroll instead of the halves overflowing. */
+    display: grid;
+    grid-template-rows: auto minmax(0, 3fr) minmax(0, 2fr);
     overflow: hidden;
 }
 
@@ -4619,8 +4622,7 @@ body.new-game-plus .village-buildings {
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 10px;
     flex: 1;
-    height: 100%;
-    min-height: 180px;
+    min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-gutter: stable;
@@ -4697,36 +4699,76 @@ body.new-game-plus .village-buildings {
     background: rgba(255, 255, 255, 0.12);
 }
 
-.common-house-selected {
-    flex: 0 0 auto;
-    margin-top: 14px;
+/* Two stacked regions sized by the popup grid (Rosters 3fr, Selected 2fr).
+   Each is a self-contained flex column; inner panels scroll, never overflow. */
+.common-house-half {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow: hidden;
 }
 
 .common-house-selected-card {
     position: relative;
-    margin-top: 6px;
+    flex: 1 1 auto;
+    min-height: 0;
     padding: 12px 14px;
     background: rgba(39, 39, 42, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 10px;
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
     gap: 14px;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
-/* Row of elemental Type buttons shown for non-specialized selections.
-   Sits to the right of the selected-slime labels, vertically centered. */
-.common-house-selected-card .common-house-type-buttons {
+/* Single 4-column action grid holding every button row (Type, Spec, and the 12
+   Talent rows). Each row spans all 4 columns; the grid sits to the right of the
+   selected-slime labels, vertically centered. */
+.common-house-selected-card .common-house-action-buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 44px);
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    padding-right: 40px;
+}
+
+.common-house-grid-row {
+    grid-column: 1 / -1;
     display: flex;
     flex-direction: row;
     align-items: center;
-    justify-content: center;
-    flex-wrap: wrap;
+    justify-content: flex-start;
     gap: 8px;
-    margin-left: auto;
-    padding-right: 40px;
-    transform: translateX(-100px);
+}
+
+.common-house-grid-row.hidden-row {
+    display: none;
+}
+
+.common-house-type-btn,
+.common-house-spec-btn {
+    width: 44px;
+    height: 44px;
+    padding: 5px;
+    border: 0;
+    border-radius: 0;
+    background: #2a2d34;
+    box-shadow: 0px 2px #000, 0px -2px #000, 2px 0px #000, -2px 0px #000, inset 0px 2px rgba(255, 255, 255, 0.38);
+    cursor: pointer;
+    transition: transform 0.06s ease, box-shadow 0.06s ease, background 0.06s ease;
+}
+
+.common-house-type-btn img,
+.common-house-spec-btn img {
+    width: 34px;
+    height: 34px;
+    display: block;
+    image-rendering: pixelated;
 }
 
 .common-house-type-btn {
@@ -4770,6 +4812,76 @@ body.new-game-plus .village-buildings {
 
 .common-house-type-btn.selected:active {
     background: #d4b954;
+}
+
+.common-house-spec-btn:hover {
+    background: #3a3d44;
+    transform: scale(1.1);
+    outline: none;
+}
+
+.common-house-spec-btn:active {
+    transform: translateY(2px) !important;
+    box-shadow: 0px 1px #000, 0px -1px #000, 1px 0px #000, -1px 0px #000, inset 0px 2px rgba(0, 0, 0, 0.2);
+    background: #23262c;
+}
+
+.common-house-spec-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.40;
+    filter: grayscale(1);
+}
+
+.common-house-talent-btn {
+    width: 44px;
+    height: 44px;
+    padding: 5px;
+    border: 0;
+    border-radius: 0;
+    background: #2a2d34;
+    box-shadow: 0px 2px #000, 0px -2px #000, 2px 0px #000, -2px 0px #000, inset 0px 2px rgba(255, 255, 255, 0.38);
+    cursor: pointer;
+    transition: transform 0.06s ease, box-shadow 0.06s ease, background 0.06s ease;
+}
+
+.common-house-talent-btn img {
+    width: 34px;
+    height: 34px;
+    display: block;
+    image-rendering: pixelated;
+}
+
+.common-house-talent-btn.selected {
+    background: #e3c765;
+}
+
+.common-house-talent-btn:hover {
+    background: #3a3d44;
+    transform: scale(1.1);
+    outline: none;
+}
+
+.common-house-talent-btn.selected:hover {
+    background: #ecd57f;
+}
+
+.common-house-talent-btn:active {
+    transform: translateY(2px) !important;
+    box-shadow: 0px 1px #000, 0px -1px #000, 1px 0px #000, -1px 0px #000, inset 0px 2px rgba(0, 0, 0, 0.2);
+    background: #23262c;
+}
+
+.common-house-talent-btn.selected:active {
+    background: #d4b954;
+}
+
+/* Hidden talent slots (6 of 9) keep their layout space but are invisible
+   and non-interactive, reserving room for future talents. */
+.common-house-talent-btn.hidden-slot {
+    visibility: hidden;
+    pointer-events: none;
+    background: transparent;
+    box-shadow: none;
 }
 
 /* Sacrifice button, top-right corner of the Selected Slime card.
