@@ -4086,16 +4086,10 @@ body.new-game-plus .village-buildings {
 }
 
 .village-door {
-    width: 28px;
-    height: 32px;
+    position: relative;
+    width: 22px;
+    height: 26px;
     padding: 0;
-    border: 1px solid rgba(203, 213, 225, 0.42);
-    border-radius: 5px;
-    background: rgba(39, 42, 48, 0.70);
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.30), 0 2px 5px rgba(0, 0, 0, 0.42);
-    color: #f8fafc;
-    opacity: 0.82;
-    transition: opacity 0.15s ease, background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 }
 
 .village-door::before {
@@ -4107,24 +4101,24 @@ body.new-game-plus .village-buildings {
 
 .village-door-alchemist::before {
     content: "";
-    width: 22px;
-    height: 26px;
+    width: 17px;
+    height: 20px;
     margin: auto;
     background: url("../images/logos/potion.png") no-repeat center / contain;
 }
 
 .village-door-common-house::before {
     content: "";
-    width: 22px;
-    height: 26px;
+    width: 17px;
+    height: 20px;
     margin: auto;
     background: url("../images/slimes/army.png") no-repeat center / contain;
 }
 
 .village-door-forge::before {
     content: "";
-    width: 22px;
-    height: 26px;
+    width: 17px;
+    height: 20px;
     margin: auto;
     background: url("../images/logos/anvil.png") no-repeat center / contain;
 }
@@ -4133,38 +4127,23 @@ body.new-game-plus .village-buildings {
     content: "\1F37A";
 }
 
-.village-door:hover,
-.village-door:focus-visible {
-    opacity: 1;
-    border-color: rgba(253, 230, 138, 0.88);
-    background: rgba(66, 71, 80, 0.88);
-    transform: scale(1.12);
-    outline: none;
-}
-
 .village-door-alchemist {
     left: calc(31% + 20px);
     top: 18%;
 }
 
-.village-door:disabled {
-    cursor: not-allowed;
-    opacity: 0.32;
-    filter: grayscale(1);
-}
-
 .village-door-common-house {
-    left: calc(65% - 50px);
-    top: 17%;
+    left: calc(65% - 95px);
+    top: calc(17% + 8px);
 }
 
 .village-door-forge {
-    left: calc(82% - 40px);
+    left: calc(82% - 105px);
     top: calc(47% - 20px);
 }
 
 .village-door-tavern {
-    left: calc(14% + 90px);
+    left: calc(14% + 5px);
     top: 54%;
 }
 
@@ -4516,8 +4495,12 @@ body.new-game-plus .village-buildings {
     font-size: 0.66rem;
 }
 
+/* Shared pixel-button style: Forge buttons, Merge All, and Village doors all
+   use the same square golden button with a thick black box-shadow border. */
 .forge-section-header button,
-.forge-item-actions button {
+.forge-item-actions button,
+.btn-forge-merge-all:not(:disabled),
+.village-door {
     position: relative;
     border: 0;
     border-radius: 0;
@@ -4525,28 +4508,41 @@ body.new-game-plus .village-buildings {
     background: #e3c765;
     color: #1b1c21;
     font-family: var(--font-heading);
-    font-size: 0.55rem;
     cursor: pointer;
-    /* Thick square pixel border built with box-shadows (like the reference). */
-    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, 4px 4px 0 rgba(0, 0, 0, 0.28), inset 0px 3px rgba(255, 255, 255, 0.25);
-    transition: transform 0.06s ease, box-shadow 0.06s ease;
+    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, 4px 4px 0 rgba(0, 0, 0, 0.28), inset 0px 3px rgba(255, 255, 255, 0.6);
+    transition: transform 0.06s ease, box-shadow 0.06s ease, background 0.06s ease;
 }
 
 .forge-section-header button:hover:not(:disabled),
-.forge-item-actions button:hover:not(:disabled) {
+.forge-item-actions button:hover:not(:disabled),
+.btn-forge-merge-all:not(:disabled):hover,
+.village-door:hover,
+.village-door:focus-visible {
     background: #ecd57f;
+    outline: none;
+    transform: scale(1.1);
 }
 
 .forge-section-header button:not(:disabled):active,
-.forge-item-actions button:not(:disabled):active {
-    transform: translateY(3px);
+.forge-item-actions button:not(:disabled):active,
+.btn-forge-merge-all:not(:disabled):active,
+.village-door:not(:disabled):active {
+    transform: translateY(2px);
     box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, inset 0px 3px rgba(0, 0, 0, 0.2);
 }
 
 .forge-section-header button:disabled,
-.forge-item-actions button:disabled {
+.forge-item-actions button:disabled,
+.village-door:disabled {
     cursor: not-allowed;
     opacity: 0.40;
+    filter: grayscale(1);
+}
+
+/* Village doors are icon-only buttons: no padding (the shared rule above
+   sets padding: 6px 10px for text buttons). */
+.village-door {
+    padding: 0;
 }
 
 .forge-roster-list {
@@ -4677,7 +4673,7 @@ body.new-game-plus .village-buildings {
     border: 0;
     border-radius: 0;
     background: #e3c765;
-    box-shadow: 0px 2px #000, 0px -2px #000, 2px 0px #000, -2px 0px #000, inset 0px 2px rgba(255, 255, 255, 0.25);
+    box-shadow: 0px 2px #000, 0px -2px #000, 2px 0px #000, -2px 0px #000, inset 0px 2px rgba(255, 255, 255, 0.38);
     transition: transform 0.06s ease, box-shadow 0.06s ease;
 }
 
@@ -4693,6 +4689,10 @@ body.new-game-plus .village-buildings {
 
 .forge-item-actions-spec .btn-forge-spec-priority:not(.selected) {
     background: #2a2d34;
+}
+
+.forge-item-actions-spec .btn-forge-spec-priority.selected:active {
+    background: #b49d4d;
 }
 
 .forge-item-actions-spec .btn-forge-spec-priority:active {
@@ -4771,11 +4771,12 @@ body.new-game-plus .village-buildings {
 
 /* Clear Forge interaction feedback and newly equipped Slime highlight. */
 .forge-section-header button:not(:disabled):active,
-.forge-item-actions button:not(:disabled):active {
-    background: #fbbf24;
-    border-color: #fff7d6;
-    color: #3f2108;
-    transform: translateY(1px) scale(0.97);
+.forge-item-actions button:not(:disabled):active,
+.btn-forge-merge-all:not(:disabled):active {
+    background: #b49d4d;
+    color: #1b1c21;
+    transform: translateY(2px);
+    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, inset 0px 3px rgba(0, 0, 0, 0.2);
 }
 
 .roster-grid-item.roster-equipment-flash {
@@ -4784,18 +4785,7 @@ body.new-game-plus .village-buildings {
     box-shadow: 0 0 10px rgba(255, 255, 255, 0.9) !important;
 }
 
-/* Forge merging: keep the available action prominent and show item quality. */
-.btn-forge-merge-all:not(:disabled) {
-    border-color: rgba(196, 181, 253, 0.92) !important;
-    background: linear-gradient(135deg, #7c3aed, #5b21b6) !important;
-    color: #f5f3ff !important;
-    box-shadow: 0 0 10px rgba(139, 92, 246, 0.52);
-}
-
-.btn-forge-merge-all:not(:disabled):hover {
-    background: linear-gradient(135deg, #8b5cf6, #6d28d9) !important;
-}
-
+/* Forge item quality colors. */
 .forge-item-details .forge-item-quality-0 {
     color: #f8fafc;
 }
@@ -4833,9 +4823,6 @@ body.new-game-plus .village-buildings {
 
 .forge-roster-section {
     padding: 12px;
-    border: 2px solid #0b0c0e;
-    border-radius: 0;
-    background: #24262b;
 }
 
 .forge-section-header {
@@ -4849,32 +4836,14 @@ body.new-game-plus .village-buildings {
 
 .forge-section-header button,
 .forge-item-actions button {
-    position: relative;
-    border: 0;
-    border-radius: 0;
-    padding: 6px 9px;
-    background: #e3c765;
-    color: #1b1c21;
-    cursor: pointer;
-    font-family: var(--font-heading);
     font-size: 0.45rem;
-    /* Thick square pixel border built with box-shadows (like the reference). */
-    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, 4px 4px 0 rgba(0, 0, 0, 0.28), inset 0px 3px rgba(255, 255, 255, 0.25);
-    transition: transform 0.06s ease, box-shadow 0.06s ease;
+    padding: 6px 9px;
 }
 
-.forge-section-header button:hover:not(:disabled),
-.forge-item-actions button:hover:not(:disabled) {
-    background: #ecd57f;
-}
-
-.forge-section-header button:not(:disabled):active,
-.forge-item-actions button:not(:disabled):active {
-    transform: translateY(3px);
-    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, inset 0px 3px rgba(0, 0, 0, 0.2);
-}
-
-.forge-roster-slime {
+/* Shared dark panel background for Forge roster section, roster slimes, and inventory items. */
+.forge-roster-section,
+.forge-roster-slime,
+.forge-inventory-item {
     border: 2px solid #0b0c0e;
     border-radius: 0;
     background: #24262b;
@@ -4892,9 +4861,6 @@ body.new-game-plus .village-buildings {
 
 .forge-inventory-item {
     padding: 9px;
-    border: 2px solid #0b0c0e;
-    border-radius: 0;
-    background: #24262b;
 }
 
 .forge-item-details strong {
@@ -4906,23 +4872,6 @@ body.new-game-plus .village-buildings {
     color: #e3c765;
 }
 
-.btn-forge-merge-all:not(:disabled) {
-    position: relative;
-    border: 0 !important;
-    border-color: transparent !important;
-    background: #e3c765 !important;
-    color: #1b1c21 !important;
-    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, 4px 4px 0 rgba(0, 0, 0, 0.28), inset 0px 3px rgba(255, 255, 255, 0.25) !important;
-}
-
-.btn-forge-merge-all:not(:disabled):hover {
-    background: #ecd57f !important;
-}
-
-.btn-forge-merge-all:not(:disabled):active {
-    transform: translateY(3px);
-    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, inset 0px 3px rgba(0, 0, 0, 0.2) !important;
-}
 
 .forge-inventory-list {
     scrollbar-color: auto;
@@ -4941,18 +4890,23 @@ body.new-game-plus .village-buildings {
 
 /* Square, pixel-styled close button for this popup. */
 .forge-building-popup .village-popup-close {
-    border: 2px solid #000;
+    border: 0;
     border-radius: 0;
     background: #2a2d34;
     color: #c8cbcf;
-    box-shadow: 3px 3px 0 #0a0b0d;
+    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, 4px 4px 0 rgba(0, 0, 0, 0.28), inset 0px 3px rgba(255, 255, 255, 0.25);
+    transition: transform 0.06s ease, box-shadow 0.06s ease, background 0.06s ease;
 }
 
 .forge-building-popup .village-popup-close:hover {
     background: #3a3d44;
-    border-color: #000;
     color: #ef4444;
-    transform: none;
+    outline: none;
+}
+
+.forge-building-popup .village-popup-close:active {
+    transform: translateY(2px);
+    box-shadow: 0px 3px #000, 0px -3px #000, 3px 0px #000, -3px 0px #000, inset 0px 3px rgba(0, 0, 0, 0.2);
 }
 
 /* Merchant stock uses the same quality palette as forged equipment. */
