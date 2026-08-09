@@ -3,7 +3,7 @@
  */
 
 import { activeEnemies, triggerLootDrop, activeGroundLoots, formatLootEffects } from './enemies.js';
-import { gameState, SLIME_TYPES, addScraps, updateBestRoster, saveStateToLocal, calculateSlimeDamage, getScaledEquipmentEffects, getSlimeHitEffects, refreshSlimeMaxHp, getSlimeJumpSprite, getSlimeSpecialization, getSlimeGraftMultipliers, getSlimeSubTalentDef, hasMeltingMend } from './state.js';
+import { gameState, SLIME_TYPES, addScraps, updateBestRoster, saveStateToLocal, calculateSlimeDamage, getScaledEquipmentEffects, getSlimeHitEffects, refreshSlimeMaxHp, getSlimeJumpSprite, getSlimeSpecialization, getSlimeGraftMultipliers, getSlimeSubTalentDef, hasMeltingMend, hasIceBarrier, hasLeech } from './state.js';
 import { updateUI, requestUIRefresh, updateLootHUD } from './ui.js';
 /**
  * Convert viewport measurements back into the battlefield's native 500px coordinate space.
@@ -180,20 +180,39 @@ function trySupportGraft(unitEl, support) {
 
         // Melting Mend (Fire Support second talent): the grafted ally gains a
         // "Heal on Time" status that restores 5% of the INTENDED (theoretical)
-        // healing every 0.5s for 5 seconds (10 ticks = 50% total), regardless of
-        // how much HP was actually restored. Ticks can show +0 when it rounds down.
-        // The status is STACKABLE: repeated grafts add 5s to the timer (capped at
-        // MAX_HOT_DURATION) and accumulate the per-tick heal amount, rather than
-        // overwriting the previous effect.
+        // healing every 0.5s. The duration is always exactly HOT_DURATION (3s) and
+        // reapplying RESETS the timer (it never extends). Only the per-tick heal
+        // value accumulates across repeated grafts. Ticks can show +0 when rounding down.
         if (hasMeltingMend(liveSupport)) {
             if (!liveTarget.effects) {
                 liveTarget.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0, stunTimer: 0 };
             }
             const perTick = Math.max(0, Math.round(intendedHealing * 0.05));
-            const MAX_HOT_DURATION = 15.0;
-            liveTarget.effects.healOnTimeTimer = Math.min(MAX_HOT_DURATION, (liveTarget.effects.healOnTimeTimer || 0) + 5.0);
+            const HOT_DURATION = 3.0;
+            // Timer resets to a fixed 3s (never stacks in length).
+            liveTarget.effects.healOnTimeTimer = HOT_DURATION;
             liveTarget.effects.healOnTimeTickTimer = (liveTarget.effects.healOnTimeTickTimer || 0);
+            // Only the per-tick heal amount accumulates.
             liveTarget.effects.healOnTimePerTick = (liveTarget.effects.healOnTimePerTick || 0) + perTick;
+        }
+
+        // Ice Barrier (Ice Support second talent): the grafted ally gains temporary
+        // bonus HP equal to 20% of the heal provided by the Graft (based on the
+        // intended/theoretical healing, consistent with Melting Mend). Stackable:
+        // repeated grafts add 20% of the heal and the 2s duration resets on each
+        // application. Total bonus HP is capped at 60% of the target's Max HP.
+        if (hasIceBarrier(liveSupport)) {
+            if (!liveTarget.effects) {
+                liveTarget.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0, stunTimer: 0 };
+            }
+            const bonusHp = Math.round(intendedHealing * 0.20);
+            const MAX_BARRIER_BONUS = Math.round(liveTarget.maxHp * 0.60);
+            const currentBonus = liveTarget.effects.iceBarrierBonusHp || 0;
+            const newBonus = Math.min(MAX_BARRIER_BONUS, currentBonus + bonusHp);
+            // Only raise current HP if the barrier is growing (never reduces it).
+            liveTarget.hp += Math.max(0, newBonus - currentBonus);
+            liveTarget.effects.iceBarrierBonusHp = newBonus;
+            liveTarget.effects.iceBarrierTimer = 2.0;
         }
 
         const targetEl = Array.from(document.querySelectorAll('.slime-unit')).find(el => String(el.dataset.slimeId) === String(liveTarget.id));
@@ -327,6 +346,12 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
 
         imgEl.style.transform = `translate(${dx}px, ${dy}px)`;
 
+        // Keep the Ice Barrier shield glued to the jumping slime image.
+        const barrierEl = unitEl.querySelector('.slime-ice-barrier');
+        if (barrierEl) {
+            barrierEl.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+        }
+
         if (shadowEl) {
             const shadowScale = Math.max(0.3, 1.0 - (Math.abs(dy) / (maxAltitude * 1.2)));
             shadowEl.style.transform = `translateX(${dx}px) scale(${shadowScale})`;
@@ -402,6 +427,8 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
         if (progress < 1.0) {
             requestAnimationFrame(animateJumpFrame);
         } else {
+            const barrierEl = unitEl.querySelector('.slime-ice-barrier');
+            if (barrierEl) barrierEl.style.transform = '';
             setTimeout(() => {
                 startSmoothReturnWalk(unitEl, imgEl, shadowEl, slimeConfig, maxDx);
             }, 90);
@@ -455,6 +482,7 @@ function dealTargetEnemyDamage(targetEnemy, damageAmount, slimeConfig, isCrit = 
     const isControlImmune = currentTarget.typeId === 'death';
     const sourceSlime = slimeObj || { type: slimeConfig?.id || 'base', equipment: [] };
     const hitEffects = getSlimeHitEffects(sourceSlime);
+    let freezeDmgDealt = 0;
 
     if (hitEffects.burn > 0) {
         currentTarget.effects.burnStacks = currentTarget.effects.burnTimer > 0
@@ -471,16 +499,23 @@ function dealTargetEnemyDamage(targetEnemy, damageAmount, slimeConfig, isCrit = 
     if (hitEffects.freeze > 0 && !isControlImmune) {
         currentTarget.effects.freezeTimer = 1 * hitEffects.freeze;
         const freezeDmg = 5 * hitEffects.freeze;
-        const freezeDmgDealt = Math.min(currentTarget.hp, freezeDmg);
+        freezeDmgDealt = Math.min(currentTarget.hp, freezeDmg);
         if (freezeDmgDealt > 0) {
             currentTarget.hp -= freezeDmgDealt;
             showFloatingDamageNumber(currentTarget.x - 8, currentTarget.y - 20, freezeDmgDealt, 'freeze-dmg');
             showFloatingStatusText(currentTarget, String.fromCodePoint(0x2744, 0xFE0F), 'freeze-text');
         }
     }
-    if (hitEffects.stun > 0 && !isControlImmune) {
-        currentTarget.effects.stunTimer = 0.5 * hitEffects.stun;
-        showFloatingStatusText(currentTarget, String.fromCodePoint(0x1F4AB), 'stun-text');
+    // Leech (Poison Support second talent): the attacking slime heals for 100% of the
+    // direct damage it inflicts (main hit + freeze bonus damage), up to its Max HP.
+    if (slimeObj && hasLeech(slimeObj)) {
+        const leechAmount = (damageToApply || 0) + (typeof freezeDmgDealt === 'number' ? freezeDmgDealt : 0);
+        if (leechAmount > 0 && slimeObj.hp > 0) {
+            const healed = Math.min(slimeObj.maxHp - slimeObj.hp, leechAmount);
+            slimeObj.hp += healed;
+            const leechUnit = document.querySelector(`.slime-unit[data-slime-id="${slimeObj.id}"]`);
+            if (leechUnit) showFloatingHealingNumberFromUnit(leechUnit, healed);
+        }
     }
     // Visual WHITE hit flash on currentTarget sprite
     if (currentTarget.el) {

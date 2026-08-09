@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Enemy Management & AI Behaviors
  */
 
@@ -677,7 +677,7 @@ export const PROJECTILE_TYPES = {
     arrow: {
         id: 'arrow',
         sprite: 'images/projectiles/arrow.png',
-        fallbackIcon: '🏹',
+        fallbackIcon: '??',
         arcHeight: 25, // Curved arc height in px
         duration: 0.5, // Parabolic flight time in seconds
         rotationMode: 'tangent' // Follows smooth flight curve angle
@@ -685,7 +685,7 @@ export const PROJECTILE_TYPES = {
     fireball: {
         id: 'fireball',
         sprite: 'images/projectiles/fireball.png',
-        fallbackIcon: '🔥',
+        fallbackIcon: '??',
         arcHeight: 30, // Smooth arc height in px
         duration: 0.5, // Fast & snappy flight time matching arrows
         rotationMode: 'tangent' // Follows smooth flight curve angle
@@ -693,7 +693,7 @@ export const PROJECTILE_TYPES = {
     flask: {
         id: 'flask',
         sprite: 'images/projectiles/flask.png',
-        fallbackIcon: '🧪',
+        fallbackIcon: '??',
         arcHeight: 35, // Curved high arc height in px
         duration: 1.0, // 50% slower flight speed (1.0s vs 0.5s)
         rotationMode: 'spin' // Rotates on itself continuously during flight
@@ -708,7 +708,7 @@ export const PROJECTILE_TYPES = {
     }, boulder: {
         id: 'boulder',
         sprite: 'images/projectiles/boulder.png',
-        fallbackIcon: '🪨',
+        fallbackIcon: '??',
         arcHeight: 35, // Curved high arc height in px
         duration: 1.0, // 50% slower flight speed like flask
         rotationMode: 'spin' // Rotates on itself continuously during flight
@@ -1236,7 +1236,7 @@ export function enterNewGamePlus() {
 /**
  * Manually abandon the current run via the "Return to Village" battlefield button.
  * Kills the active army (clears the battlefield) and transitions to the village
- * intermission, exactly like a run ended by Death — without resetting to the
+ * intermission, exactly like a run ended by Death � without resetting to the
  * start of the tier.
  */
 export function returnToVillage() {
@@ -1273,7 +1273,7 @@ export function returnToVillage() {
         }));
         resetGameFull({ startWave: false, preserveUpgrades: true });
         // Returning to the village via the button does NOT count as a completed
-        // run (no NG+ increment, no village coin reward) — only a wipe to Death does.
+        // run (no NG+ increment, no village coin reward) � only a wipe to Death does.
         gameState.isInNewGamePlus = true;
         gameState.bestRoster = healedRoster.length > 0 ? healedRoster : gameState.bestRoster;
         gameState.slimes = gameState.bestRoster.map((slime, index) => ({
@@ -1331,7 +1331,8 @@ function checkWaveCompletion() {
             gameState.slimes.forEach(s => {
                 const regeneration = getSlimeTotalRegen(s);
                 if (s.hp > 0 && regeneration > 0) {
-                    s.hp = Math.min(s.maxHp, s.hp + regeneration);
+                    const bonusCap = s.maxHp + (s.effects?.iceBarrierBonusHp || 0);
+                    s.hp = Math.min(bonusCap, s.hp + regeneration);
                 }
             });
         }
@@ -1357,7 +1358,7 @@ function checkWaveCompletion() {
         saveStateToLocal();
         updateUI();
 
-        // Every 10th wave (10, 20, 30...) the Merchant arrives — unless No Merchant
+        // Every 10th wave (10, 20, 30...) the Merchant arrives � unless No Merchant
         // Mode is active, in which case we skip the shop and go straight to the next wave.
         if (clearedWaveNum > 0 && clearedWaveNum % 10 === 0 && !gameState.noMerchant) {
             console.log(`[MERCHANT SHOP] Wave ${clearedWaveNum} cleared! Waiting for slimes to eat all ground loots...`);
@@ -1830,10 +1831,21 @@ export function updateEnemies(deltaSeconds) {
         const armyContainer = document.getElementById('armyContainer');
 
         gameState.slimes.forEach(slime => {
-            if (slime.hp <= 0) return;
+            if (slime.hp <= 0) {
+                // Dead slimes skip status processing; just make sure any lingering
+                // Ice Barrier shield sprite is removed from the (dying/dead) unit.
+                if (slime.effects && (slime.effects.iceBarrierTimer > 0 || slime.effects.iceBarrierBonusHp > 0)) {
+                    slime.effects.iceBarrierTimer = 0;
+                    slime.effects.iceBarrierBonusHp = 0;
+                    const armyContainer = document.getElementById('armyContainer');
+                    const deadUnit = armyContainer ? armyContainer.querySelector(`[data-slime-id="${slime.id}"]`) : null;
+                    updateSlimeIceBarrier(deadUnit, false);
+                }
+                return;
+            }
 
             if (!slime.effects) {
-                slime.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0, stunTimer: 0, healOnTimeTimer: 0, healOnTimeTickTimer: 0, healOnTimePerTick: 0, healOnTimeTimer: 0, healOnTimeTickTimer: 0, healOnTimePerTick: 0 };
+                slime.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0, stunTimer: 0, healOnTimeTimer: 0, healOnTimeTickTimer: 0, healOnTimePerTick: 0, iceBarrierTimer: 0, iceBarrierBonusHp: 0 };
             }
 
             // Resolve the live on-field unit ONCE per iteration (before any
@@ -1874,7 +1886,7 @@ export function updateEnemies(deltaSeconds) {
                 }
             }
 
-            // 2.5 Process Heal on Time (Melting Mend): restore a flat amount every 0.5s for 5s
+            // 2.5 Process Heal on Time (Melting Mend): restore a flat amount every 0.5s for 3s
             if (slime.effects.healOnTimeTimer > 0) {
                 slime.effects.healOnTimeTimer -= deltaSeconds;
                 slime.effects.healOnTimeTickTimer = (slime.effects.healOnTimeTickTimer || 0) + deltaSeconds;
@@ -1892,6 +1904,17 @@ export function updateEnemies(deltaSeconds) {
                 }
             }
 
+            // 2.6 Process Ice Barrier Timer (temporary bonus HP shield)
+            if (slime.effects.iceBarrierTimer > 0) {
+                slime.effects.iceBarrierTimer -= deltaSeconds;
+                if (slime.effects.iceBarrierTimer <= 0) {
+                    slime.effects.iceBarrierTimer = 0;
+                    // Shield expired: remove the temporary bonus HP and clamp current HP.
+                    slime.effects.iceBarrierBonusHp = 0;
+                    if (slime.hp > slime.maxHp) slime.hp = slime.maxHp;
+                }
+            }
+
             // 3. Process Stun Status Timer
             if (slime.effects.stunTimer > 0) {
                 slime.effects.stunTimer -= deltaSeconds;
@@ -1900,7 +1923,7 @@ export function updateEnemies(deltaSeconds) {
                 }
             }
 
-            // 4. Update Slime Status Row Icons (🔥 🧪 💚 💫) & CSS Filters
+            // 4. Update Slime Status Row Icons (?? ?? ?? ??) & CSS Filters
             if (unit) {
                 // `unit` already resolved live (above) from armyContainer by id.
                 const statusRow = unit.querySelector('.slime-status-row');
@@ -1925,6 +1948,10 @@ export function updateEnemies(deltaSeconds) {
                     unit.classList.toggle('is-poisoned', slime.effects.poisonTimer > 0);
                     unit.classList.toggle('is-heal-on-time', slime.effects.healOnTimeTimer > 0);
                     unit.classList.toggle('is-stunned', slime.effects.stunTimer > 0);
+                    unit.classList.toggle('is-ice-barrier', slime.effects.iceBarrierTimer > 0);
+
+                    // Spawn / remove the Ice Barrier shield sprite on the target slime.
+                    updateSlimeIceBarrier(unit, slime.effects.iceBarrierTimer > 0);
 
                     const rosterItem = document.getElementById(`roster_item_${slime.id}`);
                     if (rosterItem) {
@@ -1933,6 +1960,7 @@ export function updateEnemies(deltaSeconds) {
                         rosterItem.classList.toggle('is-frozen', (slime.effects.freezeTimer || 0) > 0);
                         rosterItem.classList.toggle('is-stunned', slime.effects.stunTimer > 0);
                         rosterItem.classList.toggle('is-heal-on-time', slime.effects.healOnTimeTimer > 0);
+                        rosterItem.classList.toggle('is-ice-barrier', slime.effects.iceBarrierTimer > 0);
                     }
                 }
             }
@@ -2020,7 +2048,7 @@ function fireProjectiles(enemy) {
     const projType = PROJECTILE_TYPES[projKey] || {
         id: projKey,
         sprite: `images/projectiles/${projKey}.png`,
-        fallbackIcon: '💥',
+        fallbackIcon: '??',
         arcHeight: 25,
         duration: 0.5,
         rotationMode: 'tangent'
@@ -2032,7 +2060,7 @@ function fireProjectiles(enemy) {
     projEl.style.top = `${enemy.y + 10}px`;
 
     const spritePath = projType.sprite || `images/projectiles/${projKey}.png`;
-    const fallback = projType.fallbackIcon || '💥';
+    const fallback = projType.fallbackIcon || '??';
 
     projEl.innerHTML = `
         <img src="${spritePath}" 
@@ -2079,7 +2107,7 @@ export function applyBurnEffectToSlime(slime, duration = 3.0, stacks = 1) {
     if (!slime || slime.hp <= 0) return;
 
     if (!slime.effects) {
-        slime.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0, stunTimer: 0, healOnTimeTimer: 0, healOnTimeTickTimer: 0, healOnTimePerTick: 0 };
+        slime.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0, stunTimer: 0, healOnTimeTimer: 0, healOnTimeTickTimer: 0, healOnTimePerTick: 0, iceBarrierTimer: 0, iceBarrierBonusHp: 0 };
     }
 
     const burnStacks = Math.max(1, Math.round(stacks));
@@ -2098,7 +2126,7 @@ export function applyPoisonEffectToSlime(slime, duration = 3.0, stacks = 2) {
     if (!slime || slime.hp <= 0) return;
 
     if (!slime.effects) {
-        slime.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0, stunTimer: 0, healOnTimeTimer: 0, healOnTimeTickTimer: 0, healOnTimePerTick: 0 };
+        slime.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0, stunTimer: 0, healOnTimeTimer: 0, healOnTimeTickTimer: 0, healOnTimePerTick: 0, iceBarrierTimer: 0, iceBarrierBonusHp: 0 };
     }
 
     if (slime.effects.poisonTimer > 0) {
@@ -2116,7 +2144,7 @@ export function applyStunEffectToSlime(slime, duration = 2.5) {
     if (!slime || slime.hp <= 0) return;
 
     if (!slime.effects) {
-        slime.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0, stunTimer: 0, healOnTimeTimer: 0, healOnTimeTickTimer: 0, healOnTimePerTick: 0 };
+        slime.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0, stunTimer: 0, healOnTimeTimer: 0, healOnTimeTickTimer: 0, healOnTimePerTick: 0, iceBarrierTimer: 0, iceBarrierBonusHp: 0 };
     }
 
     slime.effects.stunTimer = Math.max(slime.effects.stunTimer || 0, duration);
@@ -2281,6 +2309,32 @@ function spawnBlockEffect(slime) {
 }
 
 /**
+ * Create / refresh / remove the Ice Barrier shield sprite on a slime unit.
+ * The shield persists as long as the barrier is active (the per-frame status
+ * loop calls this every frame). The real stacking is in iceBarrierBonusHp;
+ * here we only toggle the visual overlay.
+ */
+function updateSlimeIceBarrier(unit, active) {
+    if (!unit) return;
+    let shield = unit.querySelector('.slime-ice-barrier');
+    if (!active) {
+        if (shield && shield.parentNode) shield.remove();
+        return;
+    }
+    if (!shield) {
+        shield = document.createElement('div');
+        shield.className = 'slime-ice-barrier';
+        const img = document.createElement('img');
+        img.className = 'slime-ice-barrier-img';
+        img.src = 'images/projectiles/icebarrier.png';
+        img.alt = 'Ice Barrier';
+        img.onerror = function () { this.style.display = 'none'; };
+        shield.appendChild(img);
+        unit.appendChild(shield);
+    }
+}
+
+/**
  * Applies damage to a specific slime instance
  */
 export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg', sourceEnemy = null, allowBlock = true) {
@@ -2302,6 +2356,21 @@ export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg', 
 
     slime.hp = Math.max(0, slime.hp - damageAmount);
 
+    // Ice Barrier (Ice Support): while the temporary bonus HP is active, a lethal
+    // hit is absorbed by the shield instead of killing the slime. Damage eats the
+    // bonus HP first; the slime only dies once the barrier is fully depleted.
+    if (slime.effects && slime.effects.iceBarrierTimer > 0 && slime.hp <= 0) {
+        const bonus = slime.effects.iceBarrierBonusHp || 0;
+        if (bonus > 0) {
+            const absorbed = Math.min(bonus, -slime.hp);
+            slime.effects.iceBarrierBonusHp = bonus - absorbed;
+            slime.hp = Math.max(0, slime.hp + absorbed);
+            if (slime.effects.iceBarrierBonusHp <= 0) {
+                slime.effects.iceBarrierBonusHp = 0;
+                slime.effects.iceBarrierTimer = 0;
+            }
+        }
+    }
     const hpPct = Math.max(0, (slime.hp / slime.maxHp) * 100);
     const rosterItem = document.getElementById(`roster_item_${slime.id}`);
     const hpFill = rosterItem ? rosterItem.querySelector('.roster-hp-fill') : null;
@@ -2364,7 +2433,7 @@ export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg', 
                     }
                 });
 
-                // Instantly refresh roster sidebar so dead slime slot displays 💀 RIP icon immediately
+                // Instantly refresh roster sidebar so dead slime slot displays ?? RIP icon immediately
                 updateUI();
             }
         } else if (slime.hp <= 0) {
@@ -2611,6 +2680,7 @@ export function spawnSlashEffect(enemy) {
         }
     }, 50);
 }
+
 
 
 

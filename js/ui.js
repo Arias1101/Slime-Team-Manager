@@ -2,7 +2,7 @@
  * User Interface & Authentication Screen Renderer
  */
 
-import { gameState, SLIME_TYPES, killSlime, syncSlimesArray, rerollSlimeType, calculateSlimeDamage, getScaledEquipmentEffects, getEquipmentDisplayName, getEquipmentSprite, saveStateToLocal, getSlimeHitEffects, getEquipmentQuality, getSlimeTotalRegen, sortRosterBySpecialization, updateBestRoster, getSlimeJumpSprite, canSlimeBuyNextTalent, TALENT_SUBTALENTS, SECOND_TALENT, getSecondTalentFlag, hasSecondTalent, ensureSlimeSubTalents, getSlimeSubTalent, recalculateSlimeStats } from './state.js';
+import { gameState, SLIME_TYPES, killSlime, syncSlimesArray, rerollSlimeType, calculateSlimeDamage, getScaledEquipmentEffects, getEquipmentDisplayName, getEquipmentSprite, saveStateToLocal, getSlimeHitEffects, getEquipmentQuality, getSlimeTotalRegen, sortRosterBySpecialization, updateBestRoster, getSlimeJumpSprite, canSlimeBuyNextTalent, TALENT_SUBTALENTS, SECOND_TALENT, SECOND_TALENT_ICON, getSecondTalentFlag, hasSecondTalent, ensureSlimeSubTalents, getSlimeSubTalent, recalculateSlimeStats } from './state.js';
 import { updateUpgradesUI } from './upgrades.js';
 import { activeGroundLoots, formatLootEffects } from './enemies.js';
 import { setGamePaused, isGamePaused } from './engine.js';
@@ -335,11 +335,15 @@ function buildRosterItem(entry, { itemClassName, extraClassFor, titleFor, dataAt
     item.dataset.slimeId = String(slime.id);
     item.title = titleFor ? titleFor(slime) : `[Slot #${(slime.slotIndex ?? 0) + 1}] ${displayName} (${slimeConfig.name})${slime.ascended ? ' ✨' : ''}: ${slime.hp}/${slime.maxHp} HP`;
     if (dataAttrsFor) Object.entries(dataAttrsFor(slime) || {}).forEach(([k, v]) => item.setAttribute(k, v));
+    const bonusHp = Number(slime.effects?.iceBarrierBonusHp || 0);
+    const bonusPct = Math.max(0, Math.min(50, (bonusHp / Math.max(1, slime.maxHp)) * 100));
+    const mainPct = Math.max(0, Math.min(100, hpPct));
     if (slime.effects?.burnTimer > 0) item.classList.add('is-burning');
     if (slime.effects?.poisonTimer > 0) item.classList.add('is-poisoned');
     if (slime.effects?.freezeTimer > 0) item.classList.add('is-frozen');
     if (slime.effects?.stunTimer > 0) item.classList.add('is-stunned');
-    item.innerHTML = `<img src="${getSlimeJumpSprite(slime)}" alt="${displayName}" class="roster-grid-icon"><div class="roster-grid-hp-bar"><div class="roster-hp-fill" style="width:${hpPct}%;background:${hpColor};"></div></div>`;
+    if (slime.effects?.iceBarrierTimer > 0) item.classList.add('is-ice-barrier');
+    item.innerHTML = `<img src="${getSlimeJumpSprite(slime)}" alt="${displayName}" class="roster-grid-icon"><div class="roster-grid-hp-bar"><div class="roster-hp-fill" style="width:${mainPct}%;background:${hpColor};"></div>${bonusPct > 0 ? `<div class="roster-hp-bonus" style="width:${bonusPct}%;"></div>` : ''}</div>`;
     if (onItemClick) item.addEventListener('click', (e) => onItemClick(slime, item, e));
     return item;
 }
@@ -898,15 +902,19 @@ function renderSlimeTalentTree(slime) {
         const dedicatedUnlocked = normalizedSpecialization ? Boolean(slime.talents?.[talentFlag[normalizedSpecialization]]) : false;
         const columns = costs.map((cost, index) => {
             const isFirst = index === 0;
+            const isSecond = index === 1;
+            const elementMatch = (slime.type || '').match(/^(poison|fire|ice|stone)/);
+            const elementCap = elementMatch ? elementMatch[0].charAt(0).toUpperCase() + elementMatch[0].slice(1) : '';
             const dedicatedIcon = isFirst && normalizedSpecialization ? talentNames[normalizedSpecialization]?.toLowerCase() : null;
-            const iconSource = dedicatedIcon ? `images/talents/${normalizedSpecialization}${dedicatedIcon}.png` : icon;
+            const comboTypeId = elementMatch ? `${elementMatch[0]}${normalizedSpecialization.charAt(0).toUpperCase()}${normalizedSpecialization.slice(1)}` : '';
+            const secondIcon = isSecond ? SECOND_TALENT_ICON[comboTypeId] : null;
+            const iconSource = dedicatedIcon
+                ? `images/talents/${normalizedSpecialization}${dedicatedIcon}.png`
+                : (secondIcon || `images/talents/${normalizedSpecialization}Talent${index + 1}.png`);
             const talentName = normalizedSpecialization
                 ? (isFirst ? (talentNames[normalizedSpecialization] || 'Talent1') : `Talent${index + 1}`)
                 : genericTalentNames[index];
-            const elementMatch = (slime.type || '').match(/^(poison|fire|ice|stone)/);
-            const elementCap = elementMatch ? elementMatch[0].charAt(0).toUpperCase() + elementMatch[0].slice(1) : '';
-            const isSecond = index === 1;
-            const secondFlag = isSecond ? getSecondTalentFlag(`${elementMatch ? elementMatch[0] : ''}${normalizedSpecialization.charAt(0).toUpperCase()}${normalizedSpecialization.slice(1)}`) : null;
+            const secondFlag = isSecond ? getSecondTalentFlag(comboTypeId) : null;
             const secondOwned = Boolean(secondFlag && slime.talents?.[secondFlag]);
             const secondAvailable = isSecond && dedicatedUnlocked && secondFlag && coins >= cost;
             const isOwned = isFirst ? dedicatedUnlocked : (isSecond ? secondOwned : false);

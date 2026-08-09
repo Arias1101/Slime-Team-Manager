@@ -1,15 +1,12 @@
 ------------- NOW ----------------
-- Add a return to village button after NG+ (abandon run).
-- Add a Skip Shop CheckBox after NG+.
 - Add Critical Heal
 - Include status priority on auto equip.
-- Change NG+ scaling to +5% multiplicative instead of 10% aditive. and remove move speed from scaling.
 
 ------------- LATER  ----------------
-2d SupportTalent (name: Melting Mend for Fire Support):
-FireSupport - HOT after a graft [DONE]
-IceSupport - Temporary HP shield after a graft
-PoisonSupport - Leech Life on Attack
+2d SupportTalent
+FireSupport - Melting Mend
+IceSupport - Ice Barrier:Temporary HP shield equals to 20% of heal
+PoisonSupport - Leech - Leech Life on Attack
 StoneSupport - %Dmg reduc after a graft on next direct damage
 3d SupportTalent:
 At the end of Wave, sacrifice 90% PV to res

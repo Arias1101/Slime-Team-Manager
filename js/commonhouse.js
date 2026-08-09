@@ -9,7 +9,7 @@
  *                 Only slimes from one side can be selected at once.
  */
 
-import { gameState, SLIME_TYPES, getSlimeJumpSprite, getSlimeSpecialization, calculateSlimeDamage, getBaseCritChance, generateUniqueSlimeName, getNextAvailableSlotIndex, saveStateToLocal, updateBestRoster, getEquipmentQuality, sortRosterBySpecialization, TALENT_SUBTALENTS, SECOND_TALENT, getSecondTalentFlag, hasFirstTalent, ensureSlimeSubTalents, getSlimeSubTalent, recalculateSlimeStats } from './state.js';
+import { gameState, SLIME_TYPES, getSlimeJumpSprite, getSlimeSpecialization, calculateSlimeDamage, getBaseCritChance, generateUniqueSlimeName, getNextAvailableSlotIndex, saveStateToLocal, updateBestRoster, getEquipmentQuality, sortRosterBySpecialization, TALENT_SUBTALENTS, SECOND_TALENT, SECOND_TALENT_ICON, getSecondTalentFlag, hasFirstTalent, ensureSlimeSubTalents, getSlimeSubTalent, recalculateSlimeStats } from './state.js';
 import { renderSlimeRosterLanes, updateUI } from './ui.js';
 
 const MAX_MAIN_ROSTER = 60;
@@ -547,7 +547,7 @@ function getActionButtonsHtml(selectedSlimes) {
             // (e.g. supportgraft.png); Talents 2/3 use ${spec}Talent${n}.png.
             const talentIcon = t === 0
                 ? `images/talents/${spec}${talentName.toLowerCase()}.png`
-                : `images/talents/${spec}Talent${t + 1}.png`;
+                : (SECOND_TALENT_ICON[combo.typeId] || `images/talents/${spec}Talent${t + 1}.png`);
             const secondTalent = t === 1 ? SECOND_TALENT[combo.typeId] : null;
             const secondFlag = t === 1 ? getSecondTalentFlag(combo.typeId) : null;
             const talentLabel = t === 1 && secondTalent ? secondTalent.name : `${talentName} (Talent ${t + 1})`;

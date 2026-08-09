@@ -372,9 +372,9 @@ export function getSlimeSpecialization(slime) {
  * description used as its tooltip on the Common House and the Slime sheet.
  */
 export const SECOND_TALENT = {
-    fireSupport: { name: 'Melting Mend', description: 'After a Graft, heals 50% of the Graft heal amount over 5 seconds.' },
-    iceSupport: { name: 'Talent2', description: '' },
-    poisonSupport: { name: 'Talent2', description: '' },
+    fireSupport: { name: 'Melting Mend', description: 'Graft heals 30% more over 3 seconds' },
+    iceSupport: { name: 'Ice Barrier', description: 'Graft gives 20% more HP as temporary bonus HP for 2 seconds.' },
+    poisonSupport: { name: 'Leech', description: 'Self heal 100% of inflicted direct damages.' },
     stoneSupport: { name: 'Talent2', description: '' },
     fireFighter: { name: 'Talent2', description: '' },
     iceFighter: { name: 'Talent2', description: '' },
@@ -384,6 +384,14 @@ export const SECOND_TALENT = {
     iceTank: { name: 'Talent2', description: '' },
     poisonTank: { name: 'Talent2', description: '' },
     stoneTank: { name: 'Talent2', description: '' }
+};
+
+/** Dedicated second-talent button icons (keyed by combo typeId). */
+export const SECOND_TALENT_ICON = {
+    fireSupport: 'images/talents/supportMeltingMend.png',
+    iceSupport: 'images/talents/supportIceBarrier.png',
+    poisonSupport: 'images/talents/supportLeech.png',
+    stoneSupport: 'images/talents/supportStoneSkin.png'
 };
 
 export const TALENT_SUBTALENTS = {
@@ -479,6 +487,28 @@ export function hasMeltingMend(slime) {
     const spec = getSlimeSpecialization(slime);
     const comboTypeId = spec ? `${slime.type || ''}${spec.charAt(0).toUpperCase()}${spec.slice(1)}` : '';
     return comboTypeId === 'fireSupport' && hasSecondTalent(slime);
+}
+
+/** Whether a Slime owns the Ice Barrier second talent (Ice Support). */
+export function hasIceBarrier(slime) {
+    if (!slime) return false;
+    if (slime.talents?.iceBarrier) return true;
+    // Same combo flag convention as Melting Mend: element + capitalized specialization.
+    // type 'ice' + spec 'support' => 'iceSupport'.
+    const spec = getSlimeSpecialization(slime);
+    const comboTypeId = spec ? `${slime.type || ''}${spec.charAt(0).toUpperCase()}${spec.slice(1)}` : '';
+    return comboTypeId === 'iceSupport' && hasSecondTalent(slime);
+}
+
+/** Whether a Slime owns the Leech second talent (Poison Support). */
+export function hasLeech(slime) {
+    if (!slime) return false;
+    if (slime.talents?.leech) return true;
+    // Same combo flag convention as the other second talents: element + capitalized specialization.
+    // type 'poison' + spec 'support' => 'poisonSupport'.
+    const spec = getSlimeSpecialization(slime);
+    const comboTypeId = spec ? `${slime.type || ''}${spec.charAt(0).toUpperCase()}${spec.slice(1)}` : '';
+    return comboTypeId === 'poisonSupport' && hasSecondTalent(slime);
 }
 
 /** Per-combo flag key used to store ownership of a Slime's second talent. */
