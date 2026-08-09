@@ -3,8 +3,9 @@
  */
 
 import { activeEnemies, triggerLootDrop, activeGroundLoots, formatLootEffects } from './enemies.js';
-import { gameState, SLIME_TYPES, addScraps, updateBestRoster, saveStateToLocal, calculateSlimeDamage, getScaledEquipmentEffects, getSlimeHitEffects, refreshSlimeMaxHp, getSlimeJumpSprite, getSlimeSpecialization, getSlimeGraftMultipliers, getSlimeSubTalentDef, hasMeltingMend, hasIceBarrier, hasLeech, hasStoneSkin } from './state.js';
+import { gameState, SLIME_TYPES, addScraps, updateBestRoster, saveStateToLocal, calculateSlimeDamage, getScaledEquipmentEffects, getSlimeHitEffects, refreshSlimeMaxHp, getSlimeJumpSprite, getSlimeSpecialization, getSlimeGraftMultipliers, getSlimeSubTalentDef, hasMeltingMend, hasIceBarrier, hasLeech, hasStoneSkin, hasIceBurst, hasCorrosivePoison, hasHeavyStrike } from './state.js';
 import { updateUI, requestUIRefresh, updateLootHUD } from './ui.js';
+import { isGamePaused } from './engine.js';
 /**
  * Convert viewport measurements back into the battlefield's native 500px coordinate space.
  * The wide layout scales the battlefield element as a whole, while gameplay coordinates stay native.
@@ -50,7 +51,7 @@ export function showFloatingDamageNumber(x, y, damageVal, type = 'enemy-dmg') {
     floatEl.style.left = `${x + jitterX}px`;
     floatEl.style.top = `${y}px`;
 
-    if (type === 'heal') {
+    if (type === 'heal' || type === 'crit-heal' || type === 'mega-crit-heal') {
         floatEl.textContent = '+' + damageVal;
     } else {
         floatEl.textContent = `-${damageVal}`;
@@ -65,15 +66,16 @@ export function showFloatingDamageNumber(x, y, damageVal, type = 'enemy-dmg') {
 }
 
 /** Show a green floating healing amount. Reusable for enemies and slimes. */
-export function showFloatingHealingNumber(x, y, healingAmount) {
-    showFloatingDamageNumber(x, y, healingAmount, 'heal');
+export function showFloatingHealingNumber(x, y, healingAmount, isCrit = false, isMegaCrit = false) {
+    const type = isMegaCrit ? 'mega-crit-heal' : isCrit ? 'crit-heal' : 'heal';
+    showFloatingDamageNumber(x, y, healingAmount, type);
 }
 
 /** Show a green floating healing amount anchored to a battlefield unit element. */
-export function showFloatingHealingNumberFromUnit(unitEl, healingAmount) {
+export function showFloatingHealingNumberFromUnit(unitEl, healingAmount, isCrit = false, isMegaCrit = false) {
     if (unitEl === undefined || unitEl === null) return;
     const position = getOverlayPosition(unitEl);
-    if (position) showFloatingHealingNumber(position.x + position.width / 2, position.y - 12, healingAmount);
+    if (position) showFloatingHealingNumber(position.x + position.width / 2, position.y - 12, healingAmount, isCrit, isMegaCrit);
 }
 /**
  * Display a centered battlefield banner message (e.g. "🎉 WAVE 10 CLEARED!")
@@ -171,7 +173,28 @@ function trySupportGraft(unitEl, support) {
         const liveTarget = gameState.slimes.find(s => String(s.id) === String(target.id)) || target;
         const graftMult = getSlimeGraftMultipliers(liveSupport);
         const sacrificedAmount = Math.ceil(liveSupport.maxHp * .2 * graftMult.cost);
-        const intendedHealing = sacrificedAmount * 2 * graftMult.heal;
+
+        // Critical Heal: the graft's healing rolls for a crit using the grafting
+        // slime's crit chance (same tiers as attack crits). A crit doubles the
+        // intended healing. This roll MUST happen before any support talents are
+        // applied, since Melting Mend / Ice Barrier / Stone Skin all scale off the
+        // (possibly crit-doubled) intended healing.
+        const graftCritChance = liveSupport.critChance || 0;
+        let isHealCrit = false;
+        let isHealMegaCrit = false;
+        let healCritMultiplier = 1;
+        if (graftCritChance > 0) {
+            const critTier = Math.floor(graftCritChance / 100);
+            const overflowChance = graftCritChance % 100;
+            healCritMultiplier = Math.pow(2, critTier);
+            if (overflowChance > 0 && Math.random() * 100 < overflowChance) {
+                healCritMultiplier *= 2;
+            }
+            // Only overflow beyond a guaranteed 100% tier is a mega crit (x4+).
+            isHealMegaCrit = healCritMultiplier >= 4;
+            isHealCrit = healCritMultiplier > 1;
+        }
+        const intendedHealing = sacrificedAmount * 2 * graftMult.heal * healCritMultiplier;
         const restoredAmount = Math.min(liveTarget.maxHp - liveTarget.hp, intendedHealing);
         const overhealAmount = Math.max(0, intendedHealing - restoredAmount);
         const overhealRecovery = Math.round(overhealAmount / 2);
@@ -226,7 +249,7 @@ function trySupportGraft(unitEl, support) {
         const targetEl = Array.from(document.querySelectorAll('.slime-unit')).find(el => String(el.dataset.slimeId) === String(liveTarget.id));
         if (targetEl) {
             playSlimeSupportHealAnimation(targetEl);
-            showSlimeSupportHealingNumber(targetEl, restoredAmount);
+            showSlimeSupportHealingNumber(targetEl, restoredAmount, isHealCrit, isHealMegaCrit);
         }
 
         unitEl.dataset.isAttacking = 'false';
@@ -283,10 +306,10 @@ function playSlimeSupportHealAnimation(targetEl) {
     setTimeout(() => healEl.remove(), 400);
 }
 
-function showSlimeSupportHealingNumber(targetEl, restoredAmount) {
+function showSlimeSupportHealingNumber(targetEl, restoredAmount, isCrit = false, isMegaCrit = false) {
     if (restoredAmount <= 0) return;
     const position = getOverlayPosition(targetEl);
-    if (position) showFloatingHealingNumber(position.x + position.width / 2, position.y - 12, restoredAmount);
+    if (position) showFloatingHealingNumber(position.x + position.width / 2, position.y - 12, restoredAmount, isCrit, isMegaCrit);
 }
 function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
     if (trySupportGraft(unitEl, slimeObj)) return;
@@ -346,6 +369,14 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
     let baseY = 0;
 
     function animateJumpFrame(now) {
+        // While the game is paused, freeze the jump animation in place (and shift
+        // the clock forward so it resumes seamlessly) instead of letting the
+        // wall-clock timer keep advancing and land a hit mid-pause.
+        if (isGamePaused) {
+            startTime += 16;
+            requestAnimationFrame(animateJumpFrame);
+            return;
+        }
         const elapsed = now - startTime;
         let progress = Math.min(1.0, elapsed / jumpDuration);
 
@@ -435,8 +466,13 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
         if (progress < 1.0) {
             requestAnimationFrame(animateJumpFrame);
         } else {
+            // Keep the Ice Barrier glued to the landing position (don't snap it back
+            // to the origin) so it doesn't teleport ahead of the returning sprite.
             const barrierEl = unitEl.querySelector('.slime-ice-barrier');
-            if (barrierEl) barrierEl.style.transform = '';
+            if (barrierEl) {
+                const finalDx = baseX + maxDx;
+                barrierEl.style.transform = `translate(calc(-50% + ${finalDx}px), -50%)`;
+            }
             setTimeout(() => {
                 startSmoothReturnWalk(unitEl, imgEl, shadowEl, slimeConfig, maxDx);
             }, 90);
@@ -469,9 +505,32 @@ function dealTargetEnemyDamage(targetEnemy, damageAmount, slimeConfig, isCrit = 
     if (!currentTarget || currentTarget.hp <= 0 || currentTarget.x < 90 || currentTarget.x > 450) return;
 
     // Apply damage to currentTarget (excess damage beyond currentTarget.hp is lost!)
-    const damageToApply = Math.min(currentTarget.hp, damageAmount);
+    // Corrosive Poison (Poison Fighter second talent): direct damage is boosted by
+    // the target's current poison stacks as a percentage (e.g. 10 stacks => +10%).
+    let effectiveDamage = damageAmount;
+    if (slimeObj && hasCorrosivePoison(slimeObj) && currentTarget.effects) {
+        const poisonStacks = currentTarget.effects.poisonStacks || 0;
+        if (poisonStacks > 0) effectiveDamage = effectiveDamage * (1 + poisonStacks / 100);
+    }
+    const damageToApply = Math.min(currentTarget.hp, Math.round(effectiveDamage));
 
     currentTarget.hp -= damageToApply;
+
+    // Heavy Strike (Stone Fighter second talent): knock the target back 10px to the
+    // right and force it to re-approach its targetX before it can attack again.
+    if (slimeObj && hasHeavyStrike(slimeObj) && currentTarget.type !== 'rush') {
+        currentTarget.x = Math.min(450, currentTarget.x + 10);
+        // Re-engage the walking state so the movement phase makes it walk back to
+        // targetX (and only resumes attacking once it arrives).
+        currentTarget.state = 'walking';
+        currentTarget.attackTimer = 0;
+        if (currentTarget.el) {
+            currentTarget.el.style.left = `${currentTarget.x}px`;
+            currentTarget.el.classList.remove('enemy-attacking', 'enemy-tanking', 'enemy-range', 'enemy-support');
+            currentTarget.el.classList.add('enemy-walking');
+        }
+        showFloatingStatusText(currentTarget, String.fromCodePoint(0x1F4A5), 'pushback-text');
+    }
 
     // Pop floating pixel art damage number on currentTarget (golden glowing crit-dmg for critical hits)
     if (isMegaCrit) {
@@ -506,7 +565,10 @@ function dealTargetEnemyDamage(targetEnemy, damageAmount, slimeConfig, isCrit = 
     }
     if (hitEffects.freeze > 0 && !isControlImmune) {
         currentTarget.effects.freezeTimer = 1 * hitEffects.freeze;
-        const freezeDmg = 5 * hitEffects.freeze;
+        const baseFreeze = hasIceBurst(sourceSlime)
+            ? ((currentTarget.effects.burnStacks || 0) + (currentTarget.effects.poisonStacks || 0))
+            : 5;
+        const freezeDmg = baseFreeze * hitEffects.freeze;
         freezeDmgDealt = Math.min(currentTarget.hp, freezeDmg);
         if (freezeDmgDealt > 0) {
             currentTarget.hp -= freezeDmgDealt;
@@ -567,6 +629,14 @@ function startSmoothReturnWalk(unitEl, imgEl, shadowEl, slimeConfig, maxDx = 100
     imgEl.style.transition = `transform ${returnDuration}ms cubic-bezier(0.25, 1, 0.5, 1)`;
     if (shadowEl) shadowEl.style.transition = `transform ${returnDuration}ms cubic-bezier(0.25, 1, 0.5, 1)`;
 
+    // Glue the Ice Barrier to the returning slime so it walks back with it
+    // instead of snapping to the origin ahead of the sprite.
+    const barrierEl = unitEl.querySelector('.slime-ice-barrier');
+    if (barrierEl) {
+        barrierEl.style.transition = `transform ${returnDuration}ms cubic-bezier(0.25, 1, 0.5, 1)`;
+        barrierEl.style.transform = 'translate(-50%, -50%)';
+    }
+
     imgEl.style.transform = 'translate(0px, 0px)';
     if (shadowEl) {
         shadowEl.style.transform = 'translate(0px, 0px) scale(1)';
@@ -576,6 +646,7 @@ function startSmoothReturnWalk(unitEl, imgEl, shadowEl, slimeConfig, maxDx = 100
     setTimeout(() => {
         imgEl.style.transition = '';
         if (shadowEl) shadowEl.style.transition = '';
+        if (barrierEl) barrierEl.style.transition = '';
 
         const originalZ = unitEl.dataset.originalZ || '1';
         unitEl.style.zIndex = originalZ;
@@ -960,6 +1031,7 @@ function scheduleSingleAscendedAttack(slimeObj) {
 function attemptAscendedSlimeAttack(slimeObj) {
     if (!slimeObj.ascended || (slimeObj.hp !== undefined && slimeObj.hp <= 0)) return;
     if (slimeObj.effects && slimeObj.effects.stunTimer > 0) return;
+    if (isGamePaused) return;
     if (!activeEnemies || activeEnemies.length === 0) return;
 
     // Only attack enemies within the Slime target zone (90 <= x <= 450)

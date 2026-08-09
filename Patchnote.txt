@@ -1,4 +1,14 @@
 Patch Notes:
+v0.21
+- Fixed Roster occasionaly not properly displaying on first page load.
+- Fixed pause game not preventing auto attacks.
+- Integrated Crit and MegaCrit Heal chances.
+- Implemented second Fire Fighter Slime talent: Immolation.
+- Implemented second Ice Fighter Slime talent: Ice Burst.
+- Implemented second Poison Fighter Slime talent: Corrosive Poison.
+- Implemented second Stone Fighter Slime talent: Heavy Strike.
+- Fixed small animation issue on IceBarrier movements.
+
 v0.20
 - Tried a new method to handle Roster.
 - Removed Scrap reset when finishing a run.

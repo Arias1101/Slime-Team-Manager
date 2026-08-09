@@ -544,7 +544,7 @@ function getActionButtonsHtml(selectedSlimes) {
         const hidden = activeCombo === combo.typeId ? '' : ' hidden-row';
         const talentCols = Array.from({ length: TALENT_VISIBLE }, (_, t) => {
             // Main Talent icon: first Talent uses its dedicated file
-            // (e.g. supportgraft.png); Talents 2/3 use ${spec}Talent${n}.png.
+            // (e.g. supportGraft.png); Talents 2/3 use ${spec}Talent${n}.png.
             const talentIcon = t === 0
                 ? `images/talents/${spec}${talentName.toLowerCase()}.png`
                 : (SECOND_TALENT_ICON[combo.typeId] || `images/talents/${spec}Talent${t + 1}.png`);

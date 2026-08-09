@@ -2350,7 +2350,8 @@ export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg', 
     // Stone Skin (Stone Support): consume the target's "reduction" pool against the
     // NEXT DIRECT hit only (status DoT passes allowBlock=false and is unaffected).
     // Damage is reduced by the reduction amount (never below 0) and the pool resets to 0.
-    if (allowBlock && (slime.reduction || 0) > 0) {
+    const wasReduced = (allowBlock && (slime.reduction || 0) > 0);
+    if (wasReduced) {
         const reduced = Math.min(slime.reduction, damageAmount);
         slime.reduction = 0;
         damageAmount -= reduced;
@@ -2455,7 +2456,9 @@ export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg', 
         }
     }
 
-    // Pop floating pixel art damage number over hit slime
+    // Pop floating pixel art damage number over hit slime. Always show it, even
+    // when the reduction attribute fully absorbed the hit (damageAmount === 0), so
+    // a "-0" floats up to confirm the block rather than silently doing nothing.
     showFloatingDamageNumber(slimeX + (Math.random() * 16 - 8), slimeY - 14, damageAmount, dmgType);
     return slime;
 }

@@ -352,6 +352,8 @@ export function getSlimeHitEffects(slime) {
             totals[type] += Math.max(1, Number(effect.value) || 1);
         });
     });
+    // Immolation (Fire Fighter second talent): all burn this Slime applies is doubled.
+    if (hasImmolation(slime)) totals.burn *= 2;
     return totals;
 }
 /** Resolve a Slime path from saved data or its specialized type. */
@@ -376,10 +378,10 @@ export const SECOND_TALENT = {
     iceSupport: { name: 'Ice Barrier', description: 'Graft gives 20% of the heal as barrier. (Stacks)' },
     poisonSupport: { name: 'Leech', description: 'Self heal 50% of inflicted direct damages.' },
     stoneSupport: { name: 'Stone Skin', description: 'Graft reduces next direct damage by 50% of the heal. (Stacks)' },
-    fireFighter: { name: 'Talent2', description: '' },
-    iceFighter: { name: 'Talent2', description: '' },
-    poisonFighter: { name: 'Talent2', description: '' },
-    stoneFighter: { name: 'Talent2', description: '' },
+    fireFighter: { name: 'Immolation', description: 'All burn Stacks applied are doubled.' },
+    iceFighter: { name: 'Ice Burst', description: 'Cold damage equals the target\'s burn + poison Stacks instead of a flat 5.' },
+    poisonFighter: { name: 'Corrosive Poison', description: 'Increase direct damage by the target\'s current poison stacks (%).' },
+    stoneFighter: { name: 'Heavy Strike', description: 'Pushback ennemies.' },
     fireTank: { name: 'Talent2', description: '' },
     iceTank: { name: 'Talent2', description: '' },
     poisonTank: { name: 'Talent2', description: '' },
@@ -391,7 +393,11 @@ export const SECOND_TALENT_ICON = {
     fireSupport: 'images/talents/supportMeltingMend.png',
     iceSupport: 'images/talents/supportIceBarrier.png',
     poisonSupport: 'images/talents/supportLeech.png',
-    stoneSupport: 'images/talents/supportStoneSkin.png'
+    stoneSupport: 'images/talents/supportStoneSkin.png',
+    fireFighter: 'images/talents/fighterImmolation.png',
+    iceFighter: 'images/talents/fighterIceBurst.png',
+    poisonFighter: 'images/talents/fighterCorrosivePoison.png',
+    stoneFighter: 'images/talents/fighterHeavyStrike.png'
 };
 
 export const TALENT_SUBTALENTS = {
@@ -520,6 +526,40 @@ export function hasLeech(slime) {
     const spec = getSlimeSpecialization(slime);
     const comboTypeId = spec ? `${slime.type || ''}${spec.charAt(0).toUpperCase()}${spec.slice(1)}` : '';
     return comboTypeId === 'poisonSupport' && hasSecondTalent(slime);
+}
+
+/** Whether a Slime owns the Immolation second talent (Fire Fighter). */
+export function hasImmolation(slime) {
+    if (!slime) return false;
+    // Same combo flag convention as the other second talents: element + capitalized specialization.
+    // type 'fire' + spec 'fighter' => 'fireFighter'.
+    const spec = getSlimeSpecialization(slime);
+    const comboTypeId = spec ? `${slime.type || ''}${spec.charAt(0).toUpperCase()}${spec.slice(1)}` : '';
+    return comboTypeId === 'fireFighter' && hasSecondTalent(slime);
+}
+
+/** Whether a Slime owns the Ice Burst second talent (Ice Fighter). */
+export function hasIceBurst(slime) {
+    if (!slime) return false;
+    const spec = getSlimeSpecialization(slime);
+    const comboTypeId = spec ? `${slime.type || ''}${spec.charAt(0).toUpperCase()}${spec.slice(1)}` : '';
+    return comboTypeId === 'iceFighter' && hasSecondTalent(slime);
+}
+
+/** Whether a Slime owns the Corrosive Poison second talent (Poison Fighter). */
+export function hasCorrosivePoison(slime) {
+    if (!slime) return false;
+    const spec = getSlimeSpecialization(slime);
+    const comboTypeId = spec ? `${slime.type || ''}${spec.charAt(0).toUpperCase()}${spec.slice(1)}` : '';
+    return comboTypeId === 'poisonFighter' && hasSecondTalent(slime);
+}
+
+/** Whether a Slime owns the Heavy Strike second talent (Stone Fighter). */
+export function hasHeavyStrike(slime) {
+    if (!slime) return false;
+    const spec = getSlimeSpecialization(slime);
+    const comboTypeId = spec ? `${slime.type || ''}${spec.charAt(0).toUpperCase()}${spec.slice(1)}` : '';
+    return comboTypeId === 'stoneFighter' && hasSecondTalent(slime);
 }
 
 /** Per-combo flag key used to store ownership of a Slime's second talent. */

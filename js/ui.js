@@ -217,16 +217,29 @@ export function renderSlimeRosterLanes(container, entries, {
         // Wrap each visual line in a centered flex row so rows stay aligned and
         // the (possibly short) last line is centered like the others. Capacity is
         // measured from the container's real width, which isn't settled yet on the
-        // first synchronous render (panel not laid out) — so recompute the line
-        // grouping on the next frame once layout is final.
-        const draw = () => renderLines(computeRosterCapacity(container));
+        // first synchronous render (panel not laid out, or still hidden behind the
+        // auth screen). Recompute the line grouping repeatedly until the container
+        // reports a stable, non-zero width, then keep observing its size so the
+        // layout self-corrects the instant it is revealed or resized — no manual
+        // page resize required.
+        let lastCapacity = -1;
+        const draw = () => {
+            const capacity = computeRosterCapacity(container);
+            // A 0 capacity means the panel isn't laid out yet (zero width while
+            // still hidden). Defer rather than collapsing the roster into single
+            // items per line.
+            if (capacity <= 0) return;
+            if (capacity === lastCapacity) return;
+            lastCapacity = capacity;
+            renderLines(capacity);
+        };
         draw();
         requestAnimationFrame(() => requestAnimationFrame(draw));
+        trackRosterForResize(container, draw);
     } else {
         renderWith(computeRosterCapacity(container));
     }
 
-    trackRosterForResize(container);
     return container;
 }
 
@@ -248,7 +261,13 @@ function computeRosterCapacity(container) {
     // true content area where items sit is clientWidth minus the horizontal
     // padding.
     const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
-    const innerWidth = (container.clientWidth || (itemW * 10 + padX)) - padX;
+    const measuredInner = container.clientWidth - padX;
+    // While the panel is still hidden or not laid out, clientWidth is 0; falling
+    // back to 1 here would permanently collapse the roster into one-per-line.
+    // Instead return 0 as a sentinel so callers (and the ResizeObserver) can
+    // defer the real measurement until the panel has a proper width.
+    if (measuredInner <= 0) return 0;
+    const innerWidth = measuredInner;
     if (innerWidth < itemW) return 1;
     // N items need N*itemW + (N-1)*gap <= innerWidth, so the max N is
     // floor((innerWidth - itemW)/(itemW+gap)) + 1.
@@ -412,9 +431,32 @@ function updateSlimeRoster() {
 // between breakpoints). On resize we invalidate the render cache and dispatch a
 // relayout event so popups (Shop, Common House) that render their own rosters can
 // re-render too.
+//
+// When `redraw` is provided (byLine rosters), we also watch the container itself
+// with a ResizeObserver. This is the key fix for the "roster not formed on page
+// load until I resize" bug: the panel's real width is only known after the auth
+// screen is dismissed / fonts load, so the observer re-lays-out automatically the
+// moment the container gets a non-zero width — no manual resize needed.
 let rosterResizeBound = false;
-function trackRosterForResize(container) {
+const observedRosterContainers = new Set();
+function trackRosterForResize(container, redraw = null) {
     if (!container) return;
+
+    if (redraw && !observedRosterContainers.has(container)) {
+        observedRosterContainers.add(container);
+        const observer = new ResizeObserver(() => {
+            // Re-measure now that the container has a settled size. Guard against a
+            // 0-width transient (still hidden) which would collapse the layout.
+            if (computeRosterCapacity(container) > 0) redraw();
+        });
+        observer.observe(container);
+        // A few deferred retries in case the observer's first callback fires while
+        // the panel is still in a transitional (zero-width) state.
+        requestAnimationFrame(redraw);
+        setTimeout(redraw, 150);
+        setTimeout(redraw, 500);
+    }
+
     if (rosterResizeBound) return;
     rosterResizeBound = true;
     let resizeTimer = null;

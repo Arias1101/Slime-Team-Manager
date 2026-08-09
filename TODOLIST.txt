@@ -1,20 +1,17 @@
 ------------- NOW ----------------
-- Add Critical Heal
-- Include status priority on auto equip.
+Immolation: Double Fire effects
+Ice Burst: Cold damage inflicts damage depending on amount of burn and poison Stacks instead of a fixed 5.
+Corrosive Poison: Increase direct damage by [Poison Stacks]%.
+Heavy Strike: Pushback ennemies on hit.
 
 ------------- LATER  ----------------
-2d SupportTalent
-FireSupport - Melting Mend
-IceSupport - Ice Barrier:Temporary HP shield equals to 20% of heal
-PoisonSupport - Leech - Leech Life on Attack
-StoneSupport - %Dmg reduc after a graft on next direct damage
 3d SupportTalent:
 At the end of Wave, sacrifice 90% PV to res
 
-FireFighter: Double Fire effects
-IceFighter: Cold damage = total number of stacks instead of flat 5.
-PoisonFighter: Increase direct damage by X% (equal poison stacks)
-StoneFighter: Pushback ennemies on hit.
+
+
+
+
 3d FighterTalent:
 Slide: 10% chance of sliding to hit backlane
 
@@ -27,8 +24,9 @@ StoneTank: On block apply stun value *2.
 Interception: If at more than 80% PV, and another tank takes damage while under 20% PV, intercept it.
 
 
-Alchemist Upgrade:
-Increase Base Effect of Slime Types
+
+- Alchemist Upgrade: Increase Base Effect of Slime Types
+- Include status priority on auto equip.
 
 
 

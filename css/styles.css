@@ -4069,6 +4069,18 @@ body.modal-open {
     text-shadow: -1px -1px 0 #052e16, 1px -1px 0 #052e16, -1px 1px 0 #052e16, 1px 1px 0 #052e16, 0 0 8px rgba(74, 222, 128, 0.85);
 }
 
+.floating-damage-num.crit-heal {
+    color: #70FF9D;
+    font-size: 12px;
+    text-shadow: -1px -1px 0 #052e16, 1px -1px 0 #052e16, -1px 1px 0 #052e16, 1px 1px 0 #052e16, 0 0 8px rgba(112, 255, 157, 0.9);
+}
+
+.floating-damage-num.mega-crit-heal {
+    color: #00FFB2;
+    font-size: 12px;
+    text-shadow: -1px -1px 0 #052e16, 1px -1px 0 #052e16, -1px 1px 0 #052e16, 1px 1px 0 #052e16, 0 0 8px rgba(0, 255, 178, 0.95);
+}
+
 .enemy-support-cast-ray {
     position: absolute;
     width: 3px;
