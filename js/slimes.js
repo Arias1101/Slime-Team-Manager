@@ -483,6 +483,54 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
 }
 
 /**
+ * Apply a single combined set of elemental hit-effects to an enemy.
+ * Mirrors the status application previously inlined in dealTargetEnemyDamage so a
+ * Slime's hit profile can be reused (and stacked/repeated) elsewhere, e.g. Spicy Block.
+ * Returns the freeze bonus damage dealt (used by Leech).
+ */
+export function applyHitEffectsToEnemy(enemy, hitEffects, sourceSlime = null, isControlImmune = false) {
+    if (!enemy) return 0;
+    if (!enemy.effects) {
+        enemy.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, freezeTimer: 0, stunTimer: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0 };
+    }
+    const effects = enemy.effects;
+    let freezeDmgDealt = 0;
+
+    if (hitEffects.burn > 0) {
+        effects.burnStacks = effects.burnTimer > 0
+            ? (effects.burnStacks || 0) + hitEffects.burn
+            : hitEffects.burn;
+        effects.burnTimer = 5.0;
+    }
+    if (hitEffects.poison > 0) {
+        effects.poisonStacks = effects.poisonTimer > 0
+            ? (effects.poisonStacks || 0) + hitEffects.poison
+            : hitEffects.poison;
+        effects.poisonTimer = 5.0;
+    }
+    if (hitEffects.freeze > 0 && !isControlImmune) {
+        effects.freezeTimer = 1 * hitEffects.freeze;
+        const baseFreeze = hasIceBurst(sourceSlime)
+            ? ((effects.burnStacks || 0) + (effects.poisonStacks || 0))
+            : 5;
+        const freezeDmg = baseFreeze * hitEffects.freeze;
+        freezeDmgDealt = Math.min(enemy.hp, freezeDmg);
+        if (freezeDmgDealt > 0) {
+            enemy.hp -= freezeDmgDealt;
+            showFloatingDamageNumber(enemy.x - 8, enemy.y - 20, freezeDmgDealt, 'freeze-dmg');
+            showFloatingStatusText(enemy, String.fromCodePoint(0x2744, 0xFE0F), 'freeze-text');
+        }
+    }
+    if (hitEffects.stun > 0 && !isControlImmune) {
+        // Stun fully disables the enemy's attack for the duration.
+        const stunDuration = (SLIME_TYPES[sourceSlime?.type]?.stunDuration || 0.5) * hitEffects.stun;
+        effects.stunTimer = Math.max(effects.stunTimer || 0, stunDuration);
+        showFloatingStatusText(enemy, String.fromCodePoint(0x1F4AB), 'stun-text');
+    }
+    return freezeDmgDealt;
+}
+
+/**
  * Deal damage & apply elemental status effects (Fire Burn / Frost Freeze) to target enemy.
  */
 function dealTargetEnemyDamage(targetEnemy, damageAmount, slimeConfig, isCrit = false, slimeObj = null, isMegaCrit = false) {
@@ -548,40 +596,7 @@ function dealTargetEnemyDamage(targetEnemy, damageAmount, slimeConfig, isCrit = 
 
     const isControlImmune = currentTarget.typeId === 'death';
     const sourceSlime = slimeObj || { type: slimeConfig?.id || 'base', equipment: [] };
-    const hitEffects = getSlimeHitEffects(sourceSlime);
-    let freezeDmgDealt = 0;
-
-    if (hitEffects.burn > 0) {
-        currentTarget.effects.burnStacks = currentTarget.effects.burnTimer > 0
-            ? (currentTarget.effects.burnStacks || 0) + hitEffects.burn
-            : hitEffects.burn;
-        currentTarget.effects.burnTimer = 3.0;
-    }
-    if (hitEffects.poison > 0) {
-        currentTarget.effects.poisonStacks = currentTarget.effects.poisonTimer > 0
-            ? (currentTarget.effects.poisonStacks || 0) + hitEffects.poison
-            : hitEffects.poison;
-        currentTarget.effects.poisonTimer = 3.0;
-    }
-    if (hitEffects.freeze > 0 && !isControlImmune) {
-        currentTarget.effects.freezeTimer = 1 * hitEffects.freeze;
-        const baseFreeze = hasIceBurst(sourceSlime)
-            ? ((currentTarget.effects.burnStacks || 0) + (currentTarget.effects.poisonStacks || 0))
-            : 5;
-        const freezeDmg = baseFreeze * hitEffects.freeze;
-        freezeDmgDealt = Math.min(currentTarget.hp, freezeDmg);
-        if (freezeDmgDealt > 0) {
-            currentTarget.hp -= freezeDmgDealt;
-            showFloatingDamageNumber(currentTarget.x - 8, currentTarget.y - 20, freezeDmgDealt, 'freeze-dmg');
-            showFloatingStatusText(currentTarget, String.fromCodePoint(0x2744, 0xFE0F), 'freeze-text');
-        }
-    }
-    if (hitEffects.stun > 0 && !isControlImmune) {
-        // Stun fully disables the enemy's attack for the duration.
-        const stunDuration = (SLIME_TYPES[sourceSlime.type]?.stunDuration || 0.5) * hitEffects.stun;
-        currentTarget.effects.stunTimer = Math.max(currentTarget.effects.stunTimer || 0, stunDuration);
-        showFloatingStatusText(currentTarget, String.fromCodePoint(0x1F4AB), 'stun-text');
-    }
+    const freezeDmgDealt = applyHitEffectsToEnemy(currentTarget, getSlimeHitEffects(sourceSlime), sourceSlime, isControlImmune);
     // direct damage it inflicts (main hit + freeze bonus damage), up to its Max HP.
     if (slimeObj && hasLeech(slimeObj)) {
         const leechAmount = ((damageToApply || 0) + (typeof freezeDmgDealt === 'number' ? freezeDmgDealt : 0)) * 0.5;

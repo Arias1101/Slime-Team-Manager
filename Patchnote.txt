@@ -1,4 +1,11 @@
 Patch Notes:
+v0.22
+- Implemented second Fire Tank Slime talent: "Spicy Block".
+- Implemented second Ice Tank Slime talent: "Ice Block".
+- Implemented second Poison Tank Slime talent: "Counter".
+- Fixed talent coin costs.
+- Tried a blind fix on a Roster display edge case issue.
+
 v0.21
 - Fixed Roster occasionaly not properly displaying on first page load.
 - Fixed pause game not preventing auto attacks.

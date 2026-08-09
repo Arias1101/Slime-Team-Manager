@@ -899,9 +899,9 @@ function renderSlimeTalentTree(slime) {
     const specializationTalents = document.getElementById('slimeSpecializationTalents');
     const unlocked = (gameState.newGamePlusCompletions || 0) > 0;
     const isBase = (slime.type || 'base') === 'base';
-    const canSpecialize = !isBase && slime.ascended === true;
     const specialization = slime.specialization || '';
     const isSpecialized = Boolean(specialization);
+    const canSpecialize = !isBase && !isSpecialized;
     // Show the Talent sheet for specialized Slimes even without a New Game+ run,
     // so their Talent columns (and sub-talent placeholders) are always visible.
     const showTalentSheet = unlocked || isSpecialized;
@@ -918,7 +918,10 @@ function renderSlimeTalentTree(slime) {
     if (gateMessage) gateMessage.classList.toggle('hidden', showTalentSheet);
     if (baseMessage) baseMessage.classList.toggle('hidden', showTalentSheet || canSpecialize || Boolean(specialization));
     if (choices) {
-        choices.classList.toggle('hidden', showTalentSheet || Boolean(specialization));
+        // The 3 specialization choice buttons stay visible whenever the Slime has
+        // not yet specialized (so the player can pick one). They hide only once a
+        // specialization is chosen, at which point the Talent columns take over.
+        choices.classList.toggle('hidden', Boolean(specialization));
         choices.querySelectorAll('.slime-talent-choice').forEach(choice => {
             choice.disabled = !canSpecialize;
         });
@@ -932,13 +935,15 @@ function renderSlimeTalentTree(slime) {
     }
     if (specializationTalents) {
         const normalizedSpecialization = String(specialization).toLowerCase();
-        const icon = normalizedSpecialization ? `images/logos/${normalizedSpecialization}.png` : 'images/logos/support.png';
-        const coins = Number(slime.coins || 0);
+        const icon = normalizedSpecialization ? `images/talents/${normalizedSpecialization}Spec.png` : 'images/talents/supportSpec.png';
+        // Talent purchases are paid from Village Coins (the New Game+ currency),
+        // consistent with the Common House — not the Slime's per-run personal coins.
+        const coins = Number(gameState.villageCoins || 0);
         const costs = [1, 2, 3];
-        // Keep the section visible as soon as Specializations are unlocked (or the
-        // Slime is already specialized) so the Talent columns and sub-talent
-        // placeholders are always on display.
-        specializationTalents.classList.toggle('hidden', !showTalentSheet);
+        // Talent columns (and their sub-talent placeholders) only appear once the
+        // Slime is actually specialized — otherwise the sheet shows just the 3
+        // specialization choice buttons.
+        specializationTalents.classList.toggle('hidden', !isSpecialized);
         const talentNames = { support: 'Graft', fighter: 'Rebound', tank: 'Block' };
         const genericTalentNames = ['Talent1', 'Talent2', 'Talent3'];
         const talentDescriptions = {
@@ -1009,7 +1014,7 @@ function renderSlimeTalentTree(slime) {
                 : '';
             return `<div class="slime-specialization-talent-column">${mainButton}<div class="slime-specialization-subtalents">${subButtons}</div></div>`;
         }).join('');
-        specializationTalents.innerHTML = unlocked ? columns : '';
+        specializationTalents.innerHTML = isSpecialized ? columns : '';
         // Wire sub-talent selection (only available once the Talent column is unlocked).
         specializationTalents.querySelectorAll('.slime-specialization-subtalent:not([disabled])').forEach(subButton => {
             subButton.addEventListener('click', () => {
@@ -1035,12 +1040,13 @@ function renderSlimeTalentTree(slime) {
             if (slime.talents?.[firstFlag]) {
                 if (firstButton) { firstButton.classList.add('unlocked'); firstButton.disabled = false; const progress = firstButton.querySelector('span'); if (progress) progress.textContent = '✔️'; }
             } else if (firstButton) {
-                firstButton.addEventListener('click', () => {
+                    firstButton.addEventListener('click', () => {
                     if (coins < costs[0]) return;
-                    slime.coins = coins - costs[0];
+                    gameState.villageCoins = coins - costs[0];
                     slime.talents = { ...(slime.talents || {}), [firstFlag]: true };
                     updateBestRoster();
                     saveStateToLocal();
+                    updateUI();
                     openSlimeInspectorModal(slime);
                 });
             }
@@ -1052,10 +1058,11 @@ function renderSlimeTalentTree(slime) {
                 } else if (secondButton) {
                     secondButton.addEventListener('click', () => {
                         if (!slime.talents?.[firstFlag] || coins < costs[1]) return;
-                        slime.coins = coins - costs[1];
+                        gameState.villageCoins = coins - costs[1];
                         slime.talents = { ...(slime.talents || {}), [secondFlag]: true };
                         updateBestRoster();
                         saveStateToLocal();
+                        updateUI();
                         openSlimeInspectorModal(slime);
                     });
                 }
@@ -1068,7 +1075,7 @@ function renderSlimeTalentTree(slime) {
 function specializeInspectedSlime(specialization) {
     if (!currentInspectedSlime || (gameState.newGamePlusCompletions || 0) <= 0) return;
     const target = (gameState.slimes || []).find(s => s.id === currentInspectedSlime.id || s.name === currentInspectedSlime.name);
-    if (!target || (target.type || 'base') === 'base' || target.ascended !== true || target.specialization) return;
+    if (!target || (target.type || 'base') === 'base' || target.specialization) return;
     const elementalPrefix = ['poison', 'fire', 'ice', 'stone'].includes(target.type) ? target.type : null;
     const typeId = elementalPrefix ? `${elementalPrefix}${specialization[0].toUpperCase()}${specialization.slice(1)}` : null;
     if (!typeId || !SLIME_TYPES[typeId]) return;

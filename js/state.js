@@ -382,9 +382,9 @@ export const SECOND_TALENT = {
     iceFighter: { name: 'Ice Burst', description: 'Cold damage equals the target\'s burn + poison Stacks instead of a flat 5.' },
     poisonFighter: { name: 'Corrosive Poison', description: 'Increase direct damage by the target\'s current poison stacks (%).' },
     stoneFighter: { name: 'Heavy Strike', description: 'Pushback ennemies.' },
-    fireTank: { name: 'Talent2', description: '' },
-    iceTank: { name: 'Talent2', description: '' },
-    poisonTank: { name: 'Talent2', description: '' },
+    fireTank: { name: 'Spicy Block', description: 'On Block, apply triple your burn status to the attacker.' },
+    iceTank: { name: 'Ice Block', description: 'On death, 10% chance to instead regain 10% HP, but suffer Stun 5.' },
+    poisonTank: { name: 'Counter', description: 'Counter Attack on Block and heal for 25% of inflicted damage.' },
     stoneTank: { name: 'Talent2', description: '' }
 };
 
@@ -397,7 +397,10 @@ export const SECOND_TALENT_ICON = {
     fireFighter: 'images/talents/fighterImmolation.png',
     iceFighter: 'images/talents/fighterIceBurst.png',
     poisonFighter: 'images/talents/fighterCorrosivePoison.png',
-    stoneFighter: 'images/talents/fighterHeavyStrike.png'
+    stoneFighter: 'images/talents/fighterHeavyStrike.png',
+    fireTank: 'images/talents/tankSpicyBlock.png',
+    iceTank: 'images/talents/tankIceBlock.png',
+    poisonTank: 'images/talents/tankCounter.png'
 };
 
 export const TALENT_SUBTALENTS = {
@@ -562,6 +565,30 @@ export function hasHeavyStrike(slime) {
     return comboTypeId === 'stoneFighter' && hasSecondTalent(slime);
 }
 
+/** Whether a Slime owns the Spicy Block second talent (Fire Tank). */
+export function hasSpicyBlock(slime) {
+    if (!slime) return false;
+    const spec = getSlimeSpecialization(slime);
+    const comboTypeId = spec ? `${slime.type || ''}${spec.charAt(0).toUpperCase()}${spec.slice(1)}` : '';
+    return comboTypeId === 'fireTank' && hasSecondTalent(slime);
+}
+
+/** Whether a Slime owns the Ice Block second talent (Ice Tank). */
+export function hasIceBlock(slime) {
+    if (!slime) return false;
+    const spec = getSlimeSpecialization(slime);
+    const comboTypeId = spec ? `${slime.type || ''}${spec.charAt(0).toUpperCase()}${spec.slice(1)}` : '';
+    return comboTypeId === 'iceTank' && hasSecondTalent(slime);
+}
+
+/** Whether a Slime owns the Counter second talent (Poison Tank). */
+export function hasCounter(slime) {
+    if (!slime) return false;
+    const spec = getSlimeSpecialization(slime);
+    const comboTypeId = spec ? `${slime.type || ''}${spec.charAt(0).toUpperCase()}${spec.slice(1)}` : '';
+    return comboTypeId === 'poisonTank' && hasSecondTalent(slime);
+}
+
 /** Per-combo flag key used to store ownership of a Slime's second talent. */
 export function getSecondTalentFlag(typeId) {
     if (!SECOND_TALENT[typeId]) return null;
@@ -590,8 +617,7 @@ export function canSlimeBuyNextTalent(slime) {
     if ((gameState.newGamePlusCompletions || 0) <= 0) return false;
     const specialization = getSlimeSpecialization(slime);
     if (!['support', 'tank', 'fighter'].includes(specialization)) return false;
-    const coins = Number(slime?.coins || 0);
-    if (coins < 1) return false;
+    if (Number(gameState.villageCoins || 0) < 1) return false;
     if (specialization === 'support' && slime?.talents?.graft) return false;
     if (specialization === 'tank' && slime?.talents?.block) return false;
     if (specialization === 'fighter' && slime?.talents?.rebound) return false;
@@ -760,7 +786,6 @@ export function syncSlimesArray() {
         s.damage = calculateSlimeDamage(s);
         if (s.critChance === undefined) s.critChance = 0;
         if (s.regen === undefined) s.regen = 0;
-        if (s.coins === undefined) s.coins = 0;
 
         if (s.slotIndex === undefined || s.slotIndex === null || usedSlots.has(s.slotIndex)) {
             let nextSlot = 0;
@@ -1313,7 +1338,6 @@ export function updateBestRoster() {
             ascended: !!activeSlime.ascended,
             specialization: getSlimeSpecialization(activeSlime),
             talents: activeSlime.talents ? JSON.parse(JSON.stringify(activeSlime.talents)) : {},
-            coins: Number(activeSlime.coins || 0),
             slotIndex: activeSlime.slotIndex !== undefined ? activeSlime.slotIndex : getNextAvailableSlotIndex(),
             equipment: activeSlime.equipment ? JSON.parse(JSON.stringify(activeSlime.equipment)) : []
         };
@@ -1356,7 +1380,6 @@ export function restoreBestRoster() {
         ascended: !!s.ascended,
         specialization: getSlimeSpecialization(s),
         talents: s.talents ? JSON.parse(JSON.stringify(s.talents)) : {},
-        coins: Number(s.coins || 0),
         slotIndex: s.slotIndex !== undefined ? s.slotIndex : idx,
         equipment: s.equipment ? JSON.parse(JSON.stringify(s.equipment)) : []
     }));
@@ -1464,7 +1487,6 @@ export function migrateSpecializedSlimes() {
         if (!savedSlime) return;
         savedSlime.specialization = getSlimeSpecialization(activeSlime);
         savedSlime.talents = activeSlime.talents ? JSON.parse(JSON.stringify(activeSlime.talents)) : {};
-        savedSlime.coins = Number(activeSlime.coins || 0);
     });
 }
 /**

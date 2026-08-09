@@ -1,36 +1,22 @@
-------------- NOW ----------------
-Immolation: Double Fire effects
-Ice Burst: Cold damage inflicts damage depending on amount of burn and poison Stacks instead of a fixed 5.
-Corrosive Poison: Increase direct damage by [Poison Stacks]%.
-Heavy Strike: Pushback ennemies on hit.
+------------- SOON ----------------
+StoneTank - Polished Slime: On block, apply stun status x2. Also Reduce incoming damage by 10%.
+Auto Equip, start by highest quality.
+Hide scroll bar in selected slime container in common house popup.
+In common house, when showing / hidding talents, we can keep both common talents if only one spec is chosen but multiple slime types.
 
 ------------- LATER  ----------------
 3d SupportTalent:
 At the end of Wave, sacrifice 90% PV to res
 
-
-
-
-
 3d FighterTalent:
 Slide: 10% chance of sliding to hit backlane
 
-
-FireTank: On block, apply twice effects (double 0 atk)
-IceTank: On death, 10% chance Ice Block +10% PV
-PoisonTank: Counter Attack leech on block
-StoneTank: On block apply stun value *2.
 3d TankTalent:
-Interception: If at more than 80% PV, and another tank takes damage while under 20% PV, intercept it.
-
-
+Interception: If at more than 50% PV, and another tank takes damage while under 50% PV, intercept it.
 
 - Alchemist Upgrade: Increase Base Effect of Slime Types
 - Include status priority on auto equip.
 
-
-
------------------- LATER -----------------
 - Trophies with Coin rewards:
 Ideas:
 Run, You Fools: Beat the Mage.
@@ -61,6 +47,7 @@ Winter is Coming: Start a Run with 60 Ice Slimes in your Roster.
 Blazing Hot: Finish a Run with 60 Fire Slimes in your Roster.
 Stonehead: Finish a Run with 60 Stone Slimes in your Roster.
 Toxicity: Finish a Run with 60 Poison Slimes in your Roster.
+Self Defense: Kill a Boss wave without attacking once.
 
 OpenCode+BigPickle
 KiloCode+Hy3

@@ -56,9 +56,9 @@ export function openCommonHousePopup() {
                         <button type="button" class="common-house-toolbar-btn" data-action="MainRosterSelectAllStone" title="MainRosterSelectAllStone" aria-label="Select all Stone"><img class="ch-slime-icon" src="images/slimes/stone/sprites/slime1.png" alt="Stone"></button>
                     </div>
                     <div class="common-house-toolbar-row">
-                        <button type="button" class="common-house-toolbar-btn" data-action="MainRosterSelectAllSupport" title="MainRosterSelectAllSupport" aria-label="Select all Support"><img class="ch-logo-icon" src="images/logos/support.png" alt="Support"></button>
-                        <button type="button" class="common-house-toolbar-btn" data-action="MainRosterSelectAllFighter" title="MainRosterSelectAllFighter" aria-label="Select all Fighter"><img class="ch-logo-icon" src="images/logos/fighter.png" alt="Fighter"></button>
-                        <button type="button" class="common-house-toolbar-btn" data-action="MainRosterSelectAllTank" title="MainRosterSelectAllTank" aria-label="Select all Tank"><img class="ch-logo-icon" src="images/logos/tank.png" alt="Tank"></button>
+                        <button type="button" class="common-house-toolbar-btn" data-action="MainRosterSelectAllSupport" title="MainRosterSelectAllSupport" aria-label="Select all Support"><img class="ch-logo-icon" src="images/talents/supportSpec.png" alt="Support"></button>
+                        <button type="button" class="common-house-toolbar-btn" data-action="MainRosterSelectAllFighter" title="MainRosterSelectAllFighter" aria-label="Select all Fighter"><img class="ch-logo-icon" src="images/talents/fighterSpec.png" alt="Fighter"></button>
+                        <button type="button" class="common-house-toolbar-btn" data-action="MainRosterSelectAllTank" title="MainRosterSelectAllTank" aria-label="Select all Tank"><img class="ch-logo-icon" src="images/talents/tankSpec.png" alt="Tank"></button>
                         <span class="common-house-toolbar-spacer"></span>
                         <button type="button" class="common-house-toolbar-btn common-house-create-btn" data-action="MainRosterCreate" title="Create a Basic Slime" aria-label="Create a Basic Slime"><img class="ch-slime-icon" src="images/slimes/createSlime.png" alt="Create"></button>
                     </div>
@@ -81,9 +81,9 @@ export function openCommonHousePopup() {
                         <button type="button" class="common-house-toolbar-btn" data-action="VillageRosterSelectAllStone" title="VillageRosterSelectAllStone" aria-label="Select all Stone"><img class="ch-slime-icon" src="images/slimes/stone/sprites/slime1.png" alt="Stone"></button>
                     </div>
                     <div class="common-house-toolbar-row">
-                        <button type="button" class="common-house-toolbar-btn" data-action="VillageRosterSelectAllSupport" title="VillageRosterSelectAllSupport" aria-label="Select all Support"><img class="ch-logo-icon" src="images/logos/support.png" alt="Support"></button>
-                        <button type="button" class="common-house-toolbar-btn" data-action="VillageRosterSelectAllFighter" title="VillageRosterSelectAllFighter" aria-label="Select all Fighter"><img class="ch-logo-icon" src="images/logos/fighter.png" alt="Fighter"></button>
-                        <button type="button" class="common-house-toolbar-btn" data-action="VillageRosterSelectAllTank" title="VillageRosterSelectAllTank" aria-label="Select all Tank"><img class="ch-logo-icon" src="images/logos/tank.png" alt="Tank"></button>
+                        <button type="button" class="common-house-toolbar-btn" data-action="VillageRosterSelectAllSupport" title="VillageRosterSelectAllSupport" aria-label="Select all Support"><img class="ch-logo-icon" src="images/talents/supportSpec.png" alt="Support"></button>
+                        <button type="button" class="common-house-toolbar-btn" data-action="VillageRosterSelectAllFighter" title="VillageRosterSelectAllFighter" aria-label="Select all Fighter"><img class="ch-logo-icon" src="images/talents/fighterSpec.png" alt="Fighter"></button>
+                        <button type="button" class="common-house-toolbar-btn" data-action="VillageRosterSelectAllTank" title="VillageRosterSelectAllTank" aria-label="Select all Tank"><img class="ch-logo-icon" src="images/talents/tankSpec.png" alt="Tank"></button>
                         <span class="common-house-toolbar-spacer"></span>
                         <button type="button" class="common-house-toolbar-btn common-house-create-btn" data-action="VillageRosterCreate" title="Create a Basic Slime" aria-label="Create a Basic Slime"><img class="ch-slime-icon" src="images/slimes/createSlime.png" alt="Create"></button>
                     </div>
@@ -448,9 +448,9 @@ const TYPE_BUTTONS = [
 
 /** The three Specialization buttons shown for non-specialized selections. */
 const SPEC_BUTTONS = [
-    { id: 'support', label: 'Support', icon: 'images/logos/support.png' },
-    { id: 'fighter', label: 'Fighter', icon: 'images/logos/fighter.png' },
-    { id: 'tank', label: 'Tank', icon: 'images/logos/tank.png' }
+    { id: 'support', label: 'Support', icon: 'images/talents/supportSpec.png' },
+    { id: 'fighter', label: 'Fighter', icon: 'images/talents/fighterSpec.png' },
+    { id: 'tank', label: 'Tank', icon: 'images/talents/tankSpec.png' }
 ];
 
 /** Talent display data, reused from the character-sheet Talent sheet. */
@@ -571,15 +571,18 @@ function getActionButtonsHtml(selectedSlimes) {
                     talentBadge = `${cost}<img src="images/logos/coin.png" alt="" class="talent-cost-coin">`;
                 }
             } else if (t === 1 && secondFlag) {
-                // Second Talent: purchasable once the combo's first Talent is owned.
+                // Second Talent: purchasable for every selected Slime that already
+                // owns the combo's first Talent. The button enables as long as at
+                // least one selected Slime qualifies (mass-buy applies per Slime).
                 const ownedCount = secondFlag ? selectedSlimes.filter(s => s.talents?.[secondFlag]).length : 0;
-                const firstOwnedAll = selectedSlimes.every(s => hasFirstTalent(s));
-                const cost = (selectedSlimes.length - ownedCount) * TALENT_PRICE[t];
-                if (cost === 0) {
+                const firstOwnedSome = selectedSlimes.some(s => hasFirstTalent(s));
+                const eligible = selectedSlimes.filter(s => hasFirstTalent(s) && !s.talents?.[secondFlag]).length;
+                const cost = eligible * TALENT_PRICE[t];
+                if (ownedCount === selectedSlimes.length) {
                     talentBadge = '✔️';
                     talentExtraClass = ' unlocked';
                     talentDisabled = ' disabled';
-                } else if (firstOwnedAll) {
+                } else if (firstOwnedSome) {
                     talentBadge = `${cost}<img src="images/logos/coin.png" alt="" class="talent-cost-coin">`;
                 } else {
                     talentBadge = '🔒';
@@ -722,13 +725,31 @@ function wireTypeButtons(container) {
             const comboTypeId = `${elementOf(selectedSlimes[0])}${spec.charAt(0).toUpperCase()}${spec.slice(1)}`;
             const flag = talentIndex === 0 ? TALENT_FLAG[spec] : getSecondTalentFlag(comboTypeId);
             if (!flag) return;
-            if (talentIndex === 1 && !selectedSlimes.every(s => hasFirstTalent(s))) return;
-            selectedSlimes.forEach(slime => {
-                if (!slime.talents?.[flag]) {
+            // First Talent: grant to every selected Slime lacking it, charging the
+            // village coin pool per Slime (1/2/3 by tier).
+            // Second Talent: only grant to selected Slimes that already own the first
+            // Talent (never bypass the prerequisite); charge per eligible Slime.
+            if (talentIndex === 1) {
+                const eligible = selectedSlimes.filter(s => hasFirstTalent(s) && !s.talents?.[flag]);
+                if (!eligible.length) return;
+                const totalCost = eligible.length * TALENT_PRICE[talentIndex];
+                if ((gameState.villageCoins || 0) < totalCost) return;
+                gameState.villageCoins -= totalCost;
+                eligible.forEach(slime => {
                     if (!slime.talents || typeof slime.talents !== 'object') slime.talents = {};
                     slime.talents[flag] = true;
-                }
-            });
+                });
+            } else {
+                const needy = selectedSlimes.filter(s => !s.talents?.[flag]);
+                if (!needy.length) return;
+                const totalCost = needy.length * TALENT_PRICE[talentIndex];
+                if ((gameState.villageCoins || 0) < totalCost) return;
+                gameState.villageCoins -= totalCost;
+                needy.forEach(slime => {
+                    if (!slime.talents || typeof slime.talents !== 'object') slime.talents = {};
+                    slime.talents[flag] = true;
+                });
+            }
             updateBestRoster();
             saveStateToLocal();
             updateUI();

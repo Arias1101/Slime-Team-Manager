@@ -2,8 +2,8 @@
  * Enemy Management & AI Behaviors
  */
 
-import { gameState, addScraps, saveStateToLocal, saveWaveSnapshot, restoreBestRoster, SLIME_TYPES, getSlimeTotalRegen, getSlimeSpecialization, setEquipmentDefinitionResolver, getSlimeSubTalentDef, getSlimeMaxHp } from './state.js';
-import { healAllSlimes, initAscendedAutoAttacks, clearAscendedAutoAttacks, showFloatingDamageNumber, showFloatingHealingNumber, showFloatingHealingNumberFromUnit, showFloatingStatusTextAt, showBattlefieldWaveBanner, triggerSlimeEatLoot } from './slimes.js';
+import { gameState, addScraps, saveStateToLocal, saveWaveSnapshot, restoreBestRoster, SLIME_TYPES, getSlimeTotalRegen, getSlimeSpecialization, setEquipmentDefinitionResolver, getSlimeSubTalentDef, getSlimeMaxHp, getSlimeHitEffects, getSlimeJumpSprite, hasSpicyBlock, hasIceBlock, hasCounter } from './state.js';
+import { healAllSlimes, initAscendedAutoAttacks, clearAscendedAutoAttacks, showFloatingDamageNumber, showFloatingHealingNumber, showFloatingHealingNumberFromUnit, showFloatingStatusTextAt, showBattlefieldWaveBanner, triggerSlimeEatLoot, applyHitEffectsToEnemy } from './slimes.js';
 import { updateUI, updateLootHUD, requestUIRefresh, playSlimeRainRespawnAnimation } from './ui.js';
 import { openShopModal } from './shop.js';
 import { isGamePaused } from './engine.js';
@@ -194,7 +194,7 @@ export const ENEMY_TYPES = {
         damage: 1,            // 1 Damage per attack
         attackSpeed: 1.0,     // 1 attack per second
         moveSpeed: 1,         // Move speed (1 to 100) -> 25 px/sec
-        targetX: 130,         // Close melee range near the slimes
+        targetX: 180,         // Close melee range near the slimes
         loot_name: 'Beggar Cup',
         loot_effect: { stat: 'hp', value: 1 },
         loot_priority: 'tank'
@@ -209,7 +209,7 @@ export const ENEMY_TYPES = {
         damage: 2,            // 1 Damage per attack
         attackSpeed: 1.0,     // 1 attack per second
         moveSpeed: 1.2,       // Move speed (1 to 100) -> 25 px/sec
-        targetX: 140,         // Close melee range near the slimes
+        targetX: 180,         // Close melee range near the slimes
         loot_name: 'Farmer Hat',
         loot_effect: { stat: 'hp', value: 1 },
         loot_priority: 'tank'
@@ -224,7 +224,7 @@ export const ENEMY_TYPES = {
         damage: 3,            // 1 Damage per attack
         attackSpeed: 1.0,     // 1 attack per second
         moveSpeed: 1.2,       // Move speed (1 to 100) -> 25 px/sec
-        targetX: 110,         // Close melee range near the slimes
+        targetX: 180,         // Close melee range near the slimes
         loot_name: 'Burning Torch',
         loot_effect: [
             { stat: 'burn', value: 1 },
@@ -242,22 +242,22 @@ export const ENEMY_TYPES = {
         damage: 2,            // 1 Damage per attack
         attackSpeed: 1.0,     // 1 attack per second
         moveSpeed: 1.3,       // Move speed (1 to 100) -> 25 px/sec
-        targetX: 130,         // Close melee range near the slimes
+        targetX: 180,         // Close melee range near the slimes
         loot_name: 'Smelly Fish',
         loot_effect: { stat: 'hp', value: 2 },
         loot_priority: 'tank'
     },
     thief: {
         id: 'thief',
-        type: 'melee',        // Melee attacker
+        type: 'rush',        // Melee attacker
         projectile: 'slash1',
         tier: 1,
         hp: 5,                // 2 HP (requires 2 hits from base slime)
         maxHp: 5,
         damage: 2,            // 1 Damage per attack
         attackSpeed: 1.0,     // 1 attack per second
-        moveSpeed: 10,         // Move speed (1 to 100) -> 25 px/sec
-        targetX: 100,         // Close melee range near the slimes
+        moveSpeed: 12,         // Move speed (1 to 100) -> 25 px/sec
+        targetX: 180,         // Close melee range near the slimes
         loot_name: 'Thief Mask',
         loot_effect: { stat: 'crit', value: 10 },
         loot_priority: 'fighter'
@@ -896,7 +896,7 @@ function generateWaveComposition(waveNum) {
     if (waveNum === 2) return [0.5, 'beggar:2', 'farmer'];
     if (waveNum === 3) return [0.5, 'farmer:3', 'fisher:2'];
     if (waveNum === 5) return [0.2, 'beggar:5', 'torchfarmer:1', 'farmer:1', 'fisher:1'];
-    if (waveNum === 4) return [0.1, 'thief:1', 'guard:1'];
+    if (waveNum === 4) return [0.1, 'thief:2', 'guard:1'];
     if (waveNum === 6) return [0.2, 'fisher:10', 'torchfarmer:5'];
     if (waveNum === 7) return [0.4, 'farmer:15', 'torchfarmer:2'];
     if (waveNum === 8) return [0.8, 'beggar:8', 'farmer:2', 'torchfarmer:2', 'fisher:2'];
@@ -1337,8 +1337,6 @@ function checkWaveCompletion() {
             });
         }
 
-        // Coins are earned for each wave survived since this Slime last died.
-        (gameState.slimes || []).forEach(s => { s.coins = (s.coins || 0) + 1; });
         // Give airborne slimes time to land before sending one to eat.
         if ((gameState.autoEatLevel || 0) > 0) {
             setTimeout(() => {
@@ -1909,6 +1907,8 @@ export function updateEnemies(deltaSeconds) {
                 slime.effects.stunTimer -= deltaSeconds;
                 if (slime.effects.stunTimer <= 0) {
                     slime.effects.stunTimer = 0;
+                    // Ice Block stun ended: drop the flag and let the sprite restore.
+                    slime.iceBlockStun = false;
                 }
             }
 
@@ -1928,35 +1928,59 @@ export function updateEnemies(deltaSeconds) {
                     if (slime.effects.stunTimer > 0) {
                         statusHTML += '<span class="status-icon stun-icon">💫</span>';
                     }
-                        if (statusRow.innerHTML !== statusHTML) {
-                            statusRow.innerHTML = statusHTML;
-                        }
-                    }
-
-                    unit.classList.toggle('is-burning', slime.effects.burnTimer > 0);
-                    unit.classList.toggle('is-poisoned', slime.effects.poisonTimer > 0);
-                    unit.classList.toggle('is-heal-on-time', slime.effects.healOnTimeTimer > 0);
-                    unit.classList.toggle('is-stunned', slime.effects.stunTimer > 0);
-                    unit.classList.toggle('is-ice-barrier', (slime.effects.iceBarrierBonusHp || 0) > 0);
-                    unit.classList.toggle('is-stone-skin', (slime.reduction || 0) > 0);
-
-                    // Spawn / remove the Ice Barrier shield sprite on the target slime.
-                    // Tie visibility to the actual temporary-HP pool, not the timer, so the
-                    // sprite disappears the instant the pool is depleted (even mid-duration).
-                    updateSlimeIceBarrier(unit, (slime.effects.iceBarrierBonusHp || 0) > 0);
-
-                    const rosterItem = document.getElementById(`roster_item_${slime.id}`);
-                    if (rosterItem) {
-                        rosterItem.classList.toggle('is-burning', slime.effects.burnTimer > 0);
-                        rosterItem.classList.toggle('is-poisoned', slime.effects.poisonTimer > 0);
-                        rosterItem.classList.toggle('is-frozen', (slime.effects.freezeTimer || 0) > 0);
-                        rosterItem.classList.toggle('is-stunned', slime.effects.stunTimer > 0);
-                        rosterItem.classList.toggle('is-heal-on-time', slime.effects.healOnTimeTimer > 0);
-                        rosterItem.classList.toggle('is-ice-barrier', (slime.effects.iceBarrierBonusHp || 0) > 0);
-                        rosterItem.classList.toggle('is-stone-skin', (slime.reduction || 0) > 0);
+                    if (statusRow.innerHTML !== statusHTML) {
+                        statusRow.innerHTML = statusHTML;
                     }
                 }
+
+                unit.classList.toggle('is-burning', slime.effects.burnTimer > 0);
+                unit.classList.toggle('is-poisoned', slime.effects.poisonTimer > 0);
+                unit.classList.toggle('is-heal-on-time', slime.effects.healOnTimeTimer > 0);
+                // Ice Block uses its own jump/vibrate style (toggled in the sprite
+                // swap branch below) instead of the stun wobble, so skip is-stunned.
+                unit.classList.toggle('is-stunned', slime.effects.stunTimer > 0 && !slime.iceBlockStun);
+                unit.classList.toggle('is-ice-barrier', (slime.effects.iceBarrierBonusHp || 0) > 0);
+                unit.classList.toggle('is-stone-skin', (slime.reduction || 0) > 0);
+
+                // Ice Block: temporarily replace the Slime sprite with the ice block
+                // image for the duration of the stun. The jump/vibrate animation plays
+                // once, when the swap happens (not every frame).
+                const slimeImgEl = unit.querySelector('.slime-img');
+                if (slimeImgEl) {
+                    if (slime.iceBlockStun && slime.effects.stunTimer > 0) {
+                        if (slimeImgEl.dataset.iceBlockSwap !== 'true') {
+                            slimeImgEl.dataset.iceBlockSwap = 'true';
+                            slimeImgEl.dataset.prevSrc = slimeImgEl.src;
+                            slimeImgEl.src = 'images/slimes/ice/iceBlock.png';
+                            slimeImgEl.style.objectPosition = '0px 0px';
+                            // Add the class now so the one-shot animation triggers once.
+                            unit.classList.add('is-ice-block');
+                        }
+                    } else if (slimeImgEl.dataset.iceBlockSwap === 'true') {
+                        slimeImgEl.dataset.iceBlockSwap = 'false';
+                        slimeImgEl.src = getSlimeJumpSprite(slime);
+                        unit.classList.remove('is-ice-block');
+                    }
+                }
+
+                // Spawn / remove the Ice Barrier shield sprite on the target slime.
+                // Tie visibility to the actual temporary-HP pool, not the timer, so the
+                // sprite disappears the instant the pool is depleted (even mid-duration).
+                updateSlimeIceBarrier(unit, (slime.effects.iceBarrierBonusHp || 0) > 0);
+
+                const rosterItem = document.getElementById(`roster_item_${slime.id}`);
+                if (rosterItem) {
+                    rosterItem.classList.toggle('is-burning', slime.effects.burnTimer > 0);
+                    rosterItem.classList.toggle('is-poisoned', slime.effects.poisonTimer > 0);
+                    rosterItem.classList.toggle('is-frozen', (slime.effects.freezeTimer || 0) > 0);
+                    rosterItem.classList.toggle('is-stunned', slime.effects.stunTimer > 0 && !(Boolean(slime.iceBlockStun) && slime.effects.stunTimer > 0));
+                    rosterItem.classList.toggle('is-ice-block', Boolean(slime.iceBlockStun) && slime.effects.stunTimer > 0);
+                    rosterItem.classList.toggle('is-heal-on-time', slime.effects.healOnTimeTimer > 0);
+                    rosterItem.classList.toggle('is-ice-barrier', (slime.effects.iceBarrierBonusHp || 0) > 0);
+                    rosterItem.classList.toggle('is-stone-skin', (slime.reduction || 0) > 0);
+                }
             }
+        }
         );
     }
 
@@ -2340,8 +2364,80 @@ export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg', 
         const blockChance = getSlimeSubTalentDef(slime, 0)?.id === 'shieldMaster' ? 0.2 : 0.1;
         if (Math.random() < blockChance) {
             spawnBlockEffect(slime);
+            // Every successful Tank Block plays a one-shot jump/vibrate on the
+            // Slime's unit (the Counter talent additionally swaps the sprite).
+            const blockUnit = document.querySelector(`[data-slime-id="${slime.id}"]`);
+            if (blockUnit) {
+                blockUnit.classList.remove('is-block-jump');
+                void blockUnit.offsetWidth;
+                blockUnit.classList.add('is-block-jump');
+            }
             if (getSlimeSubTalentDef(slime, 0)?.id === 'perfectBlock') {
                 slime.hp = getSlimeMaxHp(slime);
+            }
+            // Spicy Block (Fire Tank second talent): reflect the slime's own status
+            // effect profile onto the attacker — applied twice.
+            if (hasSpicyBlock(slime) && sourceEnemy && sourceEnemy.effects !== undefined) {
+                const hitEffects = getSlimeHitEffects(slime);
+                const isControlImmune = sourceEnemy.typeId === 'death';
+                // Spicy Block: reflect the Slime's burn status onto the attacker
+                // three times (triple burn stacks).
+                const burnOnly = { burn: hitEffects.burn };
+                applyHitEffectsToEnemy(sourceEnemy, burnOnly, slime, isControlImmune);
+                applyHitEffectsToEnemy(sourceEnemy, burnOnly, slime, isControlImmune);
+                applyHitEffectsToEnemy(sourceEnemy, burnOnly, slime, isControlImmune);
+                // Spicy Block: swap the Slime's sprite to the spicy block pose for a
+                // second (the block jump animation is already playing), then revert.
+                const spicyUnit = document.querySelector(`[data-slime-id="${slime.id}"]`);
+                const spicyImg = spicyUnit ? spicyUnit.querySelector('.slime-img') : null;
+                if (spicyImg) {
+                    spicyImg.dataset.prevSrc = spicyImg.src;
+                    spicyImg.src = 'images/slimes/fire/spicyBlock.png';
+                    spicyImg.style.objectPosition = '0px 0px';
+                    setTimeout(() => {
+                        spicyImg.src = getSlimeJumpSprite(slime);
+                    }, 1000);
+                }
+            }
+            // Counter (Poison Tank second talent): strike back at the attacker for
+            // 25% of the Slime's damage (with its on-hit effects) and heal the
+            // Slime for 25% of that counter damage.
+            if (hasCounter(slime) && sourceEnemy && sourceEnemy.hp > 0) {
+                const counterDamage = gameState.slimeDamage;
+                const damageToApply = Math.min(sourceEnemy.hp, counterDamage);
+                sourceEnemy.hp -= damageToApply;
+                const isControlImmune = sourceEnemy.typeId === 'death';
+                applyHitEffectsToEnemy(sourceEnemy, getSlimeHitEffects(slime), slime, isControlImmune);
+                showFloatingDamageNumber(sourceEnemy.x || 250, sourceEnemy.y || 130, damageToApply, 'enemy-dmg');
+                // Counter: swap the Slime's sprite to the counter pose (the block
+                // jump animation is already playing from the successful Block above),
+                // then revert to its normal jump sprite.
+                const counterUnit = document.querySelector(`[data-slime-id="${slime.id}"]`);
+                const counterImg = counterUnit ? counterUnit.querySelector('.slime-img') : null;
+                if (counterImg) {
+                    counterImg.dataset.prevSrc = counterImg.src;
+                    counterImg.src = 'images/slimes/poison/counter.png';
+                    counterImg.style.objectPosition = '0px 0px';
+                    setTimeout(() => {
+                        counterImg.src = getSlimeJumpSprite(slime);
+                    }, 600);
+                }
+                const healed = Math.min(slime.maxHp - slime.hp, Math.round(counterDamage * 0.25));
+                if (healed > 0) {
+                    slime.hp += healed;
+                    showFloatingHealingNumberFromUnit(
+                        document.querySelector(`[data-slime-id="${slime.id}"]`),
+                        healed
+                    );
+                }
+                if (sourceEnemy.hp <= 0 && sourceEnemy.el) {
+                    sourceEnemy.el.classList.add(Math.random() > 0.5 ? 'cartoon-ko-eject' : 'cartoon-ko-eject-left');
+                    setTimeout(() => {
+                        if (sourceEnemy.el) sourceEnemy.el.remove();
+                        const idx = activeEnemies.indexOf(sourceEnemy);
+                        if (idx !== -1) activeEnemies.splice(idx, 1);
+                    }, 800);
+                }
             }
             return null;
         }
@@ -2371,6 +2467,40 @@ export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg', 
         }
     }
     slime.hp = Math.max(0, slime.hp - remainingDamage);
+    let slimeX = 75;
+    let slimeY = 120;
+    const armyContainerRef = document.getElementById('armyContainer');
+    if (armyContainerRef) {
+        const unitRef = armyContainerRef.querySelector(`[data-slime-id="${slime.id}"]`);
+        if (unitRef) {
+            slimeX = parseFloat(unitRef.style.left) || 75;
+            slimeY = parseFloat(unitRef.style.top) || 120;
+        }
+    }
+
+    // Ice Block (Ice Tank second talent): on the lethal blow, roll a chance to
+    // instead survive at 10% of Max HP. Used as a death-substitute, so when it
+    // triggers we skip all death handling and the unit death animation.
+    if (slime.hp <= 0 && hasIceBlock(slime)) {
+        const ICE_BLOCK_CHANCE = 0.10; // 10% chance to survive at 10% HP
+        if (Math.random() < ICE_BLOCK_CHANCE) {
+            slime.hp = Math.max(1, Math.round(slime.maxHp * 0.10));
+            if (!slime.effects) {
+                slime.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0, stunTimer: 0, healOnTimeTimer: 0, healOnTimeTickTimer: 0, healOnTimePerTick: 0, iceBarrierTimer: 0, iceBarrierBonusHp: 0 };
+            }
+            // Surviving via Ice Block leaves the Slime stunned for 5s and shows the
+            // ice block sprite for the duration of that stun.
+            slime.effects.stunTimer = 5;
+            slime.iceBlockStun = true;
+            const unitEl = armyContainerRef ? armyContainerRef.querySelector(`[data-slime-id="${slime.id}"]`) : null;
+            if (unitEl) {
+                const hpFill = unitEl.querySelector('.slime-hp-fill');
+                if (hpFill) hpFill.style.width = `${(slime.hp / slime.maxHp) * 100}%`;
+            }
+            updateUI();
+            return slime;
+        }
+    }
     const hpPct = Math.max(0, (slime.hp / slime.maxHp) * 100);
     const rosterItem = document.getElementById(`roster_item_${slime.id}`);
     const hpFill = rosterItem ? rosterItem.querySelector('.roster-hp-fill') : null;
@@ -2388,10 +2518,7 @@ export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg', 
         setTimeout(() => rosterItem.classList.remove('roster-hit-flash'), 180);
     }
 
-    const armyContainer = document.getElementById('armyContainer');
-    let slimeX = 75;
-    let slimeY = 120;
-
+    const armyContainer = armyContainerRef;
     if (armyContainer) {
         const unit = armyContainer.querySelector(`[data-slime-id="${slime.id}"]`);
         if (unit) {
@@ -2408,13 +2535,6 @@ export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg', 
 
             if (slime.hp <= 0) {
                 gameState.hasSlimeDied = true;
-                // Dying to the "death" enemy is the only exception: coins are preserved.
-                // Any other death resets the slime's coins to 0.
-                if (sourceEnemy?.typeId !== 'death') {
-                    slime.coins = 0;
-                    const savedSlime = (gameState.bestRoster || []).find(entry => String(entry.id || entry.name) === String(slime.id || slime.name));
-                    if (savedSlime) savedSlime.coins = 0;
-                }
                 // Instantly remove dead slime from memory array
                 gameState.slimes = gameState.slimes.filter(s => s.id !== slime.id);
                 gameState.armySize = gameState.slimes.length;
@@ -2437,12 +2557,6 @@ export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg', 
                 updateUI();
             }
         } else if (slime.hp <= 0) {
-            // Dying to the "death" enemy is the only exception: coins are preserved.
-            if (sourceEnemy?.typeId !== 'death') {
-                slime.coins = 0;
-                const savedSlime = (gameState.bestRoster || []).find(entry => String(entry.id || entry.name) === String(slime.id || slime.name));
-                if (savedSlime) savedSlime.coins = 0;
-            }
             gameState.slimes = gameState.slimes.filter(s => s.id !== slime.id);
             gameState.armySize = gameState.slimes.length;
             saveStateToLocal();
