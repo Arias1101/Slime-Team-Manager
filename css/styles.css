@@ -3329,6 +3329,12 @@ body.modal-open {
     max-height: calc(100vh - (145px + var(--roster-height, 70px)));
     overflow-y: auto !important;
     padding-right: 4px;
+    /* Reserve the scrollbar gutter permanently so toggling the upgrades scrollbar
+       never changes this column's width. Without it, the (flexible) left grid
+       column resizes when the scrollbar appears/disappears, which feeds back into
+       the roster panel width -> computeRosterCapacity -> capacity jump (e.g.
+       34 -> 30) -> roster relayout loop ("roster glitches while fighting"). */
+    scrollbar-gutter: stable;
 }
 
 /* App Container Default Mobile Spacing */

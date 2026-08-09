@@ -1,4 +1,7 @@
 Patch Notes:
+v0.23
+- Fixed Roster Glich.
+
 v0.22
 - Implemented second Fire Tank Slime talent: "Spicy Block".
 - Implemented second Ice Tank Slime talent: "Ice Block".

@@ -25,6 +25,14 @@ let currentInspectedSlime = null;
 let activeSlimeSheetTab = 'stats';
 let isRainAnimating = false;
 
+// Diagnostic logger for the roster size/relayout refresh path. Prefix makes it
+// easy to filter in the console while investigating the "roster glitches / tries
+// to resize while fighting or looting" issue.
+function rosterSizeLog(...args) {
+    // eslint-disable-next-line no-console
+    console.log('[roster-size]', ...args);
+}
+
 /**
  * Main UI Update Function
  */
@@ -230,6 +238,8 @@ export function renderSlimeRosterLanes(container, entries, {
             // items per line.
             if (capacity <= 0) return;
             if (capacity === lastCapacity) return;
+            rosterSizeLog('renderSlimeRosterLanes.draw: capacity changed',
+                lastCapacity, '->', capacity, '(' + (container.id || container.className) + ')');
             lastCapacity = capacity;
             renderLines(capacity);
         };
@@ -252,8 +262,19 @@ export function renderSlimeRosterLanes(container, entries, {
  * Clamped to a sane minimum so narrow panels still wrap cleanly.
  */
 function computeRosterCapacity(container) {
-    const item = container.querySelector('.roster-grid-item');
-    const itemW = item ? item.offsetWidth : 27;
+    // Measure a single roster item's real rendered width from a DETACHED probe,
+    // not from `container.querySelector('.roster-grid-item')`. The renderer calls
+    // computeRosterCapacity() right after container.replaceChildren() has emptied
+    // the container, so the live-query fallback (a hard-coded 27) measured a
+    // DIFFERENT width than the real items (33px at >=1260px, etc.). That mismatch
+    // made the first draw() compute a larger capacity (e.g. 34) than every
+    // subsequent measure (30), flipping the layout on every rebuild -> the
+    // "roster glitches while fighting" bug. We now measure the item width from a
+    // probe placed INSIDE the container (so it inherits the same scoped +
+    // media-query rules as the live items, e.g. 33px at >=1260px) rather than a
+    // detached <body> probe that would miss those rules and under-report the
+    // width (causing capacity to be off by one and overflow).
+    const itemW = measureRosterItemWidth(container);
     const gap = 4; // matches --roster-spec-gap
     const cs = getComputedStyle(container);
     // clientWidth is the padding-box width: it INCLUDES padding but EXCLUDES the
@@ -271,7 +292,40 @@ function computeRosterCapacity(container) {
     if (innerWidth < itemW) return 1;
     // N items need N*itemW + (N-1)*gap <= innerWidth, so the max N is
     // floor((innerWidth - itemW)/(itemW+gap)) + 1.
-    return Math.max(1, Math.floor((innerWidth - itemW) / (itemW + gap)) + 1);
+    const capacity = Math.max(1, Math.floor((innerWidth - itemW) / (itemW + gap)) + 1);
+    // Diagnostic: report capacity recomputation only when the measured inner
+    // width actually differs from the previous logged value (throttled) or is in
+    // the degenerate 0-width state.
+    if (computeRosterCapacity._lastLoggedInner !== measuredInner) {
+        computeRosterCapacity._lastLoggedInner = measuredInner;
+        rosterSizeLog('computeRosterCapacity:',
+            'clientWidth=', container.clientWidth, 'padX=', padX,
+            'innerWidth=', innerWidth, 'itemW=', itemW, '=> capacity=', capacity);
+    }
+    return capacity;
+}
+
+// Measure a real roster item's width from WITHIN the actual container, so it
+// inherits the same scoped + media-query styles (e.g. .desktop-left-col
+// .roster-grid-item { width: 33px } at >=1260px) as the live items. A detached
+// probe appended to <body> would NOT pick up those descendant/media-query rules
+// and would return the wrong width, causing capacity to be off by one (overflow).
+// If the container already has a rendered item we read it directly; otherwise we
+// drop in a hidden probe, measure, then remove it.
+function measureRosterItemWidth(container) {
+    const existing = container.querySelector('.roster-grid-item');
+    if (existing) return existing.offsetWidth || 27;
+    const probe = document.createElement('div');
+    probe.className = 'roster-grid-item';
+    probe.style.visibility = 'hidden';
+    probe.style.position = 'absolute';
+    probe.style.left = '-9999px';
+    probe.style.top = '-9999px';
+    probe.style.pointerEvents = 'none';
+    container.appendChild(probe);
+    const w = probe.offsetWidth || 27;
+    container.removeChild(probe);
+    return w;
 }
 
 /**
@@ -409,6 +463,8 @@ function updateSlimeRoster() {
     }).join(',');
     if (signature === lastRosterSignature) return;
     lastRosterSignature = signature;
+    rosterSizeLog('updateSlimeRoster: signature changed -> rebuilding roster DOM',
+        'entries=', entries.length, 'signature=', signature.slice(0, 120));
 
     renderSlimeRosterLanes(rosterListEl, entries, {
         byLine: true,
@@ -422,7 +478,10 @@ function updateSlimeRoster() {
 
     const rosterPanelEl = document.querySelector('.slime-status-panel');
     if (rosterPanelEl) requestAnimationFrame(() => {
-        document.documentElement.style.setProperty('--roster-height', `${rosterPanelEl.offsetHeight || 60}px`);
+        const h = rosterPanelEl.offsetHeight || 60;
+        rosterSizeLog('updateSlimeRoster: setting --roster-height =', `${h}px`,
+            'panel.offsetHeight=', rosterPanelEl.offsetHeight);
+        document.documentElement.style.setProperty('--roster-height', `${h}px`);
     });
 }
 
@@ -444,25 +503,32 @@ function trackRosterForResize(container, redraw = null) {
 
     if (redraw && !observedRosterContainers.has(container)) {
         observedRosterContainers.add(container);
+        rosterSizeLog('trackRosterForResize: attaching ResizeObserver to', container.id || container.className);
         const observer = new ResizeObserver(() => {
             // Re-measure now that the container has a settled size. Guard against a
             // 0-width transient (still hidden) which would collapse the layout.
-            if (computeRosterCapacity(container) > 0) redraw();
+            const cap = computeRosterCapacity(container);
+            rosterSizeLog('ResizeObserver fired: container=', container.id || container.className,
+                'clientWidth=', container.clientWidth, 'computedCapacity=', cap);
+            if (cap > 0) redraw();
         });
         observer.observe(container);
         // A few deferred retries in case the observer's first callback fires while
         // the panel is still in a transitional (zero-width) state.
-        requestAnimationFrame(redraw);
-        setTimeout(redraw, 150);
-        setTimeout(redraw, 500);
+        const rafRedraw = () => { rosterSizeLog('trackRosterForResize: rAF deferred redraw'); redraw(); };
+        requestAnimationFrame(rafRedraw);
+        setTimeout(() => { rosterSizeLog('trackRosterForResize: setTimeout(150) deferred redraw'); redraw(); }, 150);
+        setTimeout(() => { rosterSizeLog('trackRosterForResize: setTimeout(500) deferred redraw'); redraw(); }, 500);
     }
 
     if (rosterResizeBound) return;
     rosterResizeBound = true;
     let resizeTimer = null;
     window.addEventListener('resize', () => {
+        rosterSizeLog('window resize event');
         if (resizeTimer) clearTimeout(resizeTimer);
         resizeTimer = setTimeout(() => {
+            rosterSizeLog('window resize debounced -> invalidating roster signature & relayout');
             lastRosterSignature = '';
             updateSlimeRoster();
             window.dispatchEvent(new CustomEvent('roster:relayout'));
