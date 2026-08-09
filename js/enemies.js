@@ -1465,11 +1465,12 @@ export function spawnEnemy(typeId = 'beggar', hpMultiplier = 1.0) {
     const def = ENEMY_TYPES[typeId] || ENEMY_TYPES.beggar;
     const enemyIdKey = def.id || typeId;
     const baseHp = def.hp || 2;
-    // Each completed New Game+ run scales enemy HP and Damage multiplicatively
-    // by +5% (compounding), but move speed is left unchanged.
-    const newGamePlusMultiplier = Math.pow(1.05, Math.max(0, gameState.newGamePlusCompletions || 0));
-    const scaledHp = Math.max(1, Math.round(baseHp * hpMultiplier * newGamePlusMultiplier));
-    const scaledDamage = Math.max(0, Math.round((def.damage || 0) * newGamePlusMultiplier));
+    // Each completed New Game+ run scales enemy stats multiplicatively (compounding):
+    // HP +20%, Damage +10%. Move speed is left unchanged.
+    const newGamePlusHpMultiplier = Math.pow(1.20, Math.max(0, gameState.newGamePlusCompletions || 0));
+    const newGamePlusDmgMultiplier = Math.pow(1.10, Math.max(0, gameState.newGamePlusCompletions || 0));
+    const scaledHp = Math.max(1, Math.round(baseHp * hpMultiplier * newGamePlusHpMultiplier));
+    const scaledDamage = Math.max(0, Math.round((def.damage || 0) * newGamePlusDmgMultiplier));
     const scaledMoveSpeed = (def.moveSpeed || 0) * 25 * (gameState.isFastMode ? 2 : 1);
 
     // Add a small -10 to +10 stop offset to reduce overlapping.
@@ -1835,6 +1836,12 @@ export function updateEnemies(deltaSeconds) {
                 slime.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0, stunTimer: 0, healOnTimeTimer: 0, healOnTimeTickTimer: 0, healOnTimePerTick: 0, healOnTimeTimer: 0, healOnTimeTickTimer: 0, healOnTimePerTick: 0 };
             }
 
+            // Resolve the live on-field unit ONCE per iteration (before any
+            // floating-number / status rendering). A stale/detached slime.el would
+            // make getOverlayPosition return bogus coords, hiding heal numbers.
+            const unit = armyContainer ? armyContainer.querySelector(`[data-slime-id="${slime.id}"]`) : null;
+            slime.el = unit;
+
             // 1. Process Burn Status DoT (1 damage per stack every 0.5s)
             if (slime.effects.burnTimer > 0) {
                 slime.effects.burnTimer -= deltaSeconds;
@@ -1867,16 +1874,15 @@ export function updateEnemies(deltaSeconds) {
                 }
             }
 
-            // 2.5 Process Heal on Time (Melting Mend): restore a flat amount every 1.0s for 5s
+            // 2.5 Process Heal on Time (Melting Mend): restore a flat amount every 0.5s for 5s
             if (slime.effects.healOnTimeTimer > 0) {
                 slime.effects.healOnTimeTimer -= deltaSeconds;
                 slime.effects.healOnTimeTickTimer = (slime.effects.healOnTimeTickTimer || 0) + deltaSeconds;
 
-                if (slime.effects.healOnTimeTickTimer >= 1.0) {
-                    slime.effects.healOnTimeTickTimer -= 1.0;
-                    const healAmount = Math.max(1, slime.effects.healOnTimePerTick || 1);
+                if (slime.effects.healOnTimeTickTimer >= 0.5) {
+                    slime.effects.healOnTimeTickTimer -= 0.5;
+                    const healAmount = Math.max(0, slime.effects.healOnTimePerTick || 0);
                     slime.hp = Math.min(slime.maxHp, slime.hp + healAmount);
-                    const unit = slime.el || (armyContainer ? armyContainer.querySelector(`[data-slime-id="${slime.id}"]`) : null);
                     if (unit) showFloatingHealingNumberFromUnit(unit, healAmount);
                 }
 
@@ -1894,32 +1900,22 @@ export function updateEnemies(deltaSeconds) {
                 }
             }
 
-            // 4. Update Slime Status Row Icons (🔥 🧪 💫) & CSS Filters
-            if (armyContainer) {
-                if (!slime.el || typeof slime.el.querySelector !== 'function') {
-                    slime.el = armyContainer.querySelector(`[data-slime-id="${slime.id}"]`);
-                    slime.statusRowEl = null;
-                }
-                const unit = slime.el;
-                if (unit) {
-                    if (!slime.statusRowEl) {
-                        slime.statusRowEl = unit.querySelector('.slime-status-row');
+            // 4. Update Slime Status Row Icons (🔥 🧪 💚 💫) & CSS Filters
+            if (unit) {
+                // `unit` already resolved live (above) from armyContainer by id.
+                const statusRow = unit.querySelector('.slime-status-row');
+                slime.statusRowEl = statusRow;
+                if (statusRow) {
+                    let statusHTML = '';
+                    if (slime.effects.burnTimer > 0) {
+                        statusHTML += '<span class="status-icon burn-icon">🔥</span>';
                     }
-                    const statusRow = slime.statusRowEl;
-                    if (statusRow) {
-                        let statusHTML = '';
-                        if (slime.effects.burnTimer > 0) {
-                            statusHTML += '<span class="status-icon burn-icon">🔥</span>';
-                        }
-                        if (slime.effects.poisonTimer > 0) {
-                            statusHTML += '<span class="status-icon poison-icon">🧪</span>';
-                        }
-                        if (slime.effects.healOnTimeTimer > 0) {
-                            statusHTML += '<span class="status-icon heal-on-time-icon">💚</span>';
-                        }
-                        if (slime.effects.stunTimer > 0) {
-                            statusHTML += '<span class="status-icon stun-icon">💫</span>';
-                        }
+                    if (slime.effects.poisonTimer > 0) {
+                        statusHTML += '<span class="status-icon poison-icon">🧪</span>';
+                    }
+                    if (slime.effects.stunTimer > 0) {
+                        statusHTML += '<span class="status-icon stun-icon">💫</span>';
+                    }
                         if (statusRow.innerHTML !== statusHTML) {
                             statusRow.innerHTML = statusHTML;
                         }
@@ -1936,10 +1932,11 @@ export function updateEnemies(deltaSeconds) {
                         rosterItem.classList.toggle('is-poisoned', slime.effects.poisonTimer > 0);
                         rosterItem.classList.toggle('is-frozen', (slime.effects.freezeTimer || 0) > 0);
                         rosterItem.classList.toggle('is-stunned', slime.effects.stunTimer > 0);
+                        rosterItem.classList.toggle('is-heal-on-time', slime.effects.healOnTimeTimer > 0);
                     }
                 }
             }
-        });
+        );
     }
 
     updateProjectiles(deltaSeconds);
@@ -2078,17 +2075,18 @@ function fireProjectiles(enemy) {
 /**
  * Apply Burn Status Effect to a slime (3 seconds DoT with stackable burn)
  */
-export function applyBurnEffectToSlime(slime, duration = 3.0) {
+export function applyBurnEffectToSlime(slime, duration = 3.0, stacks = 1) {
     if (!slime || slime.hp <= 0) return;
 
     if (!slime.effects) {
         slime.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0, stunTimer: 0, healOnTimeTimer: 0, healOnTimeTickTimer: 0, healOnTimePerTick: 0 };
     }
 
+    const burnStacks = Math.max(1, Math.round(stacks));
     if (slime.effects.burnTimer > 0) {
-        slime.effects.burnStacks = (slime.effects.burnStacks || 1) + 1;
+        slime.effects.burnStacks = (slime.effects.burnStacks || 0) + burnStacks;
     } else {
-        slime.effects.burnStacks = 1;
+        slime.effects.burnStacks = burnStacks;
     }
     slime.effects.burnTimer = duration;
 }
@@ -2143,10 +2141,12 @@ function updateProjectiles(deltaSeconds) {
                     applyPoisonEffectToSlime(slime, 3.0, 2);
                 });
             } else if (p.key === 'fireball' || (p.type && p.type.id === 'fireball')) {
-                // Fireball AoE: Hits up to 2 unique slimes for damage and applies Burn DoT to both
+                // Fireball AoE: Hits up to 2 unique slimes for damage and applies Burn DoT to both.
+                // Burn stacks scale with NG+ so fireball bite grows deeper each cycle.
+                const ngBurnStacks = Math.round(Math.pow(1.10, Math.max(0, gameState.newGamePlusCompletions || 0)));
                 const hitSlimes = damageMultipleRandomSlimes(2, p.damage, p.sourceEnemy);
                 hitSlimes.forEach(slime => {
-                    applyBurnEffectToSlime(slime, 3.0);
+                    applyBurnEffectToSlime(slime, 3.0, ngBurnStacks);
                 });
             } else {
                 damageRandomSlime(p.damage, p.sourceEnemy);

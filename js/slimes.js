@@ -66,12 +66,12 @@ export function showFloatingDamageNumber(x, y, damageVal, type = 'enemy-dmg') {
 
 /** Show a green floating healing amount. Reusable for enemies and slimes. */
 export function showFloatingHealingNumber(x, y, healingAmount) {
-    if (healingAmount > 0) showFloatingDamageNumber(x, y, healingAmount, 'heal');
+    showFloatingDamageNumber(x, y, healingAmount, 'heal');
 }
 
 /** Show a green floating healing amount anchored to a battlefield unit element. */
 export function showFloatingHealingNumberFromUnit(unitEl, healingAmount) {
-    if (healingAmount <= 0 || !unitEl) return;
+    if (unitEl === undefined || unitEl === null) return;
     const position = getOverlayPosition(unitEl);
     if (position) showFloatingHealingNumber(position.x + position.width / 2, position.y - 12, healingAmount);
 }
@@ -164,28 +164,39 @@ function trySupportGraft(unitEl, support) {
     }
 
     setTimeout(() => {
-        const graftMult = getSlimeGraftMultipliers(support);
-        const sacrificedAmount = Math.ceil(support.maxHp * .2 * graftMult.cost);
+        // Re-resolve the live slime objects from gameState.slimes by id. The
+        // captured references can go stale if the army array is rebuilt (e.g.
+        // wave restart / NG+ transition), which would silently drop the HOT.
+        const liveSupport = gameState.slimes.find(s => String(s.id) === String(support.id)) || support;
+        const liveTarget = gameState.slimes.find(s => String(s.id) === String(target.id)) || target;
+        const graftMult = getSlimeGraftMultipliers(liveSupport);
+        const sacrificedAmount = Math.ceil(liveSupport.maxHp * .2 * graftMult.cost);
         const intendedHealing = sacrificedAmount * 2 * graftMult.heal;
-        const restoredAmount = Math.min(target.maxHp - target.hp, intendedHealing);
+        const restoredAmount = Math.min(liveTarget.maxHp - liveTarget.hp, intendedHealing);
         const overhealAmount = Math.max(0, intendedHealing - restoredAmount);
         const overhealRecovery = Math.round(overhealAmount / 2);
-        support.hp = Math.min(support.maxHp, Math.max(1, support.hp - sacrificedAmount) + overhealRecovery);
-        target.hp += restoredAmount;
+        liveSupport.hp = Math.min(liveSupport.maxHp, Math.max(1, liveSupport.hp - sacrificedAmount) + overhealRecovery);
+        liveTarget.hp += restoredAmount;
 
         // Melting Mend (Fire Support second talent): the grafted ally gains a
-        // "Heal on Time" status that restores 10% of the intended healing every
-        // second for 5 seconds, regardless of how much HP was actually restored.
-        if (hasMeltingMend(support)) {
-            if (!target.effects) {
-                target.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0, stunTimer: 0 };
+        // "Heal on Time" status that restores 5% of the INTENDED (theoretical)
+        // healing every 0.5s for 5 seconds (10 ticks = 50% total), regardless of
+        // how much HP was actually restored. Ticks can show +0 when it rounds down.
+        // The status is STACKABLE: repeated grafts add 5s to the timer (capped at
+        // MAX_HOT_DURATION) and accumulate the per-tick heal amount, rather than
+        // overwriting the previous effect.
+        if (hasMeltingMend(liveSupport)) {
+            if (!liveTarget.effects) {
+                liveTarget.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0, stunTimer: 0 };
             }
-            target.effects.healOnTimeTimer = 5.0;
-            target.effects.healOnTimeTickTimer = 0;
-            target.effects.healOnTimePerTick = Math.max(1, Math.round(intendedHealing * 0.1));
+            const perTick = Math.max(0, Math.round(intendedHealing * 0.05));
+            const MAX_HOT_DURATION = 15.0;
+            liveTarget.effects.healOnTimeTimer = Math.min(MAX_HOT_DURATION, (liveTarget.effects.healOnTimeTimer || 0) + 5.0);
+            liveTarget.effects.healOnTimeTickTimer = (liveTarget.effects.healOnTimeTickTimer || 0);
+            liveTarget.effects.healOnTimePerTick = (liveTarget.effects.healOnTimePerTick || 0) + perTick;
         }
 
-        const targetEl = Array.from(document.querySelectorAll('.slime-unit')).find(el => String(el.dataset.slimeId) === String(target.id));
+        const targetEl = Array.from(document.querySelectorAll('.slime-unit')).find(el => String(el.dataset.slimeId) === String(liveTarget.id));
         if (targetEl) {
             playSlimeSupportHealAnimation(targetEl);
             showSlimeSupportHealingNumber(targetEl, restoredAmount);

@@ -699,6 +699,28 @@ body.modal-open {
     }
 }
 
+/* Melting Mend Heal-on-Time (HOT) Visual Effect on affected Slimes */
+.slime-unit.is-heal-on-time .slime-img {
+    filter: drop-shadow(0 0 6px #22c55e) saturate(1.6);
+    animation: slimeHealPulse 0.75s infinite ease-in-out alternate;
+}
+
+@keyframes slimeHealPulse {
+    0% {
+        filter: drop-shadow(0 0 4px #22c55e) saturate(1.4);
+    }
+
+    100% {
+        filter: drop-shadow(0 0 9px #4ade80) saturate(1.8);
+    }
+}
+
+
+/* HOT visual is conveyed by the green pulsing glow on the slime (is-heal-on-time filter). */
+.roster-grid-item.is-heal-on-time {
+    box-shadow: 0 0 0 2px #22c55e, 0 0 8px #22c55e;
+}
+
 .slime-shadow-sm {
     width: 14px;
     height: 3px;

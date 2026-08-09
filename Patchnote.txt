@@ -7,6 +7,7 @@ v0.20
 - Implemented "Fast Mode" button.
 - Implemented "No Merchant" button.
 - Implemented "Return to village" button.
+- NG+ Scaling balance pass.
 
 v0.19
 - Adjusted loot font.

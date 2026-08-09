@@ -592,7 +592,13 @@ function renderSlimeArmy() {
         const existingUnit = armyContainerEl.querySelector(`.slime-unit[data-slime-id="${slimeId}"]`);
         if (existingUnit) {
             slimeObj.el = existingUnit;
-            slimeObj.statusRowEl = existingUnit.querySelector('.slime-status-row');
+            let statusRow = existingUnit.querySelector('.slime-status-row');
+            if (!statusRow) {
+                statusRow = document.createElement('div');
+                statusRow.className = 'slime-status-row';
+                existingUnit.insertBefore(statusRow, existingUnit.firstChild);
+            }
+            slimeObj.statusRowEl = statusRow;
             if (existingUnit.dataset.isAttacking !== 'true' && existingUnit.dataset.isEating !== 'true') {
                 existingUnit.style.left = `${coords.posX}px`;
                 existingUnit.style.top = `${coords.posY}px`;
@@ -752,6 +758,7 @@ export function playSlimeRainRespawnAnimation(onComplete) {
 
             // Initial falling frame is frame 3 (-38px)
             unit.innerHTML = `
+                <div class="slime-status-row"></div>
                 <img src="${sheetUrl}" 
                      onerror="this.onerror=null; this.src='${SLIME_FALLBACK_SRC}';" 
                      alt="${slimeConfig.name}" 

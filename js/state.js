@@ -472,7 +472,13 @@ export function getSlimeGraftMultipliers(slime) {
 export function hasMeltingMend(slime) {
     if (!slime) return false;
     if (slime.talents?.meltingMend) return true;
-    return getSlimeSpecialization(slime) === 'support' && (slime.type || '') === 'fireSupport' && Boolean(slime.talents?.graft);
+    // Ownership is stored under the per-combo second talent flag (e.g. fireSupportTalent2),
+    // which hasSecondTalent reads. It must NOT require the separate Graft first talent.
+    // The combo typeId is derived from the slime's element (type) + capitalized specialization
+    // (e.g. type 'fire' + spec 'support' => 'fireSupport'), NOT the raw slime.type.
+    const spec = getSlimeSpecialization(slime);
+    const comboTypeId = spec ? `${slime.type || ''}${spec.charAt(0).toUpperCase()}${spec.slice(1)}` : '';
+    return comboTypeId === 'fireSupport' && hasSecondTalent(slime);
 }
 
 /** Per-combo flag key used to store ownership of a Slime's second talent. */
@@ -492,7 +498,9 @@ export function hasFirstTalent(slime) {
 /** Whether a Slime owns the second talent of its element+specialization combo. */
 export function hasSecondTalent(slime) {
     if (!slime) return false;
-    const flag = getSecondTalentFlag(slime.type || '');
+    const spec = getSlimeSpecialization(slime);
+    const comboTypeId = spec ? `${slime.type || ''}${spec.charAt(0).toUpperCase()}${spec.slice(1)}` : '';
+    const flag = getSecondTalentFlag(comboTypeId);
     return Boolean(flag && slime.talents?.[flag]);
 }
 
