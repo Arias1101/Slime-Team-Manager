@@ -2,7 +2,7 @@
  * Enemy Management & AI Behaviors
  */
 
-import { gameState, addScraps, saveStateToLocal, saveWaveSnapshot, restoreBestRoster, SLIME_TYPES, getSlimeTotalRegen, getSlimeSpecialization, setEquipmentDefinitionResolver, getSlimeSubTalentDef, getSlimeMaxHp, getSlimeHitEffects, getSlimeJumpSprite, hasSpicyBlock, hasIceBlock, hasCounter } from './state.js';
+import { gameState, addScraps, saveStateToLocal, saveWaveSnapshot, restoreBestRoster, SLIME_TYPES, getSlimeTotalRegen, getSlimeSpecialization, setEquipmentDefinitionResolver, getSlimeSubTalentDef, getSlimeMaxHp, getSlimeHitEffects, getSlimeJumpSprite, hasSpicyBlock, hasIceBlock, hasCounter, hasPolishedSlime } from './state.js';
 import { healAllSlimes, initAscendedAutoAttacks, clearAscendedAutoAttacks, showFloatingDamageNumber, showFloatingHealingNumber, showFloatingHealingNumberFromUnit, showFloatingStatusTextAt, showBattlefieldWaveBanner, triggerSlimeEatLoot, applyHitEffectsToEnemy } from './slimes.js';
 import { updateUI, updateLootHUD, requestUIRefresh, playSlimeRainRespawnAnimation } from './ui.js';
 import { openShopModal } from './shop.js';
@@ -2357,6 +2357,13 @@ function updateSlimeIceBarrier(unit, active) {
 export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg', sourceEnemy = null, allowBlock = true) {
     if (!slime || slime.hp <= 0) return null;
 
+    // Polished Slime (Stone Tank second talent): reduce ALL incoming damage by
+    // 10% BEFORE any other flat absorption or reductions (Block, Stone Skin,
+    // Ice Barrier, etc.). Applied to every hit, including status DoT ticks.
+    if (hasPolishedSlime(slime)) {
+        damageAmount = Math.max(0, Math.round(damageAmount * 0.9));
+    }
+
     // Tank Block talent: base 10% chance to ignore incoming damage.
     // Shield Master raises it to 20%. Perfect Block heals to full on a successful block.
     // Status effect DoT ticks (burn/poison) pass allowBlock=false and can never be blocked.
@@ -2396,6 +2403,27 @@ export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg', 
                     spicyImg.style.objectPosition = '0px 0px';
                     setTimeout(() => {
                         spicyImg.src = getSlimeJumpSprite(slime);
+                    }, 1000);
+                }
+            }
+            // Polished Slime (Stone Tank second talent): reflect the slime's own
+            // stun status onto the attacker twice (double stun stacks).
+            if (hasPolishedSlime(slime) && sourceEnemy && sourceEnemy.effects !== undefined) {
+                const hitEffects = getSlimeHitEffects(slime);
+                const isControlImmune = sourceEnemy.typeId === 'death';
+                const stunOnly = { stun: hitEffects.stun };
+                applyHitEffectsToEnemy(sourceEnemy, stunOnly, slime, isControlImmune);
+                applyHitEffectsToEnemy(sourceEnemy, stunOnly, slime, isControlImmune);
+                // Polished Slime: swap the Slime's sprite to the polished pose for
+                // a second (the block jump animation is already playing), then revert.
+                const polishedUnit = document.querySelector(`[data-slime-id="${slime.id}"]`);
+                const polishedImg = polishedUnit ? polishedUnit.querySelector('.slime-img') : null;
+                if (polishedImg) {
+                    polishedImg.dataset.prevSrc = polishedImg.src;
+                    polishedImg.src = 'images/slimes/stone/polishedStone.png';
+                    polishedImg.style.objectPosition = '0px 0px';
+                    setTimeout(() => {
+                        polishedImg.src = getSlimeJumpSprite(slime);
                     }, 1000);
                 }
             }

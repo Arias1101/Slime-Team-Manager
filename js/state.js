@@ -382,10 +382,10 @@ export const SECOND_TALENT = {
     iceFighter: { name: 'Ice Burst', description: 'Cold damage equals the target\'s burn + poison Stacks instead of a flat 5.' },
     poisonFighter: { name: 'Corrosive Poison', description: 'Increase direct damage by the target\'s current poison stacks (%).' },
     stoneFighter: { name: 'Heavy Strike', description: 'Pushback ennemies.' },
-    fireTank: { name: 'Spicy Block', description: 'On Block, apply triple your burn status to the attacker.' },
+    fireTank: { name: 'Spicy Block', description: 'On Block, apply triple Slime\'s burn to the attacker.' },
     iceTank: { name: 'Ice Block', description: 'On death, 10% chance to instead regain 10% HP, but suffer Stun 5.' },
     poisonTank: { name: 'Counter', description: 'Counter Attack on Block and heal for 25% of inflicted damage.' },
-    stoneTank: { name: 'Talent2', description: '' }
+    stoneTank: { name: 'Polished Slime', description: 'On Block, apply double Slime\'s stun to the attacker. Also reduce all incoming damage by 10%.' }
 };
 
 /** Dedicated second-talent button icons (keyed by combo typeId). */
@@ -398,6 +398,7 @@ export const SECOND_TALENT_ICON = {
     iceFighter: 'images/talents/fighterIceBurst.png',
     poisonFighter: 'images/talents/fighterCorrosivePoison.png',
     stoneFighter: 'images/talents/fighterHeavyStrike.png',
+    stoneTank: 'images/talents/tankPolishedStone.png',
     fireTank: 'images/talents/tankSpicyBlock.png',
     iceTank: 'images/talents/tankIceBlock.png',
     poisonTank: 'images/talents/tankCounter.png'
@@ -563,6 +564,14 @@ export function hasHeavyStrike(slime) {
     const spec = getSlimeSpecialization(slime);
     const comboTypeId = spec ? `${slime.type || ''}${spec.charAt(0).toUpperCase()}${spec.slice(1)}` : '';
     return comboTypeId === 'stoneFighter' && hasSecondTalent(slime);
+}
+
+/** Whether a Slime owns the Polished Slime second talent (Stone Tank). */
+export function hasPolishedSlime(slime) {
+    if (!slime) return false;
+    const spec = getSlimeSpecialization(slime);
+    const comboTypeId = spec ? `${slime.type || ''}${spec.charAt(0).toUpperCase()}${spec.slice(1)}` : '';
+    return comboTypeId === 'stoneTank' && hasSecondTalent(slime);
 }
 
 /** Whether a Slime owns the Spicy Block second talent (Fire Tank). */

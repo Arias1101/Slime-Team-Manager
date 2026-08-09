@@ -3,6 +3,7 @@ v0.22
 - Implemented second Fire Tank Slime talent: "Spicy Block".
 - Implemented second Ice Tank Slime talent: "Ice Block".
 - Implemented second Poison Tank Slime talent: "Counter".
+- Implemented second Stone Tank Slime talent: "Polished Slime".
 - Fixed talent coin costs.
 - Tried a blind fix on a Roster display edge case issue.
 
