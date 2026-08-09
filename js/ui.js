@@ -25,14 +25,6 @@ let currentInspectedSlime = null;
 let activeSlimeSheetTab = 'stats';
 let isRainAnimating = false;
 
-// Diagnostic logger for the roster size/relayout refresh path. Prefix makes it
-// easy to filter in the console while investigating the "roster glitches / tries
-// to resize while fighting or looting" issue.
-function rosterSizeLog(...args) {
-    // eslint-disable-next-line no-console
-    console.log('[roster-size]', ...args);
-}
-
 /**
  * Main UI Update Function
  */
@@ -238,8 +230,6 @@ export function renderSlimeRosterLanes(container, entries, {
             // items per line.
             if (capacity <= 0) return;
             if (capacity === lastCapacity) return;
-            rosterSizeLog('renderSlimeRosterLanes.draw: capacity changed',
-                lastCapacity, '->', capacity, '(' + (container.id || container.className) + ')');
             lastCapacity = capacity;
             renderLines(capacity);
         };
@@ -293,15 +283,6 @@ function computeRosterCapacity(container) {
     // N items need N*itemW + (N-1)*gap <= innerWidth, so the max N is
     // floor((innerWidth - itemW)/(itemW+gap)) + 1.
     const capacity = Math.max(1, Math.floor((innerWidth - itemW) / (itemW + gap)) + 1);
-    // Diagnostic: report capacity recomputation only when the measured inner
-    // width actually differs from the previous logged value (throttled) or is in
-    // the degenerate 0-width state.
-    if (computeRosterCapacity._lastLoggedInner !== measuredInner) {
-        computeRosterCapacity._lastLoggedInner = measuredInner;
-        rosterSizeLog('computeRosterCapacity:',
-            'clientWidth=', container.clientWidth, 'padX=', padX,
-            'innerWidth=', innerWidth, 'itemW=', itemW, '=> capacity=', capacity);
-    }
     return capacity;
 }
 
@@ -463,8 +444,6 @@ function updateSlimeRoster() {
     }).join(',');
     if (signature === lastRosterSignature) return;
     lastRosterSignature = signature;
-    rosterSizeLog('updateSlimeRoster: signature changed -> rebuilding roster DOM',
-        'entries=', entries.length, 'signature=', signature.slice(0, 120));
 
     renderSlimeRosterLanes(rosterListEl, entries, {
         byLine: true,
@@ -479,8 +458,6 @@ function updateSlimeRoster() {
     const rosterPanelEl = document.querySelector('.slime-status-panel');
     if (rosterPanelEl) requestAnimationFrame(() => {
         const h = rosterPanelEl.offsetHeight || 60;
-        rosterSizeLog('updateSlimeRoster: setting --roster-height =', `${h}px`,
-            'panel.offsetHeight=', rosterPanelEl.offsetHeight);
         document.documentElement.style.setProperty('--roster-height', `${h}px`);
     });
 }
@@ -503,32 +480,26 @@ function trackRosterForResize(container, redraw = null) {
 
     if (redraw && !observedRosterContainers.has(container)) {
         observedRosterContainers.add(container);
-        rosterSizeLog('trackRosterForResize: attaching ResizeObserver to', container.id || container.className);
         const observer = new ResizeObserver(() => {
             // Re-measure now that the container has a settled size. Guard against a
             // 0-width transient (still hidden) which would collapse the layout.
             const cap = computeRosterCapacity(container);
-            rosterSizeLog('ResizeObserver fired: container=', container.id || container.className,
-                'clientWidth=', container.clientWidth, 'computedCapacity=', cap);
             if (cap > 0) redraw();
         });
         observer.observe(container);
         // A few deferred retries in case the observer's first callback fires while
         // the panel is still in a transitional (zero-width) state.
-        const rafRedraw = () => { rosterSizeLog('trackRosterForResize: rAF deferred redraw'); redraw(); };
-        requestAnimationFrame(rafRedraw);
-        setTimeout(() => { rosterSizeLog('trackRosterForResize: setTimeout(150) deferred redraw'); redraw(); }, 150);
-        setTimeout(() => { rosterSizeLog('trackRosterForResize: setTimeout(500) deferred redraw'); redraw(); }, 500);
+        requestAnimationFrame(redraw);
+        setTimeout(redraw, 150);
+        setTimeout(redraw, 500);
     }
 
     if (rosterResizeBound) return;
     rosterResizeBound = true;
     let resizeTimer = null;
     window.addEventListener('resize', () => {
-        rosterSizeLog('window resize event');
         if (resizeTimer) clearTimeout(resizeTimer);
         resizeTimer = setTimeout(() => {
-            rosterSizeLog('window resize debounced -> invalidating roster signature & relayout');
             lastRosterSignature = '';
             updateSlimeRoster();
             window.dispatchEvent(new CustomEvent('roster:relayout'));

@@ -1,7 +1,4 @@
 ------------- SOON ----------------
-Auto Equip, start by highest quality.
-Hide scroll bar in selected slime container in common house popup.
-In common house, when showing / hidding talents, we can keep both common talents if only one spec is chosen but multiple slime types.
 
 ------------- LATER  ----------------
 3d SupportTalent:

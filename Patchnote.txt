@@ -1,4 +1,11 @@
 Patch Notes:
+v0.24
+- Changed Auto Equip to equip first highest tiers of items.
+- Changed Auto Equip to prioritize Slimes of corresponding types for status effect equipments.
+- Fixed scrollbar in Common House selection section.
+- Changed Common House Talents display logic to allow more flexibility in selections on Slimes.
+- Alchemist reworked to upgrade Slime Types base Status effects.
+
 v0.23
 - Fixed Roster Glich.
 

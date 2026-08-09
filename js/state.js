@@ -242,10 +242,10 @@ export function addScraps(amount = 1) {
 }
 
 export const ALCHEMIST_UPGRADES = Object.freeze({
-    luck: { key: 'luck', field: 'alchemistLuckLevel', name: 'Philter of Luck', description: '+1% Base Crit /lvl', icon: 'luckpotion.png' },
-    rage: { key: 'rage', field: 'alchemistRageLevel', name: 'Tincture of Rage', description: '+1 Base Damage /lvl', icon: 'ragepotion.png' },
-    endurance: { key: 'endurance', field: 'alchemistEnduranceLevel', name: 'Elixir of Endurance', description: '+1 Base HP /lvl', icon: 'endurancepotion.png' },
-    regeneration: { key: 'regeneration', field: 'alchemistRegenLevel', name: 'Potion of Regeneration', description: '+1 Base Regen /lvl', icon: 'regenerationpotion.png' }
+    luck: { key: 'luck', field: 'alchemistLuckLevel', name: 'Flask of Fire', description: '+1 Base Burn /lvl', icon: 'firePotion.png' },
+    rage: { key: 'rage', field: 'alchemistRageLevel', name: 'Vial of Frost', description: '+1 Base Freeze /lvl', icon: 'icePotion.png' },
+    endurance: { key: 'endurance', field: 'alchemistEnduranceLevel', name: 'Brew of Venom', description: '+1 Base Poison /lvl', icon: 'poisonPotion.png' },
+    regeneration: { key: 'regeneration', field: 'alchemistRegenLevel', name: 'Tonic of Stone', description: '+1 Base Stun /lvl', icon: 'stonePotion.png' }
 });
 
 export function getAlchemistUpgradeLevel(key) {
@@ -339,11 +339,28 @@ export function getEquipmentSprite(item) {
     const id = item?.id || item?.enemyKey;
     return item?.sprite || (id ? `images/loots/${id}.png` : 'images/loots/boot.png');
 }
+/**
+ * Base status amount a Slime applies by its element, before equipment.
+ * Defaults to 1, then gains +1 per level of the matching Alchemist upgrade
+ * (Flask of Fire -> burn, Vial of Frost -> freeze, Brew of Venom -> poison,
+ * Tonic of Stone -> stun). Base/unspecialized Slimes return 0.
+ */
+export function getSlimeBaseStatus(slime) {
+    const slimeEffect = (SLIME_TYPES[slime?.type] || SLIME_TYPES.base).effect;
+    if (!slimeEffect) return 0;
+    const upgradeKeyByEffect = { burn: 'luck', freeze: 'rage', poison: 'endurance', stun: 'regeneration' };
+    const upgradeKey = upgradeKeyByEffect[slimeEffect];
+    if (!upgradeKey) return 0;
+    return 1 + getAlchemistUpgradeLevel(upgradeKey);
+}
+
 /** Sum innate elemental effects and quality-scaled equipment effects for one hit. */
 export function getSlimeHitEffects(slime) {
     const totals = { burn: 0, freeze: 0, poison: 0, stun: 0 };
     const slimeEffect = (SLIME_TYPES[slime?.type] || SLIME_TYPES.base).effect;
-    if (slimeEffect && Object.prototype.hasOwnProperty.call(totals, slimeEffect)) totals[slimeEffect] += 1;
+    if (slimeEffect && Object.prototype.hasOwnProperty.call(totals, slimeEffect)) {
+        totals[slimeEffect] += getSlimeBaseStatus(slime);
+    }
 
     (slime?.equipment || []).forEach(item => {
         getScaledEquipmentEffects(item).forEach(effect => {

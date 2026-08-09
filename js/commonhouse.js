@@ -491,12 +491,18 @@ const TALENT_PRICE = [1, 2, 3];
  * Build the single 4-column action grid for the Selected Slime area. Rows:
  *   0: 4 elemental Type buttons   (non-specialized selection)
  *   1: 3 Specialize buttons        (non-specialized selection)
- *   2-13: 12 Talent rows (one per element+spec combo) for specialized slimes.
+ *   2+: Talent rows for specialized slimes.
  * Rows are shown/hidden per the current selection; non-matching rows get the
  * `hidden-row` class. The matching element Type button is marked "selected" only
  * when every selected Slime shares one element. The Spec row is disabled when any
- * selected Slime is Basic. Talent rows appear only when all selected Slimes share
- * the same exact type+specialization combo.
+ * selected Slime is Basic.
+ *
+ * Talent visibility rules:
+ *  - Same exact type+specialization combo -> full row (all 3 Talents, the second
+ *    being the unique per-type talent).
+ *  - Same specialization but DIFFERENT types -> a per-spec row showing only the
+ *    shared per-spec Talents (1 and 3); the unique per-type Talent 2 is hidden.
+ *  - Different specializations -> no Talent rows at all.
  */
 function getActionButtonsHtml(selectedSlimes) {
     const anySpecialized = selectedSlimes.some(s => getSlimeSpecialization(s) !== '');
@@ -514,6 +520,11 @@ function getActionButtonsHtml(selectedSlimes) {
     const sameSpec = selectedSlimes.length > 0 && selectedSlimes.every(s => getSlimeSpecialization(s) === getSlimeSpecialization(selectedSlimes[0]));
     const activeCombo = (allSpecialized && sameType && sameSpec)
         ? `${elementOf(selectedSlimes[0])}${getSlimeSpecialization(selectedSlimes[0]).charAt(0).toUpperCase()}${getSlimeSpecialization(selectedSlimes[0]).slice(1)}`
+        : null;
+    // Same specialization across different types: show the shared per-spec
+    // Talents (1 and 3) so talents can still be changed without a unified type.
+    const partialSpec = (allSpecialized && sameSpec && !sameType)
+        ? getSlimeSpecialization(selectedSlimes[0])
         : null;
 
     const typeRowHidden = anySpecialized ? ' hidden-row' : '';
@@ -535,14 +546,34 @@ function getActionButtonsHtml(selectedSlimes) {
         </div>
     `;
 
-    const talentRows = TALENT_COMBOS.map(combo => {
+    /**
+     * Render one Talent row. `combo.typeId` may be null for the spec-wide
+     * (different-type, same-spec) mode, in which case only `visibleTalents`
+     * (e.g. {0,2} for the per-spec Talents 1 and 3) are drawn and the unique
+     * per-type second Talent is skipped.
+     */
+    const renderTalentRow = (combo, visibleTalents) => {
         const spec = combo.spec;
         const specDef = SPEC_BUTTONS.find(s => s.id === spec) || SPEC_BUTTONS[0];
         const specLabel = specDef.label;
         const talentName = TALENT_NAMES[spec] || 'Talent';
         const talentDesc = TALENT_DESCRIPTIONS[spec] || '';
-        const hidden = activeCombo === combo.typeId ? '' : ' hidden-row';
         const talentCols = Array.from({ length: TALENT_VISIBLE }, (_, t) => {
+            if (!visibleTalents.has(t)) {
+                // Keep the slot occupied (blank space holder) without drawing a
+                // real Talent button, so the visible Talents stay in their
+                // outer positions (1 and 3) with the middle one held empty.
+                return `
+                    <div class="common-house-talent-col common-house-talent-col-placeholder">
+                        <div class="common-house-talent-placeholder"></div>
+                        <div class="common-house-subtalent-row">
+                            <span class="common-house-subtalent-placeholder"></span>
+                            <span class="common-house-subtalent-placeholder"></span>
+                            <span class="common-house-subtalent-placeholder"></span>
+                        </div>
+                    </div>
+                `;
+            }
             // Main Talent icon: first Talent uses its dedicated file
             // (e.g. supportGraft.png); Talents 2/3 use ${spec}Talent${n}.png.
             const talentIcon = t === 0
@@ -619,13 +650,13 @@ function getActionButtonsHtml(selectedSlimes) {
                 const subTitle = subDef ? `${subDef.name}: ${subDef.description}` : `${talentName} Sub-talent ${t + 1}.${s + 1}`;
                 const subSelected = sharedSub === s ? ' selected' : '';
                 return `
-                    <button type="button" class="common-house-subtalent-btn${subSelected}" data-talent="${t}" data-subtalent="${s}" data-combo="${combo.typeId}" title="${subTitle}" aria-label="${subTitle}" tabindex="-1"${subDisabled}><img src="${subtalentIcon}" alt="${specLabel}"></button>
+                    <button type="button" class="common-house-subtalent-btn${subSelected}" data-talent="${t}" data-subtalent="${s}" data-combo="${combo.typeId || ''}" title="${subTitle}" aria-label="${subTitle}" tabindex="-1"${subDisabled}><img src="${subtalentIcon}" alt="${specLabel}"></button>
                 `;
             }).join('');
             const glassTooltip = (t === 1 && secondTalent)
                 ? { name: secondTalent.name, description: secondTalent.description }
                 : (t === 0 && talentDesc ? { name: talentName, description: talentDesc } : null);
-            const talentButtonHtml = `<button type="button" class="common-house-talent-btn${talentExtraClass}" data-talent="${t}" data-combo="${combo.typeId}" title="${glassTooltip ? '' : talentTooltip}" aria-label="${talentTooltip}"${talentDisabled}><img src="${talentIcon}" alt="${talentLabel}"><span class="common-house-talent-cost">${talentBadge}</span></button>`;
+            const talentButtonHtml = `<button type="button" class="common-house-talent-btn${talentExtraClass}" data-talent="${t}" data-combo="${combo.typeId || ''}" title="${glassTooltip ? '' : talentTooltip}" aria-label="${talentTooltip}"${talentDisabled}><img src="${talentIcon}" alt="${talentLabel}"><span class="common-house-talent-cost">${talentBadge}</span></button>`;
             const talentButtonWrapped = glassTooltip
                 ? `<span class="talent-tooltip-glass">${talentButtonHtml}<span class="talent-tooltip-glass-box"><strong>${glassTooltip.name}</strong><br>${glassTooltip.description}</span></span>`
                 : talentButtonHtml;
@@ -637,11 +668,19 @@ function getActionButtonsHtml(selectedSlimes) {
             `;
         }).join('');
         return `
-            <div class="common-house-grid-row common-house-talent-row${hidden}" data-row="talent" data-combo="${combo.typeId}">
+            <div class="common-house-grid-row common-house-talent-row" data-row="talent" data-combo="${combo.typeId || ''}">
                 ${talentCols}
             </div>
         `;
-    }).join('');
+    };
+
+    let talentRows = '';
+    if (activeCombo) {
+        const combo = TALENT_COMBOS.find(c => c.typeId === activeCombo);
+        if (combo) talentRows = renderTalentRow(combo, new Set([0, 1, 2]));
+    } else if (partialSpec) {
+        talentRows = renderTalentRow({ spec: partialSpec, typeId: null }, new Set([0, 2]));
+    }
 
     return `
         <div class="common-house-action-buttons">

@@ -2,7 +2,7 @@
  * Application Main Initializer
  */
 
-import { loadStateFromLocal, addScraps, gameState, getFortificationLevel, getFortificationUpgradeCost, buyFortificationUpgrade, getSlimeRegen, getRegenMax, markAfkStart, claimAfkScraps, previewAfkScraps, updateBestRoster, calculateSlimeDamage, saveStateToLocal, getScaledEquipmentEffects, getEquipmentQuality, getEquipmentDisplayName, getEquipmentSprite, refreshSlimeMaxHp, ALCHEMIST_UPGRADES, getAlchemistUpgradeLevel, getAlchemistUpgradeCost, buyAlchemistUpgrade, getSlimeDeathSprite, getSlimeJumpSprite, getSlimeSpecialization } from './state.js';
+import { loadStateFromLocal, addScraps, gameState, SLIME_TYPES, getFortificationLevel, getFortificationUpgradeCost, buyFortificationUpgrade, getSlimeRegen, getRegenMax, markAfkStart, claimAfkScraps, previewAfkScraps, updateBestRoster, calculateSlimeDamage, saveStateToLocal, getScaledEquipmentEffects, getEquipmentQuality, getEquipmentDisplayName, getEquipmentSprite, refreshSlimeMaxHp, ALCHEMIST_UPGRADES, getAlchemistUpgradeLevel, getAlchemistUpgradeCost, buyAlchemistUpgrade, getSlimeDeathSprite, getSlimeJumpSprite, getSlimeSpecialization } from './state.js';
 import { initAuth, loginWithGoogle, logoutUser } from './auth.js';
 import { startEngine, setGamePaused, isGamePaused } from './engine.js';
 import { updateUI, setAuthScreenState, showFirebaseNotice, playSlimeRainRespawnAnimation, initSlimeModalListeners, initMainTabsListeners, openSlimeInspectorModal, renderSlimeRosterLanes } from './ui.js';
@@ -466,21 +466,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 const s = getSlimeSpecialization(slime);
                 return spec === 'basic' ? s === '' : s === spec;
             };
+            const slimeElementStatus = (slime) => (SLIME_TYPES[slime?.type] || SLIME_TYPES.base).effect;
             const findTarget = (item) => {
+                const itemStatuses = new Set(getScaledEquipmentEffects(item)
+                    .map(effect => effect?.stat || effect?.effectType)
+                    .filter(stat => !!stat));
+                const matchesStatus = (slime) => itemStatuses.has(slimeElementStatus(slime));
                 const priority = String(item.loot_priority || ENEMY_TYPES[item.id]?.loot_priority || '').toLowerCase();
                 const order = LOOT_PRIORITY_ORDER[priority] || defaultOrder;
                 for (const spec of order) {
-                    const target = roster.find(slime =>
+                    const candidates = roster.filter(slime =>
                         matchesSpec(slime, spec) &&
                         !(slime.equipment || []).some(eq => eq.id === item.id)
                     );
-                    if (target) return target;
+                    if (candidates.length) {
+                        const typeMatch = candidates.find(matchesStatus);
+                        return typeMatch || candidates[0];
+                    }
                 }
                 return null;
             };
             const remainingInventory = [];
             const equippedSlimeIds = [];
-            getVillageInventory().forEach(item => {
+            const sortedInventory = [...getVillageInventory()].sort((a, b) => getEquipmentQuality(b) - getEquipmentQuality(a));
+            sortedInventory.forEach(item => {
                 const targetSlime = findTarget(item);
                 if (!targetSlime || !equipVillageItemToSlime(targetSlime, item)) remainingInventory.push(item);
                 else equippedSlimeIds.push(targetSlime.id);
