@@ -3,7 +3,7 @@
  */
 
 import { activeEnemies, triggerLootDrop, activeGroundLoots, formatLootEffects } from './enemies.js';
-import { gameState, SLIME_TYPES, addScraps, updateBestRoster, saveStateToLocal, calculateSlimeDamage, getScaledEquipmentEffects, getSlimeHitEffects, refreshSlimeMaxHp, getSlimeJumpSprite, getSlimeSpecialization, getSlimeGraftMultipliers, getSlimeSubTalentDef, hasMeltingMend, hasIceBarrier, hasLeech } from './state.js';
+import { gameState, SLIME_TYPES, addScraps, updateBestRoster, saveStateToLocal, calculateSlimeDamage, getScaledEquipmentEffects, getSlimeHitEffects, refreshSlimeMaxHp, getSlimeJumpSprite, getSlimeSpecialization, getSlimeGraftMultipliers, getSlimeSubTalentDef, hasMeltingMend, hasIceBarrier, hasLeech, hasStoneSkin } from './state.js';
 import { updateUI, requestUIRefresh, updateLootHUD } from './ui.js';
 /**
  * Convert viewport measurements back into the battlefield's native 500px coordinate space.
@@ -196,11 +196,13 @@ function trySupportGraft(unitEl, support) {
             liveTarget.effects.healOnTimePerTick = (liveTarget.effects.healOnTimePerTick || 0) + perTick;
         }
 
-        // Ice Barrier (Ice Support second talent): the grafted ally gains temporary
-        // bonus HP equal to 20% of the heal provided by the Graft (based on the
-        // intended/theoretical healing, consistent with Melting Mend). Stackable:
-        // repeated grafts add 20% of the heal and the 2s duration resets on each
-        // application. Total bonus HP is capped at 60% of the target's Max HP.
+        // Ice Barrier (Ice Support second talent): the grafted ally gains a separate
+        // pool of temporary HP equal to 20% of the heal provided (intended/theoretical
+        // healing, consistent with Melting Mend). Temporary HP absorbs damage BEFORE
+        // the slime's real HP. It is NEVER added to slime.hp (so the main HP bar only
+        // ever shows real HP). There is NO time limit — the barrier lasts until its
+        // temporary HP is fully depleted by damage. Stackable: repeated grafts add 20%
+        // of the heal. Total temporary HP is capped at 60% of the target's Max HP.
         if (hasIceBarrier(liveSupport)) {
             if (!liveTarget.effects) {
                 liveTarget.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0, stunTimer: 0 };
@@ -208,11 +210,17 @@ function trySupportGraft(unitEl, support) {
             const bonusHp = Math.round(intendedHealing * 0.20);
             const MAX_BARRIER_BONUS = Math.round(liveTarget.maxHp * 0.60);
             const currentBonus = liveTarget.effects.iceBarrierBonusHp || 0;
-            const newBonus = Math.min(MAX_BARRIER_BONUS, currentBonus + bonusHp);
-            // Only raise current HP if the barrier is growing (never reduces it).
-            liveTarget.hp += Math.max(0, newBonus - currentBonus);
-            liveTarget.effects.iceBarrierBonusHp = newBonus;
-            liveTarget.effects.iceBarrierTimer = 2.0;
+            liveTarget.effects.iceBarrierBonusHp = Math.min(MAX_BARRIER_BONUS, currentBonus + bonusHp);
+            liveTarget.effects.iceBarrierTimer = 0;
+        }
+
+        // Stone Skin (Stone Support second talent): the grafted ally gains a "reduction"
+        // pool equal to 50% of the heal provided. The next instance of direct damage is
+        // reduced by the reduction amount (down to 0), then the pool resets to 0. It is
+        // stackable across multiple Stone Support grafts on the same target.
+        if (hasStoneSkin(liveSupport)) {
+            const reductionGain = Math.round(intendedHealing * 0.5);
+            liveTarget.reduction = (liveTarget.reduction || 0) + reductionGain;
         }
 
         const targetEl = Array.from(document.querySelectorAll('.slime-unit')).find(el => String(el.dataset.slimeId) === String(liveTarget.id));
@@ -506,10 +514,15 @@ function dealTargetEnemyDamage(targetEnemy, damageAmount, slimeConfig, isCrit = 
             showFloatingStatusText(currentTarget, String.fromCodePoint(0x2744, 0xFE0F), 'freeze-text');
         }
     }
-    // Leech (Poison Support second talent): the attacking slime heals for 100% of the
+    if (hitEffects.stun > 0 && !isControlImmune) {
+        // Stun fully disables the enemy's attack for the duration.
+        const stunDuration = (SLIME_TYPES[sourceSlime.type]?.stunDuration || 0.5) * hitEffects.stun;
+        currentTarget.effects.stunTimer = Math.max(currentTarget.effects.stunTimer || 0, stunDuration);
+        showFloatingStatusText(currentTarget, String.fromCodePoint(0x1F4AB), 'stun-text');
+    }
     // direct damage it inflicts (main hit + freeze bonus damage), up to its Max HP.
     if (slimeObj && hasLeech(slimeObj)) {
-        const leechAmount = (damageToApply || 0) + (typeof freezeDmgDealt === 'number' ? freezeDmgDealt : 0);
+        const leechAmount = ((damageToApply || 0) + (typeof freezeDmgDealt === 'number' ? freezeDmgDealt : 0)) * 0.5;
         if (leechAmount > 0 && slimeObj.hp > 0) {
             const healed = Math.min(slimeObj.maxHp - slimeObj.hp, leechAmount);
             slimeObj.hp += healed;

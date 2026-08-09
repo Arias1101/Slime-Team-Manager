@@ -372,10 +372,10 @@ export function getSlimeSpecialization(slime) {
  * description used as its tooltip on the Common House and the Slime sheet.
  */
 export const SECOND_TALENT = {
-    fireSupport: { name: 'Melting Mend', description: 'Graft heals 30% more over 3 seconds' },
-    iceSupport: { name: 'Ice Barrier', description: 'Graft gives 20% more HP as temporary bonus HP for 2 seconds.' },
-    poisonSupport: { name: 'Leech', description: 'Self heal 100% of inflicted direct damages.' },
-    stoneSupport: { name: 'Talent2', description: '' },
+    fireSupport: { name: 'Melting Mend', description: 'Graft heals 30% more over 3 seconds. (Stacks)' },
+    iceSupport: { name: 'Ice Barrier', description: 'Graft gives 20% of the heal as barrier. (Stacks)' },
+    poisonSupport: { name: 'Leech', description: 'Self heal 50% of inflicted direct damages.' },
+    stoneSupport: { name: 'Stone Skin', description: 'Graft reduces next direct damage by 50% of the heal. (Stacks)' },
     fireFighter: { name: 'Talent2', description: '' },
     iceFighter: { name: 'Talent2', description: '' },
     poisonFighter: { name: 'Talent2', description: '' },
@@ -498,6 +498,17 @@ export function hasIceBarrier(slime) {
     const spec = getSlimeSpecialization(slime);
     const comboTypeId = spec ? `${slime.type || ''}${spec.charAt(0).toUpperCase()}${spec.slice(1)}` : '';
     return comboTypeId === 'iceSupport' && hasSecondTalent(slime);
+}
+
+/** Whether a Slime owns the Stone Skin second talent (Stone Support). */
+export function hasStoneSkin(slime) {
+    if (!slime) return false;
+    if (slime.talents?.stoneSkin) return true;
+    // Same combo flag convention as the other second talents: element + capitalized specialization.
+    // type 'stone' + spec 'support' => 'stoneSupport'.
+    const spec = getSlimeSpecialization(slime);
+    const comboTypeId = spec ? `${slime.type || ''}${spec.charAt(0).toUpperCase()}${spec.slice(1)}` : '';
+    return comboTypeId === 'stoneSupport' && hasSecondTalent(slime);
 }
 
 /** Whether a Slime owns the Leech second talent (Poison Support). */

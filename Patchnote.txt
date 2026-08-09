@@ -7,9 +7,14 @@ v0.20
 - Implemented "No Merchant" button.
 - Implemented "Return to village" button.
 - NG+ Scaling balance pass.
+- Implemented Heal on time effects.
 - Implemented "Melting Mend", second talent for Fire Support Slimes.
+- Implemented life steal effects.
 - Implemented "Leech", second talent for Poison Support Slimes.
+- Implemented temporary hp effects.
 - Implemented "Ice Barrier", second talent for Ice Support Slimes.
+- Implemented damage reduction effects.
+- Implemented "Stone Skin", second talent for Stone Support Slimes.
 
 v0.19
 - Adjusted loot font.

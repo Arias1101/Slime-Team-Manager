@@ -1331,8 +1331,8 @@ function checkWaveCompletion() {
             gameState.slimes.forEach(s => {
                 const regeneration = getSlimeTotalRegen(s);
                 if (s.hp > 0 && regeneration > 0) {
-                    const bonusCap = s.maxHp + (s.effects?.iceBarrierBonusHp || 0);
-                    s.hp = Math.min(bonusCap, s.hp + regeneration);
+                    // Regen only fills real HP up to maxHp; temporary HP is a separate pool.
+                    s.hp = Math.min(s.maxHp, s.hp + regeneration);
                 }
             });
         }
@@ -1904,17 +1904,6 @@ export function updateEnemies(deltaSeconds) {
                 }
             }
 
-            // 2.6 Process Ice Barrier Timer (temporary bonus HP shield)
-            if (slime.effects.iceBarrierTimer > 0) {
-                slime.effects.iceBarrierTimer -= deltaSeconds;
-                if (slime.effects.iceBarrierTimer <= 0) {
-                    slime.effects.iceBarrierTimer = 0;
-                    // Shield expired: remove the temporary bonus HP and clamp current HP.
-                    slime.effects.iceBarrierBonusHp = 0;
-                    if (slime.hp > slime.maxHp) slime.hp = slime.maxHp;
-                }
-            }
-
             // 3. Process Stun Status Timer
             if (slime.effects.stunTimer > 0) {
                 slime.effects.stunTimer -= deltaSeconds;
@@ -1948,10 +1937,13 @@ export function updateEnemies(deltaSeconds) {
                     unit.classList.toggle('is-poisoned', slime.effects.poisonTimer > 0);
                     unit.classList.toggle('is-heal-on-time', slime.effects.healOnTimeTimer > 0);
                     unit.classList.toggle('is-stunned', slime.effects.stunTimer > 0);
-                    unit.classList.toggle('is-ice-barrier', slime.effects.iceBarrierTimer > 0);
+                    unit.classList.toggle('is-ice-barrier', (slime.effects.iceBarrierBonusHp || 0) > 0);
+                    unit.classList.toggle('is-stone-skin', (slime.reduction || 0) > 0);
 
                     // Spawn / remove the Ice Barrier shield sprite on the target slime.
-                    updateSlimeIceBarrier(unit, slime.effects.iceBarrierTimer > 0);
+                    // Tie visibility to the actual temporary-HP pool, not the timer, so the
+                    // sprite disappears the instant the pool is depleted (even mid-duration).
+                    updateSlimeIceBarrier(unit, (slime.effects.iceBarrierBonusHp || 0) > 0);
 
                     const rosterItem = document.getElementById(`roster_item_${slime.id}`);
                     if (rosterItem) {
@@ -1960,7 +1952,8 @@ export function updateEnemies(deltaSeconds) {
                         rosterItem.classList.toggle('is-frozen', (slime.effects.freezeTimer || 0) > 0);
                         rosterItem.classList.toggle('is-stunned', slime.effects.stunTimer > 0);
                         rosterItem.classList.toggle('is-heal-on-time', slime.effects.healOnTimeTimer > 0);
-                        rosterItem.classList.toggle('is-ice-barrier', slime.effects.iceBarrierTimer > 0);
+                        rosterItem.classList.toggle('is-ice-barrier', (slime.effects.iceBarrierBonusHp || 0) > 0);
+                        rosterItem.classList.toggle('is-stone-skin', (slime.reduction || 0) > 0);
                     }
                 }
             }
@@ -2354,23 +2347,29 @@ export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg', 
         }
     }
 
-    slime.hp = Math.max(0, slime.hp - damageAmount);
+    // Stone Skin (Stone Support): consume the target's "reduction" pool against the
+    // NEXT DIRECT hit only (status DoT passes allowBlock=false and is unaffected).
+    // Damage is reduced by the reduction amount (never below 0) and the pool resets to 0.
+    if (allowBlock && (slime.reduction || 0) > 0) {
+        const reduced = Math.min(slime.reduction, damageAmount);
+        slime.reduction = 0;
+        damageAmount -= reduced;
+    }
 
-    // Ice Barrier (Ice Support): while the temporary bonus HP is active, a lethal
-    // hit is absorbed by the shield instead of killing the slime. Damage eats the
-    // bonus HP first; the slime only dies once the barrier is fully depleted.
-    if (slime.effects && slime.effects.iceBarrierTimer > 0 && slime.hp <= 0) {
-        const bonus = slime.effects.iceBarrierBonusHp || 0;
-        if (bonus > 0) {
-            const absorbed = Math.min(bonus, -slime.hp);
-            slime.effects.iceBarrierBonusHp = bonus - absorbed;
-            slime.hp = Math.max(0, slime.hp + absorbed);
-            if (slime.effects.iceBarrierBonusHp <= 0) {
-                slime.effects.iceBarrierBonusHp = 0;
-                slime.effects.iceBarrierTimer = 0;
-            }
+    // Ice Barrier (Ice Support): temporary HP absorbs damage BEFORE real HP.
+    // Remove from the separate iceBarrierBonusHp pool first; only the overflow
+    // reaches slime.hp. The slime can only die once the temporary pool is gone.
+    let remainingDamage = damageAmount;
+    if (slime.effects && slime.effects.iceBarrierBonusHp > 0) {
+        const absorbed = Math.min(slime.effects.iceBarrierBonusHp, remainingDamage);
+        slime.effects.iceBarrierBonusHp -= absorbed;
+        remainingDamage -= absorbed;
+        if (slime.effects.iceBarrierBonusHp <= 0) {
+            slime.effects.iceBarrierBonusHp = 0;
+            slime.effects.iceBarrierTimer = 0;
         }
     }
+    slime.hp = Math.max(0, slime.hp - remainingDamage);
     const hpPct = Math.max(0, (slime.hp / slime.maxHp) * 100);
     const rosterItem = document.getElementById(`roster_item_${slime.id}`);
     const hpFill = rosterItem ? rosterItem.querySelector('.roster-hp-fill') : null;

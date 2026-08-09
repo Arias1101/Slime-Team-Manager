@@ -480,6 +480,15 @@ body.modal-open {
     border-radius: 1px;
     overflow: hidden;
     margin-top: 1px;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+}
+
+/* Secondary HP bar: shows Ice Barrier temporary HP, invisible until filled. */
+.roster-grid-hp-bar-secondary {
+    margin-top: 1px;
+    background: transparent;
 }
 
 .roster-hp-fill {
@@ -490,9 +499,14 @@ body.modal-open {
 
 .roster-hp-bonus {
     height: 100%;
-    background: linear-gradient(90deg, #7dd3fc, #bae6fd);
-    box-shadow: 0 0 3px rgba(125, 211, 252, 0.9);
+    background: #ffffff;
+    box-shadow: 0 0 3px rgba(255, 255, 255, 0.9);
     transition: width 0.3s ease;
+}
+
+/* Nudge the slime icon up ~2px within its roster square. */
+.roster-grid-icon {
+    transform: translateY(-2px);
 }
 
 .battlefield-wrapper {
@@ -804,7 +818,6 @@ body.modal-open {
     display: flex;
     align-items: center;
     justify-content: center;
-    animation: iceBarrierPulse 1.1s infinite ease-in-out alternate;
 }
 
 .slime-ice-barrier-img {
@@ -812,16 +825,17 @@ body.modal-open {
     height: 20px;
     image-rendering: pixelated;
     filter: drop-shadow(0 0 4px rgba(120, 200, 255, 0.9));
+    animation: iceBarrierPulse 1.1s infinite ease-in-out alternate;
 }
 
 @keyframes iceBarrierPulse {
     0% {
-        transform: translate(-50%, -50%) scale(0.92);
+        transform: scale(0.92);
         opacity: 0.8;
     }
 
     100% {
-        transform: translate(-50%, -50%) scale(1.08);
+        transform: scale(1.08);
         opacity: 1;
     }
 }
@@ -3062,6 +3076,15 @@ body.modal-open {
 .enemy-unit.is-stunned .enemy-sprite {
     filter: brightness(0.75) sepia(0.6) hue-rotate(180deg) !important;
     animation: dizzyWobble 0.4s infinite ease-in-out alternate !important;
+}
+
+/* Stone Skin (Stone Support): while reduction > 0, the slime turns grey like a stun. */
+.slime-unit.is-stone-skin .slime-img {
+    filter: brightness(0.75) sepia(0.6) hue-rotate(180deg) !important;
+}
+
+.roster-grid-item.is-stone-skin {
+    background: rgba(250, 204, 21, .42) !important;
 }
 
 @keyframes dizzyWobble {

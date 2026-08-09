@@ -333,17 +333,27 @@ function buildRosterItem(entry, { itemClassName, extraClassFor, titleFor, dataAt
     item.className = `roster-grid-item${slime.ascended ? ' ascended' : ''}${specializationClass ? ` ${specializationClass}` : ''}${itemClassName ? ` ${itemClassName}` : ''}${extraClass ? ` ${extraClass}` : ''}${talentAvailable ? ' talent-available' : ''}`;
     item.id = `roster_item_${slime.id}`;
     item.dataset.slimeId = String(slime.id);
-    item.title = titleFor ? titleFor(slime) : `[Slot #${(slime.slotIndex ?? 0) + 1}] ${displayName} (${slimeConfig.name})${slime.ascended ? ' ✨' : ''}: ${slime.hp}/${slime.maxHp} HP`;
-    if (dataAttrsFor) Object.entries(dataAttrsFor(slime) || {}).forEach(([k, v]) => item.setAttribute(k, v));
     const bonusHp = Number(slime.effects?.iceBarrierBonusHp || 0);
-    const bonusPct = Math.max(0, Math.min(50, (bonusHp / Math.max(1, slime.maxHp)) * 100));
-    const mainPct = Math.max(0, Math.min(100, hpPct));
+    item.title = titleFor ? titleFor(slime) : `[Slot #${(slime.slotIndex ?? 0) + 1}] ${displayName} (${slimeConfig.name})${slime.ascended ? ' ✨' : ''}: ${slime.hp}/${slime.maxHp} HP${bonusHp > 0 ? ` (+${bonusHp} barrier)` : ''}`;
+    if (dataAttrsFor) Object.entries(dataAttrsFor(slime) || {}).forEach(([k, v]) => item.setAttribute(k, v));
+
+    // Main HP bar shows current HP (green) vs maxHp. A separate secondary bar (below)
+    // shows the Ice Barrier temporary HP on the SAME scale (full width = maxHp), filled
+    // from the left and invisible when empty. e.g. 50/100 + 20 => main 50% green,
+    // secondary 20% white (and 30% empty on each). 100/100 + 20 => main 100% green,
+    // secondary 20% white.
+    const mainMax = Math.max(1, slime.maxHp);
+    let greenPct = Math.min(100, (slime.hp / mainMax) * 100);
+    let secondaryPct = Math.min(100, (bonusHp / mainMax) * 100);
+    greenPct = Math.max(0, greenPct);
+    secondaryPct = Math.max(0, secondaryPct);
+
     if (slime.effects?.burnTimer > 0) item.classList.add('is-burning');
     if (slime.effects?.poisonTimer > 0) item.classList.add('is-poisoned');
     if (slime.effects?.freezeTimer > 0) item.classList.add('is-frozen');
     if (slime.effects?.stunTimer > 0) item.classList.add('is-stunned');
     if (slime.effects?.iceBarrierTimer > 0) item.classList.add('is-ice-barrier');
-    item.innerHTML = `<img src="${getSlimeJumpSprite(slime)}" alt="${displayName}" class="roster-grid-icon"><div class="roster-grid-hp-bar"><div class="roster-hp-fill" style="width:${mainPct}%;background:${hpColor};"></div>${bonusPct > 0 ? `<div class="roster-hp-bonus" style="width:${bonusPct}%;"></div>` : ''}</div>`;
+    item.innerHTML = `<img src="${getSlimeJumpSprite(slime)}" alt="${displayName}" class="roster-grid-icon"><div class="roster-grid-hp-bar"><div class="roster-hp-fill" style="width:${greenPct}%;background:${hpColor};"></div></div>${secondaryPct > 0 ? `<div class="roster-grid-hp-bar roster-grid-hp-bar-secondary"><div class="roster-hp-bonus" style="width:${secondaryPct}%;"></div></div>` : ''}`;
     if (onItemClick) item.addEventListener('click', (e) => onItemClick(slime, item, e));
     return item;
 }
