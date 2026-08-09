@@ -2,7 +2,7 @@
  * User Interface & Authentication Screen Renderer
  */
 
-import { gameState, SLIME_TYPES, killSlime, syncSlimesArray, rerollSlimeType, calculateSlimeDamage, getScaledEquipmentEffects, getEquipmentDisplayName, getEquipmentSprite, saveStateToLocal, getSlimeHitEffects, getEquipmentQuality, getSlimeTotalRegen, sortRosterBySpecialization, updateBestRoster, getSlimeJumpSprite, canSlimeBuyNextTalent, TALENT_SUBTALENTS, ensureSlimeSubTalents, getSlimeSubTalent, recalculateSlimeStats } from './state.js';
+import { gameState, SLIME_TYPES, killSlime, syncSlimesArray, rerollSlimeType, calculateSlimeDamage, getScaledEquipmentEffects, getEquipmentDisplayName, getEquipmentSprite, saveStateToLocal, getSlimeHitEffects, getEquipmentQuality, getSlimeTotalRegen, sortRosterBySpecialization, updateBestRoster, getSlimeJumpSprite, canSlimeBuyNextTalent, TALENT_SUBTALENTS, SECOND_TALENT, getSecondTalentFlag, hasSecondTalent, ensureSlimeSubTalents, getSlimeSubTalent, recalculateSlimeStats } from './state.js';
 import { updateUpgradesUI } from './upgrades.js';
 import { activeGroundLoots, formatLootEffects } from './enemies.js';
 import { setGamePaused, isGamePaused } from './engine.js';
@@ -173,150 +173,175 @@ export function renderSlimeRosterLanes(container, entries, {
     extraClassFor = null,
     titleFor = null,
     dataAttrsFor = null,
-    onItemClick = null
+    onItemClick = null,
+    byLine = false
 } = {}) {
     if (!container) return;
 
-    const laneFor = slime => {
-        const specialization = String(slime?.specialization || SLIME_TYPES[slime?.type]?.specialization || '').toLowerCase();
-        return specialization === 'support' ? 'back' : specialization === 'tank' ? 'front' : 'middle';
-    };
+    const allEntries = entries || [];
 
-    const lanes = {
-        back: document.createElement('div'),
-        middle: document.createElement('div'),
-        front: document.createElement('div')
-    };
-    Object.entries(lanes).forEach(([lane, element]) => {
-        element.className = `slime-roster-lane slime-roster-lane-${lane}`;
-        container.appendChild(element);
-    });
-    container.replaceChildren(...Object.values(lanes));
-
-    const laneCounts = { back: 0, middle: 0, front: 0 };
-
-    (entries || []).forEach(entry => {
+    // Build a single flat, display-ordered array: slimes are grouped by
+    // specialization, then interleaved line-by-line so every visual line holds
+    // a balanced mix (e.g. 1 support + 9 fighters on line 1, 10 fighters on line
+    // 2) instead of three rigid columns with gaps. The stored roster order is
+    // never mutated — only the rendered sequence is derived here.
+    const groups = { support: [], fighter: [], tank: [], basic: [] };
+    allEntries.forEach(entry => {
         const slime = entry.slime || entry;
-        const isDead = entry.dead === true;
-        const lane = laneFor(slime);
-        laneCounts[lane]++;
-
-        if (isDead) {
-            const slot = slime.slotIndex ?? 0;
-            const emptyItem = document.createElement('div');
-            emptyItem.className = 'roster-grid-item empty-slot';
-            emptyItem.id = `roster_item_empty_${slot}`;
-            emptyItem.title = `RIP ${slime.name || slime.id || `Slot #${slot + 1}`}...`;
-            emptyItem.innerHTML = '<div class="roster-empty-icon">💀</div>';
-            lanes[lane].appendChild(emptyItem);
-            return;
-        }
-
-        const slimeConfig = SLIME_TYPES[slime.type] || SLIME_TYPES.base;
-        const specialization = String(slime.specialization || slimeConfig.specialization || '').toLowerCase();
-        const specializationClass = ['tank', 'fighter', 'support'].includes(specialization) ? `specialization-${specialization}` : '';
-        const displayName = slime.name || slime.id || slimeConfig.name;
-        const hpPct = Math.max(0, (slime.hp / slime.maxHp) * 100);
-        const hpColor = hpPct < 35 ? '#ef4444' : hpPct < 65 ? '#f59e0b' : '#10b981';
-
-        const extraClass = extraClassFor ? extraClassFor(slime) || '' : '';
-        const talentAvailable = canSlimeBuyNextTalent(slime);
-        const item = document.createElement('div');
-        item.className = `roster-grid-item${slime.ascended ? ' ascended' : ''}${specializationClass ? ` ${specializationClass}` : ''}${itemClassName ? ` ${itemClassName}` : ''}${extraClass ? ` ${extraClass}` : ''}${talentAvailable ? ' talent-available' : ''}`;
-        item.id = `roster_item_${slime.id}`;
-        item.dataset.slimeId = String(slime.id);
-        item.title = titleFor ? titleFor(slime) : `[Slot #${(slime.slotIndex ?? 0) + 1}] ${displayName} (${slimeConfig.name})${slime.ascended ? ' ✨' : ''}: ${slime.hp}/${slime.maxHp} HP`;
-        if (dataAttrsFor) Object.entries(dataAttrsFor(slime) || {}).forEach(([k, v]) => item.setAttribute(k, v));
-        if (slime.effects?.burnTimer > 0) item.classList.add('is-burning');
-        if (slime.effects?.poisonTimer > 0) item.classList.add('is-poisoned');
-        if (slime.effects?.freezeTimer > 0) item.classList.add('is-frozen');
-        if (slime.effects?.stunTimer > 0) item.classList.add('is-stunned');
-        item.innerHTML = `<img src="${getSlimeJumpSprite(slime)}" alt="${displayName}" class="roster-grid-icon"><div class="roster-grid-hp-bar"><div class="roster-hp-fill" style="width:${hpPct}%;background:${hpColor};"></div></div>`;
-        if (onItemClick) item.addEventListener('click', (e) => onItemClick(slime, item, e));
-        lanes[lane].appendChild(item);
+        const specialization = String(slime?.specialization || SLIME_TYPES[slime?.type]?.specialization || '').toLowerCase();
+        const key = ['support', 'fighter', 'tank'].includes(specialization) ? specialization : 'basic';
+        groups[key].push(entry);
     });
+    const groupOrder = ['support', 'fighter', 'tank', 'basic'];
 
-    applyProportionalLaneWidths(container, laneCounts);
+    container.replaceChildren();
+
+    const renderWith = (capacity) => {
+        container.replaceChildren();
+        const ordered = interleaveGroups(groups, groupOrder, capacity);
+        ordered.forEach(entry => container.appendChild(buildRosterItem(entry, { itemClassName, extraClassFor, titleFor, dataAttrsFor, onItemClick })));
+    };
+
+    const renderLines = (capacity) => {
+        container.replaceChildren();
+        const lines = interleaveGroupsToLines(groups, groupOrder, capacity);
+        lines.forEach(lineEntries => {
+            const line = document.createElement('div');
+            line.className = 'roster-line';
+            lineEntries.forEach(entry => line.appendChild(buildRosterItem(entry, { itemClassName, extraClassFor, titleFor, dataAttrsFor, onItemClick })));
+            container.appendChild(line);
+        });
+    };
+
+    if (byLine) {
+        // Wrap each visual line in a centered flex row so rows stay aligned and
+        // the (possibly short) last line is centered like the others. Capacity is
+        // measured from the container's real width, which isn't settled yet on the
+        // first synchronous render (panel not laid out) — so recompute the line
+        // grouping on the next frame once layout is final.
+        const draw = () => renderLines(computeRosterCapacity(container));
+        draw();
+        requestAnimationFrame(() => requestAnimationFrame(draw));
+    } else {
+        renderWith(computeRosterCapacity(container));
+    }
+
     trackRosterForResize(container);
-
-    return lanes;
+    return container;
 }
 
 /**
- * Size the roster columns so the roster always uses the available width, while
- * a lane with few slimes never gets stretched beyond its content (no gaps).
- *
- * Per non-empty lane the column width is:
- *   min( contentWidth, proportionalWidth )
- * where contentWidth = count * slotPx (one slime per slot) and proportionalWidth
- * = count/total * usableWidth. So a small lane is content-sized, and a large
- * lane grows to fill its proportional share — and is capped so the total never
- * overflows or leaves gaps on narrow screens & the Common House roster.
- *
- * Empty lanes are hidden and omitted so they leave no separator gap.
- * Applied to every roster (Main, Shop, Forge, Common House) via the renderer.
+ * Compute how many slimes fit on one visual line inside `container`, from its
+ * real rendered (inner) width. N items need N*itemW + (N-1)*gap, so the max N
+ * is floor((innerWidth + gap) / (itemW + gap)). The container's horizontal
+ * padding is subtracted first so we never pack more slimes than the visible
+ * area can hold (which previously let a line overflow to 11 when only 10 fit).
+ * Clamped to a sane minimum so narrow panels still wrap cleanly.
  */
-/**
- * Size the roster columns so the roster respects a fixed per-line capacity per
- * breakpoint (wide=30, medium=24, narrow=15 slots), centered in its container,
- * while a lane with few slimes never gets stretched beyond its content.
- *
- * The capacity is derived from the container's real rendered width so it always
- * matches whatever panel size the current layout applies (main roster panel,
- * Forge popup, Common House popup), and is clamped so a wide container can't
- * squeeze in more slots than the breakpoint allows. Per non-empty lane the
- * column width is:
- *   min( contentWidth, proportionalWidth )
- * where contentWidth = count * slotPx and proportionalWidth =
- * count/total * capacity * slotPx. So a small lane is content-sized and a large
- * lane grows to its proportional share of the fixed roster width — the roster
- * never exceeds its line capacity and never overflows.
- *
- * Empty lanes are hidden and omitted so they leave no separator gap.
- * Applied to every roster (Main, Shop, Forge, Common House) via the renderer.
- */
-function applyProportionalLaneWidths(container, laneCounts) {
-    if (!container || !laneCounts) return;
-
-    const order = ['back', 'middle', 'front'];
-    const total = order.reduce((s, lane) => s + (laneCounts[lane] || 0), 0);
-    if (total <= 0) return;
-
-    // Slot width (item + 4px lane gap). Fall back if not measurable yet.
+function computeRosterCapacity(container) {
     const item = container.querySelector('.roster-grid-item');
-    const slotPx = (item ? item.offsetWidth : 27) + 4;
+    const itemW = item ? item.offsetWidth : 27;
+    const gap = 4; // matches --roster-spec-gap
+    const cs = getComputedStyle(container);
+    // clientWidth is the padding-box width: it INCLUDES padding but EXCLUDES the
+    // border and any reserved scrollbar gutter (scrollbar-gutter: stable). So the
+    // true content area where items sit is clientWidth minus the horizontal
+    // padding.
+    const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+    const innerWidth = (container.clientWidth || (itemW * 10 + padX)) - padX;
+    if (innerWidth < itemW) return 1;
+    // N items need N*itemW + (N-1)*gap <= innerWidth, so the max N is
+    // floor((innerWidth - itemW)/(itemW+gap)) + 1.
+    return Math.max(1, Math.floor((innerWidth - itemW) / (itemW + gap)) + 1);
+}
 
-    // Per-line slot capacity is derived from the container's real rendered
-    // width (the slime-status-panel has three widths: 1068/750/500px), so it
-    // always matches the current layout. N slots in a lane occupy
-    // N*itemW + (N-1)*gap, hence add one gap back when counting capacity.
-    const nonEmpty = order.filter(lane => (laneCounts[lane] || 0) > 0);
-    const gap = 4;
-    const gapsTotal = Math.max(0, nonEmpty.length - 1) * gap;
+/**
+ * Distribute grouped entries into `lines` balanced rows. Each group is spread
+ * as evenly as possible across the lines: every line (except the last, when the
+ * count isn't a multiple of the line count) receives the same number of that
+ * group, and any remainder is spilled onto the first `count % lines` lines.
+ *
+ * For example, 29 tanks across 3 lines → 10, 10, 9. The returned array holds one
+ * entry-array per line; groups are concatenated within each line in `groupOrder`
+ * (support → fighter → tank → basic), so every line reads the same way. This is
+ * fully deterministic — adding or removing slimes only changes the counts, never
+ * the layout logic, so groups never "jump" sides between renders.
+ */
+function interleaveGroupsToLines(groups, groupOrder, capacity) {
+    const counts = groupOrder.map(key => ({ key, list: groups[key] || [], i: 0 })).filter(g => g.list.length > 0);
+    const total = counts.reduce((s, g) => s + g.list.length, 0);
+    if (total === 0) return [];
+    const lines = Math.max(1, Math.ceil(total / capacity));
 
-    const availWidth = container.clientWidth || (slotPx * 10);
-    const capacity = Math.max(1, Math.floor((availWidth + gap) / slotPx));
+    // Fill each line up to `capacity`, pulling the next items from each group in
+    // groupOrder (support -> fighter -> tank -> basic). Capping every line at
+    // Each line shows the lanes in order (support = back, fighter = mid, tank =
+    // front): a support block, then a fighter block, then a tank block. Within a
+    // line we take a BALANCED share from each lane — ceil(remainingInLane /
+    // remainingLines) — so every line carries the same proportion of each lane
+    // (your original "15 supports / 10 fighters / 5 tanks per line" spec), and
+    // the per-line total is capped at `capacity` so it can never overflow (the
+    // old even-split overflowed when several lanes' remainders landed on the same
+    // first lines).
+    const result = [];
+    for (let l = 0; l < lines; l++) {
+        const remainingLines = lines - l;
+        const line = [];
+        let slotsLeft = capacity;
+        for (const key of groupOrder) {
+            const g = counts.find(c => c.key === key);
+            if (!g || slotsLeft <= 0 || g.i >= g.list.length) continue;
+            const take = Math.min(slotsLeft, Math.ceil((g.list.length - g.i) / remainingLines));
+            for (let n = 0; n < take; n++) line.push(g.list[g.i++]);
+            slotsLeft -= take;
+        }
+        result.push(line);
+    }
+    return result;
+}
 
-    const rosterWidth = capacity * slotPx - gapsTotal;
+/** Flat variant (no line wrappers): concatenate every line in order. */
+function interleaveGroups(groups, groupOrder, capacity) {
+    return interleaveGroupsToLines(groups, groupOrder, capacity).flat();
+}
 
-    // Column width per lane = min(content, proportional share of the roster).
-    const widthFor = lane => {
-        const count = laneCounts[lane] || 0;
-        const content = count * slotPx;
-        const proportional = (count / total) * rosterWidth;
-        return Math.max(0, Math.min(content, proportional));
-    };
+/** Build one roster DOM item (live slime or dead/RIP slot). */
+function buildRosterItem(entry, { itemClassName, extraClassFor, titleFor, dataAttrsFor, onItemClick }) {
+    const slime = entry.slime || entry;
+    const isDead = entry.dead === true;
 
-    const cols = nonEmpty.map(lane => `${Math.round(widthFor(lane))}px`);
+    if (isDead) {
+        const slot = slime.slotIndex ?? 0;
+        const emptyItem = document.createElement('div');
+        emptyItem.className = 'roster-grid-item empty-slot';
+        emptyItem.id = `roster_item_empty_${slot}`;
+        emptyItem.title = `RIP ${slime.name || slime.id || `Slot #${slot + 1}`}...`;
+        emptyItem.innerHTML = '<div class="roster-empty-icon">💀</div>';
+        return emptyItem;
+    }
 
-    if (cols.length === 0) return;
-    container.style.gridTemplateColumns = cols.join(' ');
+    const slimeConfig = SLIME_TYPES[slime.type] || SLIME_TYPES.base;
+    const specialization = String(slime.specialization || slimeConfig.specialization || '').toLowerCase();
+    const specializationClass = ['tank', 'fighter', 'support'].includes(specialization) ? `specialization-${specialization}` : '';
+    const displayName = slime.name || slime.id || slimeConfig.name;
+    const hpPct = Math.max(0, (slime.hp / slime.maxHp) * 100);
+    const hpColor = hpPct < 35 ? '#ef4444' : hpPct < 65 ? '#f59e0b' : '#10b981';
 
-    // Hide empty lanes so they leave no separator gap; non-empty lanes fill width.
-    order.forEach(lane => {
-        const el = container.querySelector(`.slime-roster-lane-${lane}`);
-        if (el) el.style.display = (laneCounts[lane] || 0) > 0 ? '' : 'none';
-    });
+    const extraClass = extraClassFor ? extraClassFor(slime) || '' : '';
+    const talentAvailable = canSlimeBuyNextTalent(slime);
+    const item = document.createElement('div');
+    item.className = `roster-grid-item${slime.ascended ? ' ascended' : ''}${specializationClass ? ` ${specializationClass}` : ''}${itemClassName ? ` ${itemClassName}` : ''}${extraClass ? ` ${extraClass}` : ''}${talentAvailable ? ' talent-available' : ''}`;
+    item.id = `roster_item_${slime.id}`;
+    item.dataset.slimeId = String(slime.id);
+    item.title = titleFor ? titleFor(slime) : `[Slot #${(slime.slotIndex ?? 0) + 1}] ${displayName} (${slimeConfig.name})${slime.ascended ? ' ✨' : ''}: ${slime.hp}/${slime.maxHp} HP`;
+    if (dataAttrsFor) Object.entries(dataAttrsFor(slime) || {}).forEach(([k, v]) => item.setAttribute(k, v));
+    if (slime.effects?.burnTimer > 0) item.classList.add('is-burning');
+    if (slime.effects?.poisonTimer > 0) item.classList.add('is-poisoned');
+    if (slime.effects?.freezeTimer > 0) item.classList.add('is-frozen');
+    if (slime.effects?.stunTimer > 0) item.classList.add('is-stunned');
+    item.innerHTML = `<img src="${getSlimeJumpSprite(slime)}" alt="${displayName}" class="roster-grid-icon"><div class="roster-grid-hp-bar"><div class="roster-hp-fill" style="width:${hpPct}%;background:${hpColor};"></div></div>`;
+    if (onItemClick) item.addEventListener('click', (e) => onItemClick(slime, item, e));
+    return item;
 }
 
 /**
@@ -353,6 +378,7 @@ function updateSlimeRoster() {
     lastRosterSignature = signature;
 
     renderSlimeRosterLanes(rosterListEl, entries, {
+        byLine: true,
         titleFor: slime => {
             const slimeConfig = SLIME_TYPES[slime.type] || SLIME_TYPES.base;
             const displayName = slime.name || slime.id || slimeConfig.name;
@@ -367,31 +393,25 @@ function updateSlimeRoster() {
     });
 }
 
-// Track every rendered roster container so its lane widths are recomputed when
-// the window is resized (the slime-status-panel width changes between
-// breakpoints: 1068/750/500px) without needing a full re-render.
-const trackedRosters = new Set();
+// Track every rendered roster container so the flat, interleaved line layout is
+// recomputed when the window is resized (the slime-status-panel width changes
+// between breakpoints). On resize we invalidate the render cache and dispatch a
+// relayout event so popups (Shop, Common House) that render their own rosters can
+// re-render too.
+let rosterResizeBound = false;
 function trackRosterForResize(container) {
     if (!container) return;
-    trackedRosters.add(container);
-    if (!window.__rosterResizeBound) {
-        window.__rosterResizeBound = true;
-        let resizeTimer = null;
-        window.addEventListener('resize', () => {
-            if (resizeTimer) clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(() => {
-                trackedRosters.forEach(el => {
-                    if (!document.contains(el)) { trackedRosters.delete(el); return; }
-                    const laneCounts = { back: 0, middle: 0, front: 0 };
-                    Object.keys(laneCounts).forEach(lane => {
-                        const laneEl = el.querySelector(`.slime-roster-lane-${lane}`);
-                        if (laneEl) laneCounts[lane] = laneEl.querySelectorAll('.roster-grid-item').length;
-                    });
-                    applyProportionalLaneWidths(el, laneCounts);
-                });
-            }, 100);
-        });
-    }
+    if (rosterResizeBound) return;
+    rosterResizeBound = true;
+    let resizeTimer = null;
+    window.addEventListener('resize', () => {
+        if (resizeTimer) clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+            lastRosterSignature = '';
+            updateSlimeRoster();
+            window.dispatchEvent(new CustomEvent('roster:relayout'));
+        }, 100);
+    });
 }
 
 /**
@@ -851,7 +871,7 @@ function renderSlimeTalentTree(slime) {
         const normalizedSpecialization = String(specialization).toLowerCase();
         const icon = normalizedSpecialization ? `images/logos/${normalizedSpecialization}.png` : 'images/logos/support.png';
         const coins = Number(slime.coins || 0);
-        const costs = [1, 1, 1];
+        const costs = [1, 2, 3];
         // Keep the section visible as soon as Specializations are unlocked (or the
         // Slime is already specialized) so the Talent columns and sub-talent
         // placeholders are always on display.
@@ -876,19 +896,48 @@ function renderSlimeTalentTree(slime) {
             const talentName = normalizedSpecialization
                 ? (isFirst ? (talentNames[normalizedSpecialization] || 'Talent1') : `Talent${index + 1}`)
                 : genericTalentNames[index];
-            const button = `<button type="button" class="slime-specialization-talent ${isFirst && normalizedSpecialization && coins >= cost ? 'available' : ''}" title="${normalizedSpecialization ? '' : 'Specialize to unlock'}" ${isFirst && normalizedSpecialization && coins >= cost ? '' : 'disabled'}><img src="${iconSource}" alt="${talentName}"><span>${normalizedSpecialization ? `${coins}/${cost}` : '🔒'}</span></button>`;
-            const hasTooltip = isFirst && (normalizedSpecialization === 'support' || normalizedSpecialization === 'tank' || normalizedSpecialization === 'fighter');
+            const elementMatch = (slime.type || '').match(/^(poison|fire|ice|stone)/);
+            const elementCap = elementMatch ? elementMatch[0].charAt(0).toUpperCase() + elementMatch[0].slice(1) : '';
+            const isSecond = index === 1;
+            const secondFlag = isSecond ? getSecondTalentFlag(`${elementMatch ? elementMatch[0] : ''}${normalizedSpecialization.charAt(0).toUpperCase()}${normalizedSpecialization.slice(1)}`) : null;
+            const secondOwned = Boolean(secondFlag && slime.talents?.[secondFlag]);
+            const secondAvailable = isSecond && dedicatedUnlocked && secondFlag && coins >= cost;
+            const isOwned = isFirst ? dedicatedUnlocked : (isSecond ? secondOwned : false);
+            const buttonState = isOwned
+                ? ''
+                : (isFirst
+                    ? (normalizedSpecialization && coins >= cost ? '' : 'disabled')
+                    : (isSecond ? (secondAvailable ? '' : 'disabled') : 'disabled'));
+            const buttonClass = `slime-specialization-talent ${isOwned ? 'unlocked' : ''} ${isFirst && normalizedSpecialization && coins >= cost && !isOwned ? 'available' : ''}${isSecond && secondAvailable ? ' available' : ''}`;
+            const badgeHtml = normalizedSpecialization
+                ? (secondOwned || (isFirst && dedicatedUnlocked) ? '✔️' : `${cost}<img src="images/logos/coin.png" alt="" class="talent-cost-coin">`)
+                : '🔒';
+            const button = `<button type="button" class="${buttonClass}" title="${normalizedSpecialization ? '' : 'Specialize to unlock'}" ${buttonState}><img src="${iconSource}" alt="${talentName}"><span>${badgeHtml}</span></button>`;
+            const columnUnlocked = isFirst ? dedicatedUnlocked : (isSecond ? secondOwned : false);
+            // Sub-talent icon: Talent 1 & 3 share the per-spec sprite
+            // (support/tank/fighterSubtalents.png); Talent 2 uses the unique
+            // per-type sprite (e.g. supportFireSubtalents.png) keyed on element.
+            const secondTalentDef = index === 1 ? SECOND_TALENT[`${elementMatch ? elementMatch[0] : ''}${normalizedSpecialization.charAt(0).toUpperCase()}${normalizedSpecialization.slice(1)}`] : null;
+            const firstTalentDef = isFirst && (normalizedSpecialization === 'support' || normalizedSpecialization === 'tank' || normalizedSpecialization === 'fighter')
+                ? { name: talentNames[normalizedSpecialization], description: talentDescriptions[normalizedSpecialization] }
+                : null;
+            const tooltipDef = secondTalentDef || firstTalentDef;
+            const hasTooltip = Boolean(tooltipDef);
+            const tooltipTitle = tooltipDef ? tooltipDef.name : '';
+            const tooltipText = tooltipDef ? tooltipDef.description : '';
             const mainButton = hasTooltip
-                ? `<span class="talent-tooltip-glass">${button}<span class="talent-tooltip-glass-box"><strong>${talentNames[normalizedSpecialization]}</strong><br>${talentDescriptions[normalizedSpecialization]}</span></span>`
+                ? `<span class="talent-tooltip-glass">${button}<span class="talent-tooltip-glass-box"><strong>${tooltipTitle}</strong><br>${tooltipText}</span></span>`
                 : button;
-            const columnUnlocked = isFirst ? dedicatedUnlocked : false;
+            const subtalentIcon = (index === 1 && elementCap)
+                ? `images/talents/subtalents/${normalizedSpecialization}${elementCap}Subtalents.png`
+                : `images/talents/subtalents/${normalizedSpecialization}Subtalents.png`;
             const subButtons = columnUnlocked
                 ? Array.from({ length: subTalentsPerTalent }, (_, subIndex) => {
                     const subLabel = `${talentName} sub-talent ${subIndex + 1}`;
                     const subDef = TALENT_SUBTALENTS[normalizedSpecialization]?.[index]?.[subIndex];
                     const selected = columnUnlocked && getSlimeSubTalent(slime, index) === subIndex;
                     const selectedClass = selected ? ' selected' : '';
-                    return `<button type="button" class="slime-specialization-subtalent${selectedClass}" title="${subDef ? `${subDef.name}: ${subDef.description}` : subLabel}" aria-label="${subLabel}" data-talent-index="${index}" data-subtalent-index="${subIndex}" ${columnUnlocked ? '' : 'disabled'}><img src="${icon}" alt="${talentName}"></button>`;
+                    return `<button type="button" class="slime-specialization-subtalent${selectedClass}" title="${subDef ? `${subDef.name}: ${subDef.description}` : subLabel}" aria-label="${subLabel}" data-talent-index="${index}" data-subtalent-index="${subIndex}" ${columnUnlocked ? '' : 'disabled'}><img src="${subtalentIcon}" alt="${talentName}"></button>`;
                 }).join('')
                 : '';
             return `<div class="slime-specialization-talent-column">${mainButton}<div class="slime-specialization-subtalents">${subButtons}</div></div>`;
@@ -909,19 +958,40 @@ function renderSlimeTalentTree(slime) {
             });
         });
         if (normalizedSpecialization === 'support' || normalizedSpecialization === 'tank' || normalizedSpecialization === 'fighter') {
-            const flag = talentFlag[normalizedSpecialization];
-            const firstButton = specializationTalents.querySelector('.slime-specialization-talent');
-            if (slime.talents?.[flag]) {
+            const elementMatch = (slime.type || '').match(/^(poison|fire|ice|stone)/);
+            const comboTypeId = `${elementMatch ? elementMatch[0] : ''}${normalizedSpecialization.charAt(0).toUpperCase()}${normalizedSpecialization.slice(1)}`;
+            const firstFlag = talentFlag[normalizedSpecialization];
+            const secondFlag = getSecondTalentFlag(comboTypeId);
+            const buttons = specializationTalents.querySelectorAll('.slime-specialization-talent');
+            // First Talent (index 0)
+            const firstButton = buttons[0];
+            if (slime.talents?.[firstFlag]) {
                 if (firstButton) { firstButton.classList.add('unlocked'); firstButton.disabled = false; const progress = firstButton.querySelector('span'); if (progress) progress.textContent = '✔️'; }
             } else if (firstButton) {
                 firstButton.addEventListener('click', () => {
                     if (coins < costs[0]) return;
                     slime.coins = coins - costs[0];
-                    slime.talents = { ...(slime.talents || {}), [flag]: true };
+                    slime.talents = { ...(slime.talents || {}), [firstFlag]: true };
                     updateBestRoster();
                     saveStateToLocal();
                     openSlimeInspectorModal(slime);
                 });
+            }
+            // Second Talent (index 1)
+            const secondButton = buttons[1];
+            if (secondFlag) {
+                if (slime.talents?.[secondFlag]) {
+                    if (secondButton) { secondButton.classList.add('unlocked'); secondButton.disabled = false; const progress = secondButton.querySelector('span'); if (progress) progress.textContent = '✔️'; }
+                } else if (secondButton) {
+                    secondButton.addEventListener('click', () => {
+                        if (!slime.talents?.[firstFlag] || coins < costs[1]) return;
+                        slime.coins = coins - costs[1];
+                        slime.talents = { ...(slime.talents || {}), [secondFlag]: true };
+                        updateBestRoster();
+                        saveStateToLocal();
+                        openSlimeInspectorModal(slime);
+                    });
+                }
             }
         }
     }
@@ -1008,7 +1078,6 @@ export function openSlimeInspectorModal(slime) {
 
     const critEl = document.getElementById('slimeModalCrit');
     const regenEl = document.getElementById('slimeModalRegen');
-    const xpEl = document.getElementById('slimeModalXp');
 
     const critChance = slime.critChance || 0;
     if (critEl) critEl.textContent = `${critChance}%`;
@@ -1025,8 +1094,6 @@ export function openSlimeInspectorModal(slime) {
     Object.entries(hitEffectElements).forEach(([type, element]) => {
         if (element) element.textContent = String(hitEffects[type] || 0);
     });
-
-    if (xpEl) xpEl.textContent = `${slime.coins || 0}`;
 
     const activeEffects = [];
     if (slimeConfig.effect === 'burn') activeEffects.push('🔥 Burn');

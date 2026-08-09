@@ -6,7 +6,7 @@ import { loadStateFromLocal, addScraps, gameState, getFortificationLevel, getFor
 import { initAuth, loginWithGoogle, logoutUser } from './auth.js';
 import { startEngine, setGamePaused, isGamePaused } from './engine.js';
 import { updateUI, setAuthScreenState, showFirebaseNotice, playSlimeRainRespawnAnimation, initSlimeModalListeners, initMainTabsListeners, openSlimeInspectorModal, renderSlimeRosterLanes } from './ui.js';
-import { initEnemiesModule, startNextWave, setAutoPlay, resetGameFull, rewindWaveState, forwardWaveState, startNewGamePlusRun, formatLootEffects, ENEMY_TYPES } from './enemies.js';
+import { initEnemiesModule, startNextWave, setAutoPlay, resetGameFull, rewindWaveState, forwardWaveState, startNewGamePlusRun, returnToVillage, formatLootEffects, ENEMY_TYPES } from './enemies.js';
 import { triggerRandomSlimeAttack, triggerSlimeEatLoot, initAscendedAutoAttacks } from './slimes.js';
 import { initUpgradesModule, sortMaxedUpgradeCardsOnPageLoad } from './upgrades.js';
 import { initShopModule } from './shop.js';
@@ -187,6 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
         hasStartedGameAnimation = true;
 
         updateUI();
+        syncToolbarButtons();
         if (gameState.isInNewGamePlus) return;
         playSlimeRainRespawnAnimation(() => {
             startNextWave();
@@ -316,6 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             renderSlimeRosterLanes(rosterEl, roster.map(slime => ({ slime })), {
                 itemClassName: 'forge-roster-grid-item',
+                byLine: true,
                 dataAttrsFor: slime => ({ 'data-forge-slime-id': String(slime.id) }),
                 titleFor: slime => {
                     const specialization = getSlimeSpecialization(slime);
@@ -405,9 +407,36 @@ document.addEventListener('DOMContentLoaded', () => {
         backdrop.style.zIndex = '9000';
         const popup = document.createElement('div');
         popup.className = 'village-building-popup forge-building-popup pixel-popup';
-        popup.innerHTML = `<button class="village-popup-close" aria-label="Close">&times;</button><h3 class="common-house-title"><img class="common-house-title-icon" src="images/logos/anvil.png" alt="Forge"> Forge</h3><div class="forge-section-header forge-roster-header"><h4>Current Slime Roster</h4></div><section class="forge-roster-section"><div class="forge-roster-list slime-roster-list"></div></section><section class="forge-inventory-section"><div class="forge-section-header"><h4>Village Inventory</h4><div><button class="btn-forge-unequip-all pixel-btn">Unequip All</button><button class="btn-forge-merge-all pixel-btn" title="Merge five matching items into one higher-quality item">Merge All</button><button class="btn-forge-auto-equip-all pixel-btn" title="Equip every available item across the roster">Auto Equip All</button></div></div><div class="forge-inventory-list"></div></section>`;
+        popup.innerHTML = `<button class="village-popup-close" aria-label="Close">&times;</button><h3 class="common-house-title"><img class="common-house-title-icon" src="images/logos/anvil.png" alt="Forge"> Forge</h3><div class="forge-section-header forge-roster-header"><h4>Current Slime Roster</h4></div><section class="forge-roster-section"><div class="forge-roster-list slime-roster-list"></div></section><section class="forge-inventory-section"><div class="forge-section-header"><h4>Village Inventory</h4><div><button class="btn-forge-loadout pixel-btn" data-quality="0" title="Unequip all White items"><img src="images/logos/unequipWhiteEquipment.png" alt="Unequip All White Items"></button><button class="btn-forge-loadout pixel-btn" data-quality="1" title="Unequip all Green items"><img src="images/logos/unequipGreenEquipment.png" alt="Unequip All Green Items"></button><button class="btn-forge-loadout pixel-btn" data-quality="2" title="Unequip all Blue items"><img src="images/logos/unequipBlueEquipment.png" alt="Unequip All Blue Items"></button><button class="btn-forge-loadout pixel-btn" data-quality="3" title="Unequip all Purple items"><img src="images/logos/unequipPurpleEquipment.png" alt="Unequip All Purple Items"></button><button class="btn-forge-loadout pixel-btn" data-quality="4" title="Unequip all Orange items"><img src="images/logos/unequipOrangeEquipment.png" alt="Unequip All Orange Items"></button><button class="btn-forge-unequip-all pixel-btn">Unequip All</button><button class="btn-forge-merge-all pixel-btn" title="Merge five matching items into one higher-quality item">Merge All</button><button class="btn-forge-auto-equip-all pixel-btn" title="Equip every available item across the roster">Auto Equip All</button></div></div><div class="forge-inventory-list"></div></section>`;
 
         popup.querySelector('.village-popup-close').addEventListener('click', closeVillageBuildingPopup);
+        popup.querySelectorAll('.btn-forge-loadout').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const quality = Number(btn.dataset.quality);
+                const inventory = getVillageInventory();
+                (gameState.slimes || []).forEach(slime => {
+                    const kept = [];
+                    (slime.equipment || []).forEach(item => {
+                        if (getEquipmentQuality(item) === quality) {
+                            inventory.push(JSON.parse(JSON.stringify(item)));
+                        } else {
+                            kept.push(item);
+                        }
+                    });
+                    slime.equipment = kept;
+                    slime.baseMaxHp = 10 + (gameState.fortificationLevel || 0) + (gameState.alchemistEnduranceLevel || 0);
+                    slime.maxHp = slime.baseMaxHp;
+                    slime.hp = slime.maxHp;
+                    slime.regen = gameState.alchemistRegenLevel || 0;
+                    slime.critChance = (gameState.alchemistLuckLevel || 0) + (gameState.precisionLevel || 0);
+                    slime.damage = calculateSlimeDamage(slime);
+                });
+                updateBestRoster();
+                saveStateToLocal();
+                updateUI();
+                renderForgePopup(popup);
+            });
+        });
         popup.querySelector('.btn-forge-unequip-all').addEventListener('click', () => {
             const inventory = getVillageInventory();
             (gameState.slimes || []).forEach(slime => {
@@ -499,7 +528,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Eat Ground Loot Button Listener
     if (btnEat) {
         btnEat.addEventListener('click', () => {
-            if (gameState.isInNewGamePlus) startNewGamePlusRun();
+            if (gameState.isInNewGamePlus) { startNewGamePlusRun(); syncToolbarButtons(); }
             else triggerSlimeEatLoot();
         });
     }
@@ -555,6 +584,52 @@ document.addEventListener('DOMContentLoaded', () => {
             updateUI(); // Force Eat button state check!
         });
     }
+
+    // Fast Mode (Forward) button: toggles gameState.isFastMode (+50% enemy speed,
+    // 5s between-wave timer). Stays yellow while active.
+    const btnForwardGame = document.getElementById('btnForwardGame');
+    if (btnForwardGame) {
+        btnForwardGame.addEventListener('click', (e) => {
+            e.stopPropagation();
+            gameState.isFastMode = !gameState.isFastMode;
+            btnForwardGame.classList.toggle('active', gameState.isFastMode);
+            btnForwardGame.title = gameState.isFastMode ? 'Fast Mode: ON' : 'Fast Mode';
+            saveStateToLocal();
+        });
+    }
+    const btnHomeGame = document.getElementById('btnHomeGame');
+    if (btnHomeGame) {
+        btnHomeGame.addEventListener('click', (e) => {
+            e.stopPropagation();
+            returnToVillage();
+        });
+    }
+    // No Merchant Mode button: toggles gameState.noMerchant (skips the Merchant
+    // shop on 10th waves). Stays yellow while active.
+    const btnMuteGame = document.getElementById('btnMuteGame');
+    if (btnMuteGame) {
+        btnMuteGame.addEventListener('click', (e) => {
+            e.stopPropagation();
+            gameState.noMerchant = !gameState.noMerchant;
+            btnMuteGame.classList.toggle('active', gameState.noMerchant);
+            btnMuteGame.title = gameState.noMerchant ? 'No Merchant: ON' : 'No Merchant';
+            saveStateToLocal();
+        });
+    }
+
+    // Reflect the saved Fast Mode / No Merchant flags onto the toolbar buttons
+    // (e.g. when a run (re)starts so the active state isn't lost).
+    function syncToolbarButtons() {
+        if (btnForwardGame) {
+            btnForwardGame.classList.toggle('active', Boolean(gameState.isFastMode));
+            btnForwardGame.title = gameState.isFastMode ? 'Fast Mode: ON' : 'Fast Mode';
+        }
+        if (btnMuteGame) {
+            btnMuteGame.classList.toggle('active', Boolean(gameState.noMerchant));
+            btnMuteGame.title = gameState.noMerchant ? 'No Merchant: ON' : 'No Merchant';
+        }
+    }
+    syncToolbarButtons();
 
     // 4. Initialize Mandatory Auth Handler
     initAuth(

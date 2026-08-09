@@ -109,6 +109,11 @@ export function openShopModal(currentWaveNum) {
         setGamePaused(true);
     }
 
+    const onRelayout = () => renderShopUI();
+    window.addEventListener('roster:relayout', onRelayout);
+    const onClose = () => window.removeEventListener('roster:relayout', onRelayout);
+    window.addEventListener('shop:closed', onClose, { once: true });
+
     renderShopUI();
 }
 
@@ -120,6 +125,7 @@ export function closeShopModal() {
     if (backdropEl) {
         backdropEl.classList.add('hidden');
     }
+    window.dispatchEvent(new CustomEvent('shop:closed'));
     document.body.classList.remove('modal-open');
     setGamePaused(false);
 
@@ -154,6 +160,7 @@ function renderSlimeRosterBrowser() {
 
     renderSlimeRosterLanes(container, gameState.slimes.map(slime => ({ slime })), {
         itemClassName: 'shop-roster-grid-item',
+        byLine: true,
         extraClassFor: slime => {
             const classes = [];
             if (slime.id === selectedShopSlimeId) classes.push('selected');

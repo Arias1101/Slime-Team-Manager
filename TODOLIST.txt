@@ -1,7 +1,38 @@
 ------------- NOW ----------------
-- Menus to mass change slime types / spec
+- Add a return to village button after NG+ (abandon run).
+- Add a Skip Shop CheckBox after NG+.
+- Add Critical Heal
+- Include status priority on auto equip.
+- Change NG+ scaling to +5% multiplicative instead of 10% aditive. and remove move speed from scaling.
 
-------------- TESTS PENDING  ----------------
+------------- LATER  ----------------
+2d SupportTalent (name: Melting Mend for Fire Support):
+FireSupport - HOT after a graft [DONE]
+IceSupport - Temporary HP shield after a graft
+PoisonSupport - Leech Life on Attack
+StoneSupport - %Dmg reduc after a graft on next direct damage
+3d SupportTalent:
+At the end of Wave, sacrifice 90% PV to res
+
+FireFighter: Double Fire effects
+IceFighter: Cold damage = total number of stacks instead of flat 5.
+PoisonFighter: Increase direct damage by X% (equal poison stacks)
+StoneFighter: Pushback ennemies on hit.
+3d FighterTalent:
+Slide: 10% chance of sliding to hit backlane
+
+
+FireTank: On block, apply twice effects (double 0 atk)
+IceTank: On death, 10% chance Ice Block +10% PV
+PoisonTank: Counter Attack leech on block
+StoneTank: On block apply stun value *2.
+3d TankTalent:
+Interception: If at more than 80% PV, and another tank takes damage while under 20% PV, intercept it.
+
+
+Alchemist Upgrade:
+Increase Base Effect of Slime Types
+
 
 
 ------------------ LATER -----------------

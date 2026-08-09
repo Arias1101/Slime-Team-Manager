@@ -1,4 +1,13 @@
 Patch Notes:
+v0.20
+- Tried a new method to handle Roster.
+- Removed Scrap reset when finishing a run.
+- Implemented Unequip all for each equipment tiers.
+- Implemented "Melting Mend", second talent for Fire Support slimes.
+- Implemented "Fast Mode" button.
+- Implemented "No Merchant" button.
+- Implemented "Return to village" button.
+
 v0.19
 - Adjusted loot font.
 - Added a Create Slime buttons in common house.

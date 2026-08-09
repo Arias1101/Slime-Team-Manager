@@ -225,6 +225,8 @@ export const defaultState = {
     alchemistEnduranceLevel: 0,
     alchemistRegenLevel: 0,
     isInNewGamePlus: false,    // Village intermission after defeating/wiping to Death
+    isFastMode: false,         // Fast Mode: +100% enemy move speed and 5s between-wave timer
+    noMerchant: false,         // No Merchant Mode: skip the Merchant shop between waves
     lastSavedTimestamp: Date.now()
 };
 
@@ -364,6 +366,26 @@ export function getSlimeSpecialization(slime) {
  * The chosen sub-talent index for a Slime is stored on
  * `slime.talents.subTalents[talentIndex]` (or null when unchosen).
  */
+/**
+ * Second Talent (Talent2) definitions, unique per element+specialization combo.
+ * Keyed by the combo typeId (e.g. 'fireSupport'). Each combo has a name and a
+ * description used as its tooltip on the Common House and the Slime sheet.
+ */
+export const SECOND_TALENT = {
+    fireSupport: { name: 'Melting Mend', description: 'After a Graft, heals 50% of the Graft heal amount over 5 seconds.' },
+    iceSupport: { name: 'Talent2', description: '' },
+    poisonSupport: { name: 'Talent2', description: '' },
+    stoneSupport: { name: 'Talent2', description: '' },
+    fireFighter: { name: 'Talent2', description: '' },
+    iceFighter: { name: 'Talent2', description: '' },
+    poisonFighter: { name: 'Talent2', description: '' },
+    stoneFighter: { name: 'Talent2', description: '' },
+    fireTank: { name: 'Talent2', description: '' },
+    iceTank: { name: 'Talent2', description: '' },
+    poisonTank: { name: 'Talent2', description: '' },
+    stoneTank: { name: 'Talent2', description: '' }
+};
+
 export const TALENT_SUBTALENTS = {
     support: [
         [
@@ -444,6 +466,34 @@ export function getSlimeGraftMultipliers(slime) {
     if (def.id === 'flashGraft') return { cost: 0.75, heal: 1 };
     if (def.id === 'megaGraft') return { cost: 2, heal: 2 };
     return { cost: 1, heal: 1 };
+}
+
+/** Whether a Slime owns the Melting Mend second talent (Fire Support). */
+export function hasMeltingMend(slime) {
+    if (!slime) return false;
+    if (slime.talents?.meltingMend) return true;
+    return getSlimeSpecialization(slime) === 'support' && (slime.type || '') === 'fireSupport' && Boolean(slime.talents?.graft);
+}
+
+/** Per-combo flag key used to store ownership of a Slime's second talent. */
+export function getSecondTalentFlag(typeId) {
+    if (!SECOND_TALENT[typeId]) return null;
+    return `${typeId}Talent2`;
+}
+
+/** Whether a Slime already owns the first Talent of its specialization. */
+const FIRST_TALENT_FLAG = { support: 'graft', fighter: 'rebound', tank: 'block' };
+export function hasFirstTalent(slime) {
+    const spec = getSlimeSpecialization(slime);
+    const flag = FIRST_TALENT_FLAG[spec];
+    return Boolean(flag && slime.talents?.[flag]);
+}
+
+/** Whether a Slime owns the second talent of its element+specialization combo. */
+export function hasSecondTalent(slime) {
+    if (!slime) return false;
+    const flag = getSecondTalentFlag(slime.type || '');
+    return Boolean(flag && slime.talents?.[flag]);
 }
 
 /** Whether a Slime can purchase its next specialization talent (enough XP, not already bought). */

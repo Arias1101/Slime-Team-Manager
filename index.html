@@ -132,7 +132,12 @@
                     <main class="game-dashboard">
                         <!-- Battlefield Window & Controls -->
                         <div class="battlefield-wrapper">
-                            <button id="btnPauseGame" class="battlefield-pause-btn" title="Pause Game">⏸️</button>
+                            <div class="battlefield-toolbar">
+                                <button id="btnPauseGame" class="battlefield-tool-btn" title="Pause Game">⏸️</button>
+                                <button id="btnForwardGame" class="battlefield-tool-btn" title="Fast Mode">⏩</button>
+                                <button id="btnMuteGame" class="battlefield-tool-btn" title="No Merchant">🔕</button>
+                                <button id="btnHomeGame" class="battlefield-tool-btn" title="Return to Village">🏡</button>
+                            </div>
                             <section class="battlefield-card">
                                 <div class="battlefield-overlay">
                                     <!-- Left Side: Slimes -->
@@ -588,7 +593,6 @@
                         </div>
                         <div class="slime-modal-meta">
                             <span id="slimeModalAscended">Standard Slime</span>
-                            <span>Coins <strong id="slimeModalXp">0</strong></span>
                         </div>
                         <div class="slime-modal-section">
                             <h4 class="section-title">Equipments</h4>
@@ -678,7 +682,7 @@
             </div>
 
             <script type="module" src="js/main.js"></script>
-            <span class="game-version-label" aria-label="Game version 0.19">v0.19</span>
+            <span class="game-version-label" aria-label="Game version 0.20">v0.20</span>
 </body>
 
 </html>

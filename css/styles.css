@@ -1,4 +1,4 @@
-/* ==========================================================================
+﻿/* ==========================================================================
    Slime Team Manager - Design System & Modern UI
    ========================================================================== */
 
@@ -403,12 +403,24 @@ body.modal-open {
 
 .slime-roster-list {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: center;
     gap: var(--roster-spec-gap);
     width: 100%;
     justify-content: flex-start;
-    align-items: center;
     min-height: 30px;
+}
+
+/* One centered visual row of slimes, used by every roster (main, shop, forge,
+   common house) so the (possibly short) last line is centered like the others.
+   Items are grouped into these rows by the renderer (byLine: true). */
+.roster-line {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    gap: var(--roster-spec-gap);
+    width: 100%;
 }
 
 .roster-grid-item {
@@ -484,38 +496,57 @@ body.modal-open {
     position: relative;
 }
 
-.battlefield-pause-btn {
+.battlefield-toolbar {
     position: absolute;
     top: 8px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 1100;
-    background: rgba(15, 23, 42, 0.7);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    color: #fff;
-    border-radius: 50%;
-    width: 28px;
-    height: 28px;
+    display: flex;
+    gap: 15px;
+}
+
+/* Small 20x20 square pixel buttons styled like the Common House toolbar. */
+.battlefield-tool-btn {
+    width: 20px;
+    height: 20px;
+    padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
+    border: 0;
+    border-radius: 0;
+    background: #2a2d34;
+    box-shadow: 0px 2px #000, 0px -2px #000, 2px 0px #000, -2px 0px #000, inset 0px 2px rgba(255, 255, 255, 0.38);
+    color: #fff;
     cursor: pointer;
-    font-size: 0.75rem;
-    transition: all 0.2s ease;
-    backdrop-filter: blur(4px);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-    padding: 0;
+    font-size: 0.7rem;
+    line-height: 1;
+    transition: transform 0.06s ease, box-shadow 0.06s ease, background 0.06s ease;
 }
 
-.battlefield-pause-btn:hover {
-    background: rgba(245, 158, 11, 0.35);
-    border-color: #fbbf24;
-    color: #fbbf24;
-    transform: translateX(-50%) scale(1.08);
+.battlefield-tool-btn:hover {
+    background: #3a3d44;
+    transform: scale(1.1);
+    outline: none;
 }
 
-.battlefield-pause-btn:active {
-    transform: translateX(-50%) scale(0.92);
+.battlefield-tool-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0px 1px #000, 0px -1px #000, 1px 0px #000, -1px 0px #000, inset 0px 2px rgba(0, 0, 0, 0.2);
+    background: #23262c;
+}
+
+.battlefield-tool-btn:disabled {
+    background: #1f2126;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.battlefield-tool-btn.active {
+    background: #e3c765;
+    color: #1b1c21;
+    box-shadow: 0px 2px #000, 0px -2px #000, 2px 0px #000, -2px 0px #000, inset 0px 2px rgba(255, 255, 255, 0.6);
 }
 
 /* Battlefield View with Custom Background (Native 500x212) */
@@ -1356,15 +1387,15 @@ body.modal-open {
 }
 
 .floating-damage-num.mega-crit-dmg {
-    color: #c084fc !important;
+    color: #ED6F6F !important;
     z-index: 190 !important;
     text-shadow:
         -1px -1px 0 #000,
         1px -1px 0 #000,
         -1px 1px 0 #000,
         1px 1px 0 #000,
-        0 0 14px #a855f7,
-        0 0 26px rgba(168, 85, 247, 0.95) !important;
+        0 0 14px #f87171,
+        0 0 26px rgba(239, 68, 68, 0.95) !important;
     animation: floatCritDamageNum 0.8s cubic-bezier(0.17, 0.89, 0.32, 1.25) forwards !important;
 }
 
@@ -2271,13 +2302,14 @@ body.modal-open {
     color: #a1a1aa;
 }
 
-/* Roster Browser - shares the same three-column roster layout as the
+/* Roster Browser - shares the same centered-row roster layout as the
    main/forge/common-house rosters. */
 .shop-slime-roster-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    align-items: start;
-    justify-content: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    align-content: flex-start;
+    justify-content: flex-start;
     gap: var(--roster-spec-gap);
     width: 100%;
     max-width: 100%;
@@ -3800,7 +3832,7 @@ body.modal-open {
 
 .slime-inspector-modal .slime-specialization-talent.unlocked {
     border: 2px solid #e3c765;
-    background: #2a2d34;
+    background: #e3c765;
 }
 
 /* Inspector sub-talents reuse the Forge specialization button look, but in the
@@ -4172,11 +4204,8 @@ body.modal-open {
         image-rendering: crisp-edges;
     }
 
-    .battlefield-pause-btn {
+    .battlefield-toolbar {
         top: 16px;
-        width: 56px;
-        height: 56px;
-        font-size: 1.5rem;
     }
 
     .battle-controls-bar {
@@ -4236,11 +4265,8 @@ body.modal-open {
         transform: scale(1.5);
     }
 
-    .battlefield-pause-btn {
+    .battlefield-toolbar {
         top: 12px;
-        width: 42px;
-        height: 42px;
-        font-size: 1.125rem;
     }
 
     .battle-controls-bar {
@@ -4319,11 +4345,8 @@ body.modal-open {
         image-rendering: crisp-edges;
     }
 
-    .battlefield-pause-btn {
+    .battlefield-toolbar {
         top: 12px;
-        width: 42px;
-        height: 42px;
-        font-size: 1.125rem;
     }
 
     .battle-controls-bar {
@@ -4384,7 +4407,7 @@ body.new-game-plus .army-side .side-badge,
 body.new-game-plus .enemy-side .side-badge,
 body.new-game-plus .enemy-wave-count,
 body.new-game-plus .header-stat:has(#waveCount),
-body.new-game-plus .battlefield-pause-btn {
+body.new-game-plus .battlefield-toolbar {
     display: none;
 }
 
@@ -4625,15 +4648,14 @@ body.new-game-plus .village-buildings {
 }
 
 .common-house-roster {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    align-items: start;
-    justify-content: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     gap: var(--roster-spec-gap);
     width: 100%;
     min-width: 0;
     box-sizing: border-box;
-    padding: 10px;
+    padding: 6px;
     background: rgba(39, 39, 42, 0.7);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 10px;
@@ -5646,8 +5668,9 @@ body.new-game-plus .village-buildings {
 
 .forge-roster-list {
     display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--roster-spec-gap);
     min-height: 29px;
     max-height: 140px;
     overflow: hidden;
@@ -5731,6 +5754,25 @@ body.new-game-plus .village-buildings {
 
 .forge-inventory-section {
     margin-top: 14px;
+}
+
+/* Auto-unequip-by-rarity buttons on the left of Unequip All. */
+.btn-forge-loadout {
+    width: 25px;
+    height: 25px;
+    padding: 0;
+    font-size: 0.45rem;
+    font-weight: 700;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-forge-loadout img {
+    width: 20px;
+    height: 20px;
+    display: block;
 }
 
 .forge-inventory-item {
@@ -6341,30 +6383,43 @@ body.new-game-plus .village-buildings {
 
 .slime-specialization-talent {
     position: relative;
-    width: 62px;
-    height: 62px;
-    border: 1px solid #475569;
-    border-radius: 8px;
-    background: rgba(15, 23, 42, .7);
+    width: 44px;
+    height: 44px;
+    padding: 5px;
+    border: 0;
+    border-radius: 0;
+    background: #2a2d34;
+    box-shadow: 0px 2px #000, 0px -2px #000, 2px 0px #000, -2px 0px #000, inset 0px 2px rgba(255, 255, 255, 0.38);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.06s ease, box-shadow 0.06s ease, background 0.06s ease;
 }
 
 .slime-specialization-talent.available {
-    border-color: #fbbf24;
-    cursor: pointer;
+    border: 0;
+    background: #3a3d44;
 }
 
 .slime-specialization-talent img {
-    width: 30px;
-    height: 30px;
+    width: 34px;
+    height: 34px;
+    display: block;
     image-rendering: pixelated;
 }
 
+/* Talent cost badge: bottom-right of the button, matching the Common House look. */
 .slime-specialization-talent span {
     position: absolute;
-    right: 4px;
-    bottom: 3px;
-    font-size: .65rem;
-    color: #e2e8f0;
+    right: 1px;
+    bottom: 0px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #fff3c4;
+    text-shadow: 1px 1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000;
+    pointer-events: none;
+    line-height: 1;
 }
 
 /* Arrow between Talents stays centered on the 62px main buttons, not on the
@@ -6386,18 +6441,62 @@ body.new-game-plus .village-buildings {
 }
 
 .slime-specialization-talent:disabled {
-    border-color: #334155;
-    background: rgba(15, 23, 42, .42);
+    background: #1f2126;
+    cursor: not-allowed;
+    opacity: 0.6;
 }
 
 .slime-specialization-talent.unlocked {
-    border: 3px solid #fff;
-    background: rgba(255, 255, 255, .12);
+    background: #e3c765;
+    cursor: default;
+    border: 2px solid #fff;
+}
+
+/* An owned (unlocked) Talent must stay yellow even when its button is disabled. */
+.slime-specialization-talent.unlocked:disabled {
+    background: #e3c765;
+    opacity: 1;
+    cursor: default;
+}
+
+.slime-specialization-talent.unlocked:disabled img {
+    filter: none;
+    opacity: 1;
 }
 
 .slime-specialization-talent.unlocked span {
     color: #fff;
-    font-size: 1rem;
+}
+
+/* A fully unlocked main Talent must not react to hover/active (not pressable). */
+.slime-specialization-talent.unlocked:hover,
+.slime-specialization-talent.unlocked:active,
+.slime-specialization-talent.unlocked:focus-visible {
+    background: #e3c765;
+    transform: none;
+    box-shadow: 0px 2px #000, 0px -2px #000, 2px 0px #000, -2px 0px #000, inset 0px 2px rgba(255, 255, 255, 0.38);
+    outline: none;
+}
+
+.slime-specialization-talent:not(.unlocked):hover {
+    background: #3a3d44;
+    transform: scale(1.1);
+    outline: none;
+}
+
+.slime-specialization-talent:not(.unlocked):active {
+    transform: translateY(2px) !important;
+    box-shadow: 0px 1px #000, 0px -1px #000, 1px 0px #000, -1px 0px #000, inset 0px 2px rgba(0, 0, 0, 0.2);
+    background: #23262c;
+}
+
+/* Coin icon shown after the cost number in the cost badge. */
+.slime-specialization-talent span .talent-cost-coin {
+    width: 10px;
+    height: 10px;
+    margin-left: 1px;
+    vertical-align: -1px;
+    image-rendering: pixelated;
 }
 
 /* Graft feedback for Support Slimes. */
@@ -6506,50 +6605,21 @@ body.new-game-plus .village-buildings {
     }
 }
 
-/* The Forge shows the same three-lane roster structure as the main roster.
-   The lanes flex and their items wrap, so the grid resizes to the popup width
-   instead of overflowing on narrow screens. */
+/* The Forge roster shares the single flat, wrapping layout of the main roster
+   (no per-specialization columns). Items wrap into balanced lines. */
 .forge-roster-list.slime-roster-list {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    align-items: start;
-    justify-content: center;
-    gap: var(--roster-spec-gap);
-    width: 100%;
-    box-sizing: border-box;
     min-height: 95px;
     max-height: none;
-    overflow: hidden;
-}
-
-/* Main roster is a fixed three-column layout (back / middle / front). Each
-   column is one specialization lane; slimes wrap into multiple rows within
-   their own column so the grid always stays three columns wide. */
-.slime-status-panel .slime-roster-list {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    align-items: start;
-    justify-content: center;
-    gap: var(--roster-spec-gap);
-    min-height: 30px;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-.slime-roster-lane {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-start;
+    overflow-y: auto;
     align-content: flex-start;
-    gap: 4px;
-    /* Content-sized in flex contexts (Forge) while filling its grid column
-       (main roster) automatically. */
-    flex: 0 0 auto;
-    min-width: 0;
 }
 
-.slime-roster-lane.hidden {
-    display: none;
+/* Main roster: a single flat, wrapping layout. Slimes are interleaved by the
+   renderer into balanced lines (see renderSlimeRosterLanes) instead of three
+   fixed specialization columns, so there are no gaps from short lanes. */
+.slime-status-panel .slime-roster-list {
+    min-height: 30px;
+    align-content: flex-start;
 }
 
 @media (min-width: 1260px) {

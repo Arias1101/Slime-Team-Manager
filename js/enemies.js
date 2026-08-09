@@ -1,9 +1,9 @@
-/**
+﻿/**
  * Enemy Management & AI Behaviors
  */
 
 import { gameState, addScraps, saveStateToLocal, saveWaveSnapshot, restoreBestRoster, SLIME_TYPES, getSlimeTotalRegen, getSlimeSpecialization, setEquipmentDefinitionResolver, getSlimeSubTalentDef, getSlimeMaxHp } from './state.js';
-import { healAllSlimes, initAscendedAutoAttacks, clearAscendedAutoAttacks, showFloatingDamageNumber, showFloatingHealingNumber, showFloatingStatusTextAt, showBattlefieldWaveBanner, triggerSlimeEatLoot } from './slimes.js';
+import { healAllSlimes, initAscendedAutoAttacks, clearAscendedAutoAttacks, showFloatingDamageNumber, showFloatingHealingNumber, showFloatingHealingNumberFromUnit, showFloatingStatusTextAt, showBattlefieldWaveBanner, triggerSlimeEatLoot } from './slimes.js';
 import { updateUI, updateLootHUD, requestUIRefresh, playSlimeRainRespawnAnimation } from './ui.js';
 import { openShopModal } from './shop.js';
 import { isGamePaused } from './engine.js';
@@ -789,6 +789,7 @@ let isAutoPlay = true; // Game is always playing by default
 let isWaveActive = false;
 let autoWaveTimeoutId = null;
 let countdownTimerId = null;
+let waveSpawnTimers = [];
 let nextWaveCountdownSec = 0;
 
 function applyNewGamePlusPresentation() {
@@ -970,6 +971,9 @@ export function startNextWave() {
         clearInterval(countdownTimerId);
         countdownTimerId = null;
     }
+    // Cancel any pending per-enemy spawn timers from a previous wave.
+    waveSpawnTimers.forEach(id => clearTimeout(id));
+    waveSpawnTimers = [];
 
     // Clear existing active enemies and projectiles
     activeEnemies.forEach(e => {
@@ -1014,9 +1018,10 @@ export function startNextWave() {
         if (intervalMs === 0) {
             spawnEnemy(enemyType, currentWaveHpMultiplier);
         } else {
-            setTimeout(() => {
+            const timerId = setTimeout(() => {
                 spawnEnemy(enemyType, currentWaveHpMultiplier);
             }, idx * intervalMs);
+            waveSpawnTimers.push(timerId);
         }
     });
 }
@@ -1042,7 +1047,11 @@ export function resetGameFull({ startWave = true, preserveUpgrades = false } = {
         glaciationLevel: gameState.glaciationLevel,
         petrificationLevel: gameState.petrificationLevel,
         intoxicationLevel: gameState.intoxicationLevel,
-        unlockedUpgrades: gameState.unlockedUpgrades
+        unlockedUpgrades: gameState.unlockedUpgrades,
+        // Preserve the player's scrap & score economy when returning to the
+        // village (New Game Plus intermission) so progress isn't wiped.
+        scraps: gameState.scraps,
+        score: gameState.score
     };
     document.body.classList.remove('new-game-plus');
     resetBattlefieldBackground();
@@ -1054,6 +1063,9 @@ export function resetGameFull({ startWave = true, preserveUpgrades = false } = {
         clearTimeout(autoWaveTimeoutId);
         autoWaveTimeoutId = null;
     }
+    // Cancel pending per-enemy spawn timers so no stray enemies appear later.
+    waveSpawnTimers.forEach(id => clearTimeout(id));
+    waveSpawnTimers = [];
     isWaveActive = false;
     // 1. Reset state: Scraps 0, Score 0, Wave 1, Army back to 1 Base Slime with no upgrades
     gameState.scraps = 0;
@@ -1085,7 +1097,9 @@ export function resetGameFull({ startWave = true, preserveUpgrades = false } = {
             glaciationLevel: savedUpgrades.glaciationLevel,
             petrificationLevel: savedUpgrades.petrificationLevel,
             intoxicationLevel: savedUpgrades.intoxicationLevel,
-            unlockedUpgrades: savedUpgrades.unlockedUpgrades
+            unlockedUpgrades: savedUpgrades.unlockedUpgrades,
+            scraps: savedUpgrades.scraps,
+            score: savedUpgrades.score
         });
     } else {
         gameState.slimeDamage = 1;
@@ -1219,6 +1233,66 @@ export function enterNewGamePlus() {
     isNewGamePlusTransition = false;
 }
 
+/**
+ * Manually abandon the current run via the "Return to Village" battlefield button.
+ * Kills the active army (clears the battlefield) and transitions to the village
+ * intermission, exactly like a run ended by Death — without resetting to the
+ * start of the tier.
+ */
+export function returnToVillage() {
+    if (isNewGamePlusTransition || gameState.isInNewGamePlus) return;
+    isNewGamePlusTransition = true;
+
+    // Step 1: kill all slimes immediately and clear the active army.
+    if (countdownTimerId) { clearInterval(countdownTimerId); countdownTimerId = null; }
+    if (autoWaveTimeoutId) { clearTimeout(autoWaveTimeoutId); autoWaveTimeoutId = null; }
+    // Cancel pending per-enemy spawn timers so no new enemies appear mid-transition.
+    waveSpawnTimers.forEach(id => clearTimeout(id));
+    waveSpawnTimers = [];
+    isWaveActive = false;
+    gameState.slimes = [];
+    gameState.armySize = 0;
+    const armyContainer = document.getElementById('armyContainer');
+    if (armyContainer) armyContainer.innerHTML = '';
+
+    // Step 2: after 1s, kill all enemies, then transition to the village.
+    setTimeout(() => {
+        activeEnemies.forEach(enemy => { if (enemy.el && enemy.el.remove) enemy.el.remove(); });
+        activeEnemies.length = 0;
+
+        const rosterSource = (gameState.bestRoster && gameState.bestRoster.length > 0)
+            ? gameState.bestRoster
+            : (gameState.slimes || []);
+        const healedRoster = rosterSource.map((slime, index) => ({
+            ...JSON.parse(JSON.stringify(slime)),
+            id: slime.id || slime.name || `Slime ${index + 1}`,
+            name: slime.name || slime.id || `Slime ${index + 1}`,
+            hp: slime.maxHp || 10,
+            maxHp: slime.maxHp || 10,
+            slotIndex: slime.slotIndex !== undefined ? slime.slotIndex : index
+        }));
+        resetGameFull({ startWave: false, preserveUpgrades: true });
+        // Returning to the village via the button does NOT count as a completed
+        // run (no NG+ increment, no village coin reward) — only a wipe to Death does.
+        gameState.isInNewGamePlus = true;
+        gameState.bestRoster = healedRoster.length > 0 ? healedRoster : gameState.bestRoster;
+        gameState.slimes = gameState.bestRoster.map((slime, index) => ({
+            ...JSON.parse(JSON.stringify(slime)),
+            hp: slime.maxHp || 10,
+            slotIndex: slime.slotIndex !== undefined ? slime.slotIndex : index
+        }));
+        gameState.armySize = gameState.slimes.length;
+
+        clearAscendedAutoAttacks();
+        const armyContainer2 = document.getElementById('armyContainer');
+        if (armyContainer2) armyContainer2.innerHTML = '';
+        applyNewGamePlusPresentation();
+        saveStateToLocal();
+        updateUI();
+        isNewGamePlusTransition = false;
+    }, 1000);
+}
+
 /** Deploy the healed village roster and begin the next run. */
 export function startNewGamePlusRun() {
     if (!gameState.isInNewGamePlus) return;
@@ -1283,8 +1357,9 @@ function checkWaveCompletion() {
         saveStateToLocal();
         updateUI();
 
-        // Every 10th wave (10, 20, 30...), wait for slimes to eat ALL ground loots, then trigger congrats banner + 2s break!
-        if (clearedWaveNum > 0 && clearedWaveNum % 10 === 0) {
+        // Every 10th wave (10, 20, 30...) the Merchant arrives — unless No Merchant
+        // Mode is active, in which case we skip the shop and go straight to the next wave.
+        if (clearedWaveNum > 0 && clearedWaveNum % 10 === 0 && !gameState.noMerchant) {
             console.log(`[MERCHANT SHOP] Wave ${clearedWaveNum} cleared! Waiting for slimes to eat all ground loots...`);
             const checkLootInterval = setInterval(() => {
                 const hasRemainingLoot = activeGroundLoots && activeGroundLoots.length > 0;
@@ -1306,7 +1381,7 @@ function checkWaveCompletion() {
             }, 150);
         } else if (isAutoPlay) {
             console.log('[AUTO PLAY] Triggering next wave countdown...');
-            startNextWaveCountdown(10);
+            startNextWaveCountdown(gameState.isFastMode ? 5 : 10);
         }
     }
 }
@@ -1390,11 +1465,12 @@ export function spawnEnemy(typeId = 'beggar', hpMultiplier = 1.0) {
     const def = ENEMY_TYPES[typeId] || ENEMY_TYPES.beggar;
     const enemyIdKey = def.id || typeId;
     const baseHp = def.hp || 2;
-    // Each completed run raises the next New Game+ tier by 10% from base values.
-    const newGamePlusMultiplier = 1 + 0.10 * Math.max(0, gameState.newGamePlusCompletions || 0);
+    // Each completed New Game+ run scales enemy HP and Damage multiplicatively
+    // by +5% (compounding), but move speed is left unchanged.
+    const newGamePlusMultiplier = Math.pow(1.05, Math.max(0, gameState.newGamePlusCompletions || 0));
     const scaledHp = Math.max(1, Math.round(baseHp * hpMultiplier * newGamePlusMultiplier));
     const scaledDamage = Math.max(0, Math.round((def.damage || 0) * newGamePlusMultiplier));
-    const scaledMoveSpeed = (def.moveSpeed || 0) * 25 * newGamePlusMultiplier;
+    const scaledMoveSpeed = (def.moveSpeed || 0) * 25 * (gameState.isFastMode ? 2 : 1);
 
     // Add a small -10 to +10 stop offset to reduce overlapping.
     const baseTargetX = def.targetX !== undefined ? def.targetX : 300;
@@ -1756,7 +1832,7 @@ export function updateEnemies(deltaSeconds) {
             if (slime.hp <= 0) return;
 
             if (!slime.effects) {
-                slime.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0, stunTimer: 0 };
+                slime.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0, stunTimer: 0, healOnTimeTimer: 0, healOnTimeTickTimer: 0, healOnTimePerTick: 0, healOnTimeTimer: 0, healOnTimeTickTimer: 0, healOnTimePerTick: 0 };
             }
 
             // 1. Process Burn Status DoT (1 damage per stack every 0.5s)
@@ -1791,6 +1867,25 @@ export function updateEnemies(deltaSeconds) {
                 }
             }
 
+            // 2.5 Process Heal on Time (Melting Mend): restore a flat amount every 1.0s for 5s
+            if (slime.effects.healOnTimeTimer > 0) {
+                slime.effects.healOnTimeTimer -= deltaSeconds;
+                slime.effects.healOnTimeTickTimer = (slime.effects.healOnTimeTickTimer || 0) + deltaSeconds;
+
+                if (slime.effects.healOnTimeTickTimer >= 1.0) {
+                    slime.effects.healOnTimeTickTimer -= 1.0;
+                    const healAmount = Math.max(1, slime.effects.healOnTimePerTick || 1);
+                    slime.hp = Math.min(slime.maxHp, slime.hp + healAmount);
+                    const unit = slime.el || (armyContainer ? armyContainer.querySelector(`[data-slime-id="${slime.id}"]`) : null);
+                    if (unit) showFloatingHealingNumberFromUnit(unit, healAmount);
+                }
+
+                if (slime.effects.healOnTimeTimer <= 0) {
+                    slime.effects.healOnTimePerTick = 0;
+                    slime.effects.healOnTimeTickTimer = 0;
+                }
+            }
+
             // 3. Process Stun Status Timer
             if (slime.effects.stunTimer > 0) {
                 slime.effects.stunTimer -= deltaSeconds;
@@ -1819,6 +1914,9 @@ export function updateEnemies(deltaSeconds) {
                         if (slime.effects.poisonTimer > 0) {
                             statusHTML += '<span class="status-icon poison-icon">🧪</span>';
                         }
+                        if (slime.effects.healOnTimeTimer > 0) {
+                            statusHTML += '<span class="status-icon heal-on-time-icon">💚</span>';
+                        }
                         if (slime.effects.stunTimer > 0) {
                             statusHTML += '<span class="status-icon stun-icon">💫</span>';
                         }
@@ -1829,6 +1927,7 @@ export function updateEnemies(deltaSeconds) {
 
                     unit.classList.toggle('is-burning', slime.effects.burnTimer > 0);
                     unit.classList.toggle('is-poisoned', slime.effects.poisonTimer > 0);
+                    unit.classList.toggle('is-heal-on-time', slime.effects.healOnTimeTimer > 0);
                     unit.classList.toggle('is-stunned', slime.effects.stunTimer > 0);
 
                     const rosterItem = document.getElementById(`roster_item_${slime.id}`);
@@ -1983,7 +2082,7 @@ export function applyBurnEffectToSlime(slime, duration = 3.0) {
     if (!slime || slime.hp <= 0) return;
 
     if (!slime.effects) {
-        slime.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0, stunTimer: 0 };
+        slime.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0, stunTimer: 0, healOnTimeTimer: 0, healOnTimeTickTimer: 0, healOnTimePerTick: 0 };
     }
 
     if (slime.effects.burnTimer > 0) {
@@ -2001,7 +2100,7 @@ export function applyPoisonEffectToSlime(slime, duration = 3.0, stacks = 2) {
     if (!slime || slime.hp <= 0) return;
 
     if (!slime.effects) {
-        slime.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0, stunTimer: 0 };
+        slime.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0, stunTimer: 0, healOnTimeTimer: 0, healOnTimeTickTimer: 0, healOnTimePerTick: 0 };
     }
 
     if (slime.effects.poisonTimer > 0) {
@@ -2019,7 +2118,7 @@ export function applyStunEffectToSlime(slime, duration = 2.5) {
     if (!slime || slime.hp <= 0) return;
 
     if (!slime.effects) {
-        slime.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0, stunTimer: 0 };
+        slime.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0, stunTimer: 0, healOnTimeTimer: 0, healOnTimeTickTimer: 0, healOnTimePerTick: 0 };
     }
 
     slime.effects.stunTimer = Math.max(slime.effects.stunTimer || 0, duration);

@@ -9,7 +9,7 @@
  *                 Only slimes from one side can be selected at once.
  */
 
-import { gameState, SLIME_TYPES, getSlimeJumpSprite, getSlimeSpecialization, calculateSlimeDamage, getBaseCritChance, generateUniqueSlimeName, getNextAvailableSlotIndex, saveStateToLocal, updateBestRoster, getEquipmentQuality, sortRosterBySpecialization, TALENT_SUBTALENTS, ensureSlimeSubTalents, getSlimeSubTalent, recalculateSlimeStats } from './state.js';
+import { gameState, SLIME_TYPES, getSlimeJumpSprite, getSlimeSpecialization, calculateSlimeDamage, getBaseCritChance, generateUniqueSlimeName, getNextAvailableSlotIndex, saveStateToLocal, updateBestRoster, getEquipmentQuality, sortRosterBySpecialization, TALENT_SUBTALENTS, SECOND_TALENT, getSecondTalentFlag, hasFirstTalent, ensureSlimeSubTalents, getSlimeSubTalent, recalculateSlimeStats } from './state.js';
 import { renderSlimeRosterLanes, updateUI } from './ui.js';
 
 const MAX_MAIN_ROSTER = 60;
@@ -114,6 +114,11 @@ export function openCommonHousePopup() {
 
     renderCommonHouse();
 }
+
+// Re-render the roster grids on window resize (line capacity changes).
+window.addEventListener('roster:relayout', () => {
+    if (document.getElementById('commonHousePopup')) renderCommonHouse();
+});
 
 /**
  * Close the Common House popup.
@@ -242,6 +247,20 @@ function renderCommonHouse() {
     updateCreateButtons();
     const coinsEl = document.getElementById('chCoinsDisplay');
     if (coinsEl) coinsEl.querySelector('strong').textContent = gameState.villageCoins || 0;
+
+    // Re-measure the roster line capacities after the popup has fully laid out
+    // (the 1fr grid columns resolve, scrollbars appear, fonts load). The first
+    // synchronous render can measure a too-narrow column and pack fewer slimes
+    // per line than fit, leaving short trailing lines (e.g. 2-2-2 instead of
+    // 3-3-3). A short timeout catches the final settled width after everything
+    // (including web-font layout) has resolved.
+    const settle = () => {
+        if (!document.getElementById('commonHousePopup')) return;
+        renderMainRoster();
+        renderVillageRoster();
+    };
+    requestAnimationFrame(() => requestAnimationFrame(settle));
+    setTimeout(settle, 80);
 }
 
 /** Disable each toolbar's Create button when its roster is at max capacity. */
@@ -271,6 +290,7 @@ function renderMainRoster() {
 
     renderSlimeRosterLanes(container, gameState.slimes.map(slime => ({ slime })), {
         itemClassName: 'common-house-roster-item',
+        byLine: true,
         extraClassFor: slime => (selectedSide === 'main' && selectedIds.has(slime.id) ? 'selected' : ''),
         onItemClick: (slime, item, event) => selectSlime('main', slime, event?.ctrlKey === true)
     });
@@ -293,6 +313,7 @@ function renderVillageRoster() {
 
     renderSlimeRosterLanes(container, gameState.villageRoster.map(slime => ({ slime })), {
         itemClassName: 'common-house-roster-item',
+        byLine: true,
         extraClassFor: slime => (selectedSide === 'village' && selectedIds.has(slime.id) ? 'selected' : ''),
         onItemClick: (slime, item, event) => selectSlime('village', slime, event?.ctrlKey === true)
     });
@@ -441,13 +462,6 @@ const TALENT_DESCRIPTIONS = {
 };
 const TALENT_FLAG = { support: 'graft', fighter: 'rebound', tank: 'block' };
 
-/** Whether a Slime already owns the first Talent of its specialization. */
-function hasFirstTalent(slime) {
-    const spec = getSlimeSpecialization(slime);
-    const flag = TALENT_FLAG[spec];
-    return Boolean(flag && slime.talents?.[flag]);
-}
-
 /**
  * The 12 possible element+specialization class combos, in display order. Each
  * Talent row shows the 3 Talent buttons for that combo (placeholder spec icon).
@@ -470,6 +484,8 @@ const TALENT_COMBOS = [
 /** Per Talent row: 3 talent buttons, each with 3 sub-talent buttons. */
 const TALENT_VISIBLE = 3;
 const SUBTALENTS_PER_TALENT = 3;
+/** Per-talent coin price (first = 1, second = 2, third = 3). */
+const TALENT_PRICE = [1, 2, 3];
 
 /**
  * Build the single 4-column action grid for the Selected Slime area. Rows:
@@ -532,7 +548,12 @@ function getActionButtonsHtml(selectedSlimes) {
             const talentIcon = t === 0
                 ? `images/talents/${spec}${talentName.toLowerCase()}.png`
                 : `images/talents/${spec}Talent${t + 1}.png`;
-            const talentTitle = `${talentName} (Talent ${t + 1}): ${talentDesc}`;
+            const secondTalent = t === 1 ? SECOND_TALENT[combo.typeId] : null;
+            const secondFlag = t === 1 ? getSecondTalentFlag(combo.typeId) : null;
+            const talentLabel = t === 1 && secondTalent ? secondTalent.name : `${talentName} (Talent ${t + 1})`;
+            const talentTooltip = t === 1 && secondTalent
+                ? `${secondTalent.name}: ${secondTalent.description}`
+                : `${talentName} (Talent ${t + 1}): ${talentDesc}`;
 
             // First Talent: show the cost (slimes still needing it) bottom-right,
             // or a ✔️ when every selected Slime already owns it (then unlocked+disabled).
@@ -541,7 +562,7 @@ function getActionButtonsHtml(selectedSlimes) {
             let talentDisabled = '';
             if (t === 0) {
                 const ownedCount = selectedSlimes.filter(hasFirstTalent).length;
-                const cost = selectedSlimes.length - ownedCount;
+                const cost = (selectedSlimes.length - ownedCount) * TALENT_PRICE[t];
                 if (cost === 0) {
                     talentBadge = '✔️';
                     talentExtraClass = ' unlocked';
@@ -549,8 +570,24 @@ function getActionButtonsHtml(selectedSlimes) {
                 } else {
                     talentBadge = `${cost}<img src="images/logos/coin.png" alt="" class="talent-cost-coin">`;
                 }
+            } else if (t === 1 && secondFlag) {
+                // Second Talent: purchasable once the combo's first Talent is owned.
+                const ownedCount = secondFlag ? selectedSlimes.filter(s => s.talents?.[secondFlag]).length : 0;
+                const firstOwnedAll = selectedSlimes.every(s => hasFirstTalent(s));
+                const cost = (selectedSlimes.length - ownedCount) * TALENT_PRICE[t];
+                if (cost === 0) {
+                    talentBadge = '✔️';
+                    talentExtraClass = ' unlocked';
+                    talentDisabled = ' disabled';
+                } else if (firstOwnedAll) {
+                    talentBadge = `${cost}<img src="images/logos/coin.png" alt="" class="talent-cost-coin">`;
+                } else {
+                    talentBadge = '🔒';
+                    talentExtraClass = ' locked';
+                    talentDisabled = ' disabled';
+                }
             } else {
-                // Talents 2/3 are not implemented yet: lock the button and its sub-talents.
+                // Talent 3 is not implemented yet: lock the button and its sub-talents.
                 talentExtraClass = ' locked';
                 talentDisabled = ' disabled';
                 talentBadge = '🔒';
@@ -565,17 +602,33 @@ function getActionButtonsHtml(selectedSlimes) {
                 const allSame = selectedSlimes.every(s => getSlimeSubTalent(s, t) === first);
                 return allSame ? first : null;
             })();
+            // Sub-talent icon: Talent 1 & 3 use the shared per-spec sprite
+            // (support/tank/fighterSubtalents.png); Talent 2 uses the unique
+            // per-type sprite (e.g. supportFireSubtalents.png) keyed on element.
+            const elementCap = selectedSlimes.length
+                ? elementOf(selectedSlimes[0]).charAt(0).toUpperCase() + elementOf(selectedSlimes[0]).slice(1)
+                : '';
+            const subtalentIcon = t === 1 && elementCap
+                ? `images/talents/subtalents/${spec}${elementCap}Subtalents.png`
+                : `images/talents/subtalents/${spec}Subtalents.png`;
             const subtalents = Array.from({ length: SUBTALENTS_PER_TALENT }, (_, s) => {
                 const subDef = TALENT_SUBTALENTS[spec]?.[t]?.[s];
                 const subTitle = subDef ? `${subDef.name}: ${subDef.description}` : `${talentName} Sub-talent ${t + 1}.${s + 1}`;
                 const subSelected = sharedSub === s ? ' selected' : '';
                 return `
-                    <button type="button" class="common-house-subtalent-btn${subSelected}" data-talent="${t}" data-subtalent="${s}" data-combo="${combo.typeId}" title="${subTitle}" aria-label="${subTitle}" tabindex="-1"${subDisabled}><img src="${specDef.icon}" alt="${specLabel}"></button>
+                    <button type="button" class="common-house-subtalent-btn${subSelected}" data-talent="${t}" data-subtalent="${s}" data-combo="${combo.typeId}" title="${subTitle}" aria-label="${subTitle}" tabindex="-1"${subDisabled}><img src="${subtalentIcon}" alt="${specLabel}"></button>
                 `;
             }).join('');
+            const glassTooltip = (t === 1 && secondTalent)
+                ? { name: secondTalent.name, description: secondTalent.description }
+                : (t === 0 && talentDesc ? { name: talentName, description: talentDesc } : null);
+            const talentButtonHtml = `<button type="button" class="common-house-talent-btn${talentExtraClass}" data-talent="${t}" data-combo="${combo.typeId}" title="${glassTooltip ? '' : talentTooltip}" aria-label="${talentTooltip}"${talentDisabled}><img src="${talentIcon}" alt="${talentLabel}"><span class="common-house-talent-cost">${talentBadge}</span></button>`;
+            const talentButtonWrapped = glassTooltip
+                ? `<span class="talent-tooltip-glass">${talentButtonHtml}<span class="talent-tooltip-glass-box"><strong>${glassTooltip.name}</strong><br>${glassTooltip.description}</span></span>`
+                : talentButtonHtml;
             return `
                 <div class="common-house-talent-col">
-                    <button type="button" class="common-house-talent-btn${talentExtraClass}" data-talent="${t}" data-combo="${combo.typeId}" title="${talentTitle}" aria-label="${talentTitle}"${talentDisabled}><img src="${talentIcon}" alt="${talentName}"><span class="common-house-talent-cost">${talentBadge}</span></button>
+                    ${talentButtonWrapped}
                     <div class="common-house-subtalent-row">${subtalents}</div>
                 </div>
             `;
@@ -661,15 +714,17 @@ function wireTypeButtons(container) {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
             const talentIndex = Number(btn.dataset.talent);
-            // Only the first Talent is purchasable for now (mass-buy for the whole selection).
-            if (talentIndex !== 0) return;
+            // Only the first and second Talents are purchasable (mass-buy for the whole selection).
+            if (talentIndex !== 0 && talentIndex !== 1) return;
             const selectedSlimes = getSelectedSlimes();
             if (!selectedSlimes.length) return;
             const spec = getSlimeSpecialization(selectedSlimes[0]);
-            const flag = TALENT_FLAG[spec];
+            const comboTypeId = `${elementOf(selectedSlimes[0])}${spec.charAt(0).toUpperCase()}${spec.slice(1)}`;
+            const flag = talentIndex === 0 ? TALENT_FLAG[spec] : getSecondTalentFlag(comboTypeId);
             if (!flag) return;
+            if (talentIndex === 1 && !selectedSlimes.every(s => hasFirstTalent(s))) return;
             selectedSlimes.forEach(slime => {
-                if (!hasFirstTalent(slime)) {
+                if (!slime.talents?.[flag]) {
                     if (!slime.talents || typeof slime.talents !== 'object') slime.talents = {};
                     slime.talents[flag] = true;
                 }

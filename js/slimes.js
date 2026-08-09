@@ -3,7 +3,7 @@
  */
 
 import { activeEnemies, triggerLootDrop, activeGroundLoots, formatLootEffects } from './enemies.js';
-import { gameState, SLIME_TYPES, addScraps, updateBestRoster, saveStateToLocal, calculateSlimeDamage, getScaledEquipmentEffects, getSlimeHitEffects, refreshSlimeMaxHp, getSlimeJumpSprite, getSlimeSpecialization, getSlimeGraftMultipliers, getSlimeSubTalentDef } from './state.js';
+import { gameState, SLIME_TYPES, addScraps, updateBestRoster, saveStateToLocal, calculateSlimeDamage, getScaledEquipmentEffects, getSlimeHitEffects, refreshSlimeMaxHp, getSlimeJumpSprite, getSlimeSpecialization, getSlimeGraftMultipliers, getSlimeSubTalentDef, hasMeltingMend } from './state.js';
 import { updateUI, requestUIRefresh, updateLootHUD } from './ui.js';
 /**
  * Convert viewport measurements back into the battlefield's native 500px coordinate space.
@@ -67,6 +67,13 @@ export function showFloatingDamageNumber(x, y, damageVal, type = 'enemy-dmg') {
 /** Show a green floating healing amount. Reusable for enemies and slimes. */
 export function showFloatingHealingNumber(x, y, healingAmount) {
     if (healingAmount > 0) showFloatingDamageNumber(x, y, healingAmount, 'heal');
+}
+
+/** Show a green floating healing amount anchored to a battlefield unit element. */
+export function showFloatingHealingNumberFromUnit(unitEl, healingAmount) {
+    if (healingAmount <= 0 || !unitEl) return;
+    const position = getOverlayPosition(unitEl);
+    if (position) showFloatingHealingNumber(position.x + position.width / 2, position.y - 12, healingAmount);
 }
 /**
  * Display a centered battlefield banner message (e.g. "🎉 WAVE 10 CLEARED!")
@@ -165,6 +172,18 @@ function trySupportGraft(unitEl, support) {
         const overhealRecovery = Math.round(overhealAmount / 2);
         support.hp = Math.min(support.maxHp, Math.max(1, support.hp - sacrificedAmount) + overhealRecovery);
         target.hp += restoredAmount;
+
+        // Melting Mend (Fire Support second talent): the grafted ally gains a
+        // "Heal on Time" status that restores 10% of the intended healing every
+        // second for 5 seconds, regardless of how much HP was actually restored.
+        if (hasMeltingMend(support)) {
+            if (!target.effects) {
+                target.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0, stunTimer: 0 };
+            }
+            target.effects.healOnTimeTimer = 5.0;
+            target.effects.healOnTimeTickTimer = 0;
+            target.effects.healOnTimePerTick = Math.max(1, Math.round(intendedHealing * 0.1));
+        }
 
         const targetEl = Array.from(document.querySelectorAll('.slime-unit')).find(el => String(el.dataset.slimeId) === String(target.id));
         if (targetEl) {
@@ -747,7 +766,7 @@ function dispatchSingleSlimeToEat() {
 
                 // Staggered 300ms delay & leftward arc curve so equipment popup floats AFTER food popup without overlapping!
                 setTimeout(() => {
-                    showFloatingStatusTextAt(targetLoot.x - 10, targetLoot.y - 12, `<img src="images/logos/anvil.png" alt="forge" class="loot-text-icon"> ${lootDisplayName} (${combinedText})!`, 'equipment-loot-text');
+                    showFloatingStatusTextAt(targetLoot.x - 10, targetLoot.y - 12, `<img src="images/logos/whiteEquipment.png" alt="forge" class="loot-text-icon"> ${lootDisplayName} (${combinedText})!`, 'equipment-loot-text');
                 }, 300);
             }
         }
