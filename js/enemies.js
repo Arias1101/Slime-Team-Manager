@@ -2,7 +2,7 @@
  * Enemy Management & AI Behaviors
  */
 
-import { gameState, addScraps, saveStateToLocal, saveWaveSnapshot, restoreBestRoster, SLIME_TYPES, getSlimeTotalRegen, getSlimeSpecialization, setEquipmentDefinitionResolver, getSlimeSubTalentDef, getSlimeMaxHp, getSlimeHitEffects, getSlimeJumpSprite, hasSpicyBlock, hasIceBlock, hasCounter, hasPolishedSlime, processWaveEndResurrections } from './state.js';
+import { gameState, addScraps, saveStateToLocal, saveWaveSnapshot, restoreBestRoster, SLIME_TYPES, getSlimeTotalRegen, getSlimeSpecialization, setEquipmentDefinitionResolver, getSlimeSubTalentDef, getSlimeMaxHp, getSlimeHitEffects, getSlimeJumpSprite, hasSpicyBlock, hasIceBlock, hasCounter, hasPolishedSlime, findInterceptorFor, processWaveEndResurrections } from './state.js';
 import { healAllSlimes, initAscendedAutoAttacks, clearAscendedAutoAttacks, showFloatingDamageNumber, showFloatingHealingNumber, showFloatingHealingNumberFromUnit, showFloatingStatusTextAt, showBattlefieldWaveBanner, triggerSlimeEatLoot, applyHitEffectsToEnemy, playResurrectionAnimations } from './slimes.js';
 import { updateUI, updateLootHUD, requestUIRefresh, playSlimeRainRespawnAnimation } from './ui.js';
 import { openShopModal } from './shop.js';
@@ -96,7 +96,7 @@ export const ENEMY_TYPES = {
         damage: 15,            // Damages
         attackSpeed: 1.2,     // attacks per second
         moveSpeed: 3,
-        targetX: 180,         // 400=right border, 100 = Slime army
+        targetX: 190,         // 400=right border, 100 = Slime army
         loot_name: 'Berserker Greataxe',
         loot_effect: [{ stat: 'damage', value: 5 },
         { stat: 'hp', value: 5 }],
@@ -194,7 +194,7 @@ export const ENEMY_TYPES = {
         damage: 1,            // 1 Damage per attack
         attackSpeed: 1.0,     // 1 attack per second
         moveSpeed: 1,         // Move speed (1 to 100) -> 25 px/sec
-        targetX: 180,         // Close melee range near the slimes
+        targetX: 190,         // Close melee range near the slimes
         loot_name: 'Beggar Cup',
         loot_effect: { stat: 'hp', value: 1 },
         loot_priority: 'tank'
@@ -209,7 +209,7 @@ export const ENEMY_TYPES = {
         damage: 2,            // 1 Damage per attack
         attackSpeed: 1.0,     // 1 attack per second
         moveSpeed: 1.2,       // Move speed (1 to 100) -> 25 px/sec
-        targetX: 180,         // Close melee range near the slimes
+        targetX: 190,         // Close melee range near the slimes
         loot_name: 'Farmer Hat',
         loot_effect: { stat: 'hp', value: 1 },
         loot_priority: 'tank'
@@ -224,7 +224,7 @@ export const ENEMY_TYPES = {
         damage: 3,            // 1 Damage per attack
         attackSpeed: 1.0,     // 1 attack per second
         moveSpeed: 1.2,       // Move speed (1 to 100) -> 25 px/sec
-        targetX: 180,         // Close melee range near the slimes
+        targetX: 190,         // Close melee range near the slimes
         loot_name: 'Burning Torch',
         loot_effect: [
             { stat: 'burn', value: 1 },
@@ -242,7 +242,7 @@ export const ENEMY_TYPES = {
         damage: 2,            // 1 Damage per attack
         attackSpeed: 1.0,     // 1 attack per second
         moveSpeed: 1.3,       // Move speed (1 to 100) -> 25 px/sec
-        targetX: 180,         // Close melee range near the slimes
+        targetX: 190,         // Close melee range near the slimes
         loot_name: 'Smelly Fish',
         loot_effect: { stat: 'hp', value: 2 },
         loot_priority: 'tank'
@@ -257,7 +257,7 @@ export const ENEMY_TYPES = {
         damage: 2,            // 1 Damage per attack
         attackSpeed: 1.0,     // 1 attack per second
         moveSpeed: 12,         // Move speed (1 to 100) -> 25 px/sec
-        targetX: 180,         // Close melee range near the slimes
+        targetX: 190,         // Close melee range near the slimes
         loot_name: 'Thief Mask',
         loot_effect: { stat: 'crit', value: 10 },
         loot_priority: 'fighter'
@@ -274,7 +274,7 @@ export const ENEMY_TYPES = {
         damage: 3,            // 4 Damage per attack
         attackSpeed: 0.8,     // 1 attack per second
         moveSpeed: 1.5,       // Move speed
-        targetX: 180,         // Close melee range near the slimes
+        targetX: 190,         // Close melee range near the slimes
         loot_name: 'Guard Shield',
         loot_effect: { stat: 'hp', value: 2 },
         loot_priority: 'tank'
@@ -304,7 +304,7 @@ export const ENEMY_TYPES = {
         damage: 2,            // 3 Damage per attack
         attackSpeed: 1.0,     // 1 attack per second
         moveSpeed: 2,       // Move speed
-        targetX: 180,         // Close melee range near the slimes
+        targetX: 190,         // Close melee range near the slimes
         loot_name: 'Backpack',
         loot_effect: { stat: 'regen', value: 2 },
         loot_priority: 'support'
@@ -319,7 +319,7 @@ export const ENEMY_TYPES = {
         damage: 2,            // 3 Damage per attack
         attackSpeed: 1.5,     // 1 attack per second
         moveSpeed: 12,       // Move speed
-        targetX: 180,         // Close melee range near the slimes
+        targetX: 190,         // Close melee range near the slimes
         loot_name: 'Poison Dagger',
         loot_effect: { stat: 'poison', value: 1 },
         loot_priority: 'fighter'
@@ -334,7 +334,7 @@ export const ENEMY_TYPES = {
         damage: 1,            // 3 Damage per attack
         attackSpeed: 1,     // 1 attack per second
         moveSpeed: 2.5,       // Move speed
-        targetX: 180,         // Close melee range near the slimes
+        targetX: 190,         // Close melee range near the slimes
         loot_name: 'Lance Tip',
         loot_effect: [{ stat: 'crit', value: 2 },
         { stat: 'damage', value: 1 }],
@@ -350,7 +350,7 @@ export const ENEMY_TYPES = {
         damage: 10,            // 3 Damage per attack
         attackSpeed: 1,     // 1 attack per second
         moveSpeed: 2,       // Move speed
-        targetX: 180,         // Close melee range near the slimes
+        targetX: 190,         // Close melee range near the slimes
         loot_name: 'Woodcutter Axe',
         loot_effect: [{ stat: 'hp', value: 1 },
         { stat: 'damage', value: 2 }],
@@ -369,7 +369,7 @@ export const ENEMY_TYPES = {
         damage: 4,
         attackSpeed: 1.5,     // attack per second
         moveSpeed: 3,       // Move speed
-        targetX: 180,         // Close melee range near the slimes
+        targetX: 190,         // Close melee range near the slimes
         loot_name: 'Swag Helmet',
         loot_effect: [{ stat: 'hp', value: 3 },
         { stat: 'crit', value: 2 }],
@@ -385,7 +385,7 @@ export const ENEMY_TYPES = {
         damage: 5,            // 4 Damage per attack
         attackSpeed: 1,     // 1 attack per second
         moveSpeed: 3.5,       // Move speed
-        targetX: 180,         // Close melee range near the slimes
+        targetX: 190,         // Close melee range near the slimes
         loot_name: 'Greatsword',
         loot_effect: [{ stat: 'crit', value: 5 },
         { stat: 'damage', value: 2 }],
@@ -431,7 +431,7 @@ export const ENEMY_TYPES = {
         damage: 10,            // 4 Damage per attack
         attackSpeed: 1,     // 1 attack per second
         moveSpeed: 4,       // Move speed
-        targetX: 180,         // Close melee range near the slimes
+        targetX: 190,         // Close melee range near the slimes
         loot_name: 'Halberd',
         loot_effect: [{ stat: 'crit', value: 10 },
         { stat: 'damage', value: 1 }],
@@ -482,7 +482,7 @@ export const ENEMY_TYPES = {
         damage: 15,
         attackSpeed: 1.4,
         moveSpeed: 7,
-        targetX: 180,
+        targetX: 190,
         loot_name: 'Wolf Tail',
         loot_effect: { stat: 'crit', value: 3 },
         loot_priority: 'fighter',
@@ -497,7 +497,7 @@ export const ENEMY_TYPES = {
         damage: 18,
         attackSpeed: 0.65,
         moveSpeed: 1.5,
-        targetX: 180,
+        targetX: 190,
         loot_name: 'Bear Paw',
         loot_effect: [{ stat: 'hp', value: 1 },
         { stat: 'damage', value: 2 }],
@@ -561,7 +561,7 @@ export const ENEMY_TYPES = {
         damage: 16,
         attackSpeed: 0.8,
         moveSpeed: 1.2,
-        targetX: 180,
+        targetX: 190,
         loot_name: 'Zombie Rags',
         loot_effect: { stat: 'hp', value: 2 },
         loot_priority: 'tank',
@@ -573,7 +573,7 @@ export const ENEMY_TYPES = {
         damage: 14,
         attackSpeed: 0.55,
         moveSpeed: 0.65,
-        targetX: 180,
+        targetX: 190,
         loot_name: 'Talking Head',
         loot_effect: [{ stat: 'regen', value: 4 }, { stat: 'damage', value: 1 }],
         loot_priority: 'support',
@@ -588,7 +588,7 @@ export const ENEMY_TYPES = {
         damage: 35,
         attackSpeed: 0.85,
         moveSpeed: 3,
-        targetX: 180,
+        targetX: 190,
         loot_name: 'Ripped Shorts',
         loot_effect: [{ stat: 'hp', value: 10 }, { stat: 'damage', value: 2 }],
         loot_priority: 'tank'
@@ -603,7 +603,7 @@ export const ENEMY_TYPES = {
         damage: 12,
         attackSpeed: 1.3,
         moveSpeed: 9,
-        targetX: 180,
+        targetX: 190,
         loot_name: 'Sword (Arm Included)',
         loot_effect: { stat: 'damage', value: 5 },
         loot_priority: 'fighter',
@@ -2303,6 +2303,38 @@ export function damageMultipleRandomSlimes(count = 3, damageAmount = 2, sourceEn
 }
 
 /**
+ * Spawn the Intercept sprite over the Tank that just absorbed a redirected hit
+ * (Tank Interception third talent).
+ */
+function spawnInterceptEffect(slime) {
+    const armyContainer = document.getElementById('armyContainer');
+    if (!armyContainer) return;
+    const unit = armyContainer.querySelector(`[data-slime-id="${slime.id}"]`);
+    if (!unit) return;
+
+    const slimeX = parseFloat(unit.style.left) || 75;
+    const slimeY = parseFloat(unit.style.top) || 120;
+
+    const interceptEl = document.createElement('img');
+    interceptEl.className = 'intercept-effect';
+    interceptEl.src = 'images/projectiles/intercept.png';
+    interceptEl.alt = 'Interception';
+    interceptEl.style.left = `${slimeX + 8}px`;
+    interceptEl.style.top = `${slimeY - 2}px`;
+    interceptEl.style.zIndex = '9999';
+    armyContainer.appendChild(interceptEl);
+
+    // Small jump/vibrate on the absorbing Tank's unit, matching the Tank Block animation.
+    unit.classList.remove('is-block-jump');
+    void unit.offsetWidth;
+    unit.classList.add('is-block-jump');
+
+    setTimeout(() => {
+        if (interceptEl && interceptEl.parentNode) interceptEl.remove();
+    }, 500);
+}
+
+/**
  * Spawn the Block sprite over a Slime that just ignored damage (Tank Block talent).
  */
 function spawnBlockEffect(slime) {
@@ -2366,10 +2398,147 @@ function updateSlimeIceBarrier(unit, active) {
 }
 
 /**
+ * Resolve a Tank's Block roll against an incoming hit. When the Block succeeds
+ * the hit is ignored and the Tank's Block-linked talents fire (Perfect Block,
+ * Spicy Block, Polished Slime reflection, and Counter). Returns true if the hit
+ * was blocked, false if the Block roll missed (so the caller applies the damage).
+ * Only direct hits (allowBlock) can Block.
+ */
+function resolveTankBlock(slime, damageAmount, dmgType, sourceEnemy) {
+    if (!slime || getSlimeSpecialization(slime) !== 'tank' || !slime.talents?.block) return false;
+    const blockChance = getSlimeSubTalentDef(slime, 0)?.id === 'shieldMaster' ? 0.2 : 0.1;
+    if (Math.random() >= blockChance) return false;
+
+    spawnBlockEffect(slime);
+    // Every successful Tank Block plays a one-shot jump/vibrate on the
+    // Slime's unit (the Counter talent additionally swaps the sprite).
+    const blockUnit = document.querySelector(`[data-slime-id="${slime.id}"]`);
+    if (blockUnit) {
+        blockUnit.classList.remove('is-block-jump');
+        void blockUnit.offsetWidth;
+        blockUnit.classList.add('is-block-jump');
+    }
+    if (getSlimeSubTalentDef(slime, 0)?.id === 'perfectBlock') {
+        slime.hp = getSlimeMaxHp(slime);
+    }
+    // Spicy Block (Fire Tank second talent): reflect the slime's own status
+    // effect profile onto the attacker — applied twice.
+    if (hasSpicyBlock(slime) && sourceEnemy && sourceEnemy.effects !== undefined) {
+        const hitEffects = getSlimeHitEffects(slime);
+        const isControlImmune = sourceEnemy.typeId === 'death';
+        // Spicy Block: reflect the Slime's burn status onto the attacker
+        // three times (triple burn stacks).
+        const burnOnly = { burn: hitEffects.burn };
+        applyHitEffectsToEnemy(sourceEnemy, burnOnly, slime, isControlImmune);
+        applyHitEffectsToEnemy(sourceEnemy, burnOnly, slime, isControlImmune);
+        applyHitEffectsToEnemy(sourceEnemy, burnOnly, slime, isControlImmune);
+        // Spicy Block: swap the Slime's sprite to the spicy block pose for a
+        // second (the block jump animation is already playing), then revert.
+        const spicyUnit = document.querySelector(`[data-slime-id="${slime.id}"]`);
+        const spicyImg = spicyUnit ? spicyUnit.querySelector('.slime-img') : null;
+        if (spicyImg) {
+            spicyImg.dataset.prevSrc = spicyImg.src;
+            spicyImg.src = 'images/slimes/fire/spicyBlock.png';
+            spicyImg.style.objectPosition = '0px 0px';
+            setTimeout(() => {
+                spicyImg.src = getSlimeJumpSprite(slime);
+            }, 1000);
+        }
+    }
+    // Polished Slime (Stone Tank second talent): reflect the slime's own
+    // stun status onto the attacker twice (double stun stacks).
+    if (hasPolishedSlime(slime) && sourceEnemy && sourceEnemy.effects !== undefined) {
+        const hitEffects = getSlimeHitEffects(slime);
+        const isControlImmune = sourceEnemy.typeId === 'death';
+        const stunOnly = { stun: hitEffects.stun };
+        applyHitEffectsToEnemy(sourceEnemy, stunOnly, slime, isControlImmune);
+        applyHitEffectsToEnemy(sourceEnemy, stunOnly, slime, isControlImmune);
+        // Polished Slime: swap the Slime's sprite to the polished pose for
+        // a second (the block jump animation is already playing), then revert.
+        const polishedUnit = document.querySelector(`[data-slime-id="${slime.id}"]`);
+        const polishedImg = polishedUnit ? polishedUnit.querySelector('.slime-img') : null;
+        if (polishedImg) {
+            polishedImg.dataset.prevSrc = polishedImg.src;
+            polishedImg.src = 'images/slimes/stone/polishedStone.png';
+            polishedImg.style.objectPosition = '0px 0px';
+            setTimeout(() => {
+                polishedImg.src = getSlimeJumpSprite(slime);
+            }, 1000);
+        }
+    }
+    // Counter (Poison Tank second talent): strike back at the attacker for
+    // 25% of the Slime's damage (with its on-hit effects) and heal the
+    // Slime for 25% of that counter damage.
+    if (hasCounter(slime) && sourceEnemy && sourceEnemy.hp > 0) {
+        const counterDamage = gameState.slimeDamage;
+        const damageToApply = Math.min(sourceEnemy.hp, counterDamage);
+        sourceEnemy.hp -= damageToApply;
+        const isControlImmune = sourceEnemy.typeId === 'death';
+        applyHitEffectsToEnemy(sourceEnemy, getSlimeHitEffects(slime), slime, isControlImmune);
+        showFloatingDamageNumber(sourceEnemy.x || 250, sourceEnemy.y || 130, damageToApply, 'enemy-dmg');
+        // Counter: swap the Slime's sprite to the counter pose (the block
+        // jump animation is already playing from the successful Block above),
+        // then revert to its normal jump sprite.
+        const counterUnit = document.querySelector(`[data-slime-id="${slime.id}"]`);
+        const counterImg = counterUnit ? counterUnit.querySelector('.slime-img') : null;
+        if (counterImg) {
+            counterImg.dataset.prevSrc = counterImg.src;
+            counterImg.src = 'images/slimes/poison/counter.png';
+            counterImg.style.objectPosition = '0px 0px';
+            setTimeout(() => {
+                counterImg.src = getSlimeJumpSprite(slime);
+            }, 600);
+        }
+        const healed = Math.min(slime.maxHp - slime.hp, Math.round(counterDamage * 0.25));
+        if (healed > 0) {
+            slime.hp += healed;
+            showFloatingHealingNumberFromUnit(
+                document.querySelector(`[data-slime-id="${slime.id}"]`),
+                healed
+            );
+        }
+        if (sourceEnemy.hp <= 0 && sourceEnemy.el) {
+            sourceEnemy.el.classList.add(Math.random() > 0.5 ? 'cartoon-ko-eject' : 'cartoon-ko-eject-left');
+            setTimeout(() => {
+                if (sourceEnemy.el) sourceEnemy.el.remove();
+                const idx = activeEnemies.indexOf(sourceEnemy);
+                if (idx !== -1) activeEnemies.splice(idx, 1);
+            }, 800);
+        }
+    }
+    return true;
+}
+
+/**
  * Applies damage to a specific slime instance
  */
 export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg', sourceEnemy = null, allowBlock = true) {
     if (!slime || slime.hp <= 0) return null;
+
+    // Interception (Tank third talent): a wounded Tank (under 50% HP) has its
+    // incoming damage redirected to another Tank that owns Interception and is
+    // still above 50% HP. Only direct hits are intercepted — status DoT ticks
+    // (burn/poison) pass allowBlock=false and stay on their own victim.
+    // The original (wounded) Tank still resolves its OWN Block / Counter / etc.
+    // first (so Counter keeps triggering); if it Blocks, no damage remains and
+    // the interceptor takes nothing. Otherwise the leftover damage is routed to
+    // the interceptor, which resolves it with its own mitigation/Block. This is
+    // resolved up front so the rest of the function only ever applies to the
+    // "real" recipient of the surviving damage.
+    if (allowBlock) {
+        const interceptor = findInterceptorFor(slime);
+        if (interceptor) {
+            // The wounded Tank still resolves its OWN Block / Counter / etc. first
+            // (so Counter keeps triggering). If it Blocks, no damage remains and
+            // the interceptor takes nothing. Otherwise the leftover damage is
+            // routed to the interceptor with allowBlock=false so it does NOT chain
+            // another interception lookup (it is the designated absorber).
+            const blocked = resolveTankBlock(slime, damageAmount, dmgType, sourceEnemy);
+            if (blocked) return slime;
+            spawnInterceptEffect(interceptor);
+            return damageSpecificSlime(interceptor, damageAmount, dmgType, sourceEnemy, false);
+        }
+    }
 
     // Polished Slime (Stone Tank second talent): reduce ALL incoming damage by
     // 10% BEFORE any other flat absorption or reductions (Block, Stone Skin,
@@ -2381,108 +2550,10 @@ export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg', 
     // Tank Block talent: base 10% chance to ignore incoming damage.
     // Shield Master raises it to 20%. Perfect Block heals to full on a successful block.
     // Status effect DoT ticks (burn/poison) pass allowBlock=false and can never be blocked.
-    if (allowBlock && getSlimeSpecialization(slime) === 'tank' && slime.talents?.block) {
-        const blockChance = getSlimeSubTalentDef(slime, 0)?.id === 'shieldMaster' ? 0.2 : 0.1;
-        if (Math.random() < blockChance) {
-            spawnBlockEffect(slime);
-            // Every successful Tank Block plays a one-shot jump/vibrate on the
-            // Slime's unit (the Counter talent additionally swaps the sprite).
-            const blockUnit = document.querySelector(`[data-slime-id="${slime.id}"]`);
-            if (blockUnit) {
-                blockUnit.classList.remove('is-block-jump');
-                void blockUnit.offsetWidth;
-                blockUnit.classList.add('is-block-jump');
-            }
-            if (getSlimeSubTalentDef(slime, 0)?.id === 'perfectBlock') {
-                slime.hp = getSlimeMaxHp(slime);
-            }
-            // Spicy Block (Fire Tank second talent): reflect the slime's own status
-            // effect profile onto the attacker — applied twice.
-            if (hasSpicyBlock(slime) && sourceEnemy && sourceEnemy.effects !== undefined) {
-                const hitEffects = getSlimeHitEffects(slime);
-                const isControlImmune = sourceEnemy.typeId === 'death';
-                // Spicy Block: reflect the Slime's burn status onto the attacker
-                // three times (triple burn stacks).
-                const burnOnly = { burn: hitEffects.burn };
-                applyHitEffectsToEnemy(sourceEnemy, burnOnly, slime, isControlImmune);
-                applyHitEffectsToEnemy(sourceEnemy, burnOnly, slime, isControlImmune);
-                applyHitEffectsToEnemy(sourceEnemy, burnOnly, slime, isControlImmune);
-                // Spicy Block: swap the Slime's sprite to the spicy block pose for a
-                // second (the block jump animation is already playing), then revert.
-                const spicyUnit = document.querySelector(`[data-slime-id="${slime.id}"]`);
-                const spicyImg = spicyUnit ? spicyUnit.querySelector('.slime-img') : null;
-                if (spicyImg) {
-                    spicyImg.dataset.prevSrc = spicyImg.src;
-                    spicyImg.src = 'images/slimes/fire/spicyBlock.png';
-                    spicyImg.style.objectPosition = '0px 0px';
-                    setTimeout(() => {
-                        spicyImg.src = getSlimeJumpSprite(slime);
-                    }, 1000);
-                }
-            }
-            // Polished Slime (Stone Tank second talent): reflect the slime's own
-            // stun status onto the attacker twice (double stun stacks).
-            if (hasPolishedSlime(slime) && sourceEnemy && sourceEnemy.effects !== undefined) {
-                const hitEffects = getSlimeHitEffects(slime);
-                const isControlImmune = sourceEnemy.typeId === 'death';
-                const stunOnly = { stun: hitEffects.stun };
-                applyHitEffectsToEnemy(sourceEnemy, stunOnly, slime, isControlImmune);
-                applyHitEffectsToEnemy(sourceEnemy, stunOnly, slime, isControlImmune);
-                // Polished Slime: swap the Slime's sprite to the polished pose for
-                // a second (the block jump animation is already playing), then revert.
-                const polishedUnit = document.querySelector(`[data-slime-id="${slime.id}"]`);
-                const polishedImg = polishedUnit ? polishedUnit.querySelector('.slime-img') : null;
-                if (polishedImg) {
-                    polishedImg.dataset.prevSrc = polishedImg.src;
-                    polishedImg.src = 'images/slimes/stone/polishedStone.png';
-                    polishedImg.style.objectPosition = '0px 0px';
-                    setTimeout(() => {
-                        polishedImg.src = getSlimeJumpSprite(slime);
-                    }, 1000);
-                }
-            }
-            // Counter (Poison Tank second talent): strike back at the attacker for
-            // 25% of the Slime's damage (with its on-hit effects) and heal the
-            // Slime for 25% of that counter damage.
-            if (hasCounter(slime) && sourceEnemy && sourceEnemy.hp > 0) {
-                const counterDamage = gameState.slimeDamage;
-                const damageToApply = Math.min(sourceEnemy.hp, counterDamage);
-                sourceEnemy.hp -= damageToApply;
-                const isControlImmune = sourceEnemy.typeId === 'death';
-                applyHitEffectsToEnemy(sourceEnemy, getSlimeHitEffects(slime), slime, isControlImmune);
-                showFloatingDamageNumber(sourceEnemy.x || 250, sourceEnemy.y || 130, damageToApply, 'enemy-dmg');
-                // Counter: swap the Slime's sprite to the counter pose (the block
-                // jump animation is already playing from the successful Block above),
-                // then revert to its normal jump sprite.
-                const counterUnit = document.querySelector(`[data-slime-id="${slime.id}"]`);
-                const counterImg = counterUnit ? counterUnit.querySelector('.slime-img') : null;
-                if (counterImg) {
-                    counterImg.dataset.prevSrc = counterImg.src;
-                    counterImg.src = 'images/slimes/poison/counter.png';
-                    counterImg.style.objectPosition = '0px 0px';
-                    setTimeout(() => {
-                        counterImg.src = getSlimeJumpSprite(slime);
-                    }, 600);
-                }
-                const healed = Math.min(slime.maxHp - slime.hp, Math.round(counterDamage * 0.25));
-                if (healed > 0) {
-                    slime.hp += healed;
-                    showFloatingHealingNumberFromUnit(
-                        document.querySelector(`[data-slime-id="${slime.id}"]`),
-                        healed
-                    );
-                }
-                if (sourceEnemy.hp <= 0 && sourceEnemy.el) {
-                    sourceEnemy.el.classList.add(Math.random() > 0.5 ? 'cartoon-ko-eject' : 'cartoon-ko-eject-left');
-                    setTimeout(() => {
-                        if (sourceEnemy.el) sourceEnemy.el.remove();
-                        const idx = activeEnemies.indexOf(sourceEnemy);
-                        if (idx !== -1) activeEnemies.splice(idx, 1);
-                    }, 800);
-                }
-            }
-            return null;
-        }
+    // Returns true when the hit was blocked (and Counter/Spicy/Polished fired), false otherwise.
+    if (allowBlock) {
+        const blocked = resolveTankBlock(slime, damageAmount, dmgType, sourceEnemy);
+        if (blocked) return null;
     }
 
     // Stone Skin (Stone Support): consume the target's "reduction" pool against the

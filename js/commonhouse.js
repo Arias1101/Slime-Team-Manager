@@ -559,7 +559,7 @@ function getActionButtonsHtml(selectedSlimes) {
         const talentName = TALENT_NAMES[spec] || 'Talent';
         const talentDesc = TALENT_DESCRIPTIONS[spec] || '';
         // Third Talent shared by every element of this specialization (null when
-        // that specialization's Talent 3 is not implemented yet, e.g. Tank).
+        // that specialization has no Talent 3 defined).
         const thirdDef = getThirdTalentDef(spec);
         const talentCols = Array.from({ length: TALENT_VISIBLE }, (_, t) => {
             if (!visibleTalents.has(t)) {
@@ -649,7 +649,7 @@ function getActionButtonsHtml(selectedSlimes) {
                     talentDisabled = ' disabled';
                 }
             } else {
-                // Talent 3 is not implemented yet for this specialization: lock it.
+                // No Talent 3 defined for this specialization: lock it.
                 talentExtraClass = ' locked';
                 talentDisabled = ' disabled';
                 talentBadge = '🔒';

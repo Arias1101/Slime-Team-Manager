@@ -995,7 +995,7 @@ function renderSlimeTalentTree(slime) {
         // columns hide their sub-talent buttons entirely.
         const dedicatedUnlocked = normalizedSpecialization ? Boolean(slime.talents?.[talentFlag[normalizedSpecialization]]) : false;
         // Third Talent (shared by every element of a specialization): Support
-        // Resurrection / Fighter Slide. Tank's is not implemented yet (null).
+        // Resurrection / Fighter Slide / Tank Interception.
         const thirdDef = getThirdTalentDef(normalizedSpecialization);
         const columns = costs.map((cost, index) => {
             const isFirst = index === 0;
@@ -1114,7 +1114,7 @@ function renderSlimeTalentTree(slime) {
                 }
             }
             // Third Talent (index 2): shared per-spec Talent (Support Resurrection,
-            // Fighter Slide). Requires the first Talent as prerequisite.
+            // Fighter Slide, Tank Interception). Requires the first Talent as prerequisite.
             const thirdButton = buttons[2];
             if (thirdDef && thirdButton) {
                 if (slime.talents?.[thirdDef.flag]) {

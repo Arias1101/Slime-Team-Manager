@@ -2,7 +2,7 @@
  * Application Main Initializer
  */
 
-import { loadStateFromLocal, addScraps, gameState, SLIME_TYPES, getFortificationLevel, getFortificationUpgradeCost, buyFortificationUpgrade, getSlimeRegen, getRegenMax, markAfkStart, claimAfkScraps, previewAfkScraps, updateBestRoster, calculateSlimeDamage, saveStateToLocal, getScaledEquipmentEffects, getEquipmentQuality, getEquipmentDisplayName, getEquipmentSprite, refreshSlimeMaxHp, ALCHEMIST_UPGRADES, getAlchemistUpgradeLevel, getAlchemistUpgradeCost, buyAlchemistUpgrade, getSlimeDeathSprite, getSlimeJumpSprite, getSlimeSpecialization } from './state.js';
+import { loadStateFromLocal, addScraps, gameState, SLIME_TYPES, getFortificationLevel, getFortificationUpgradeCost, buyFortificationUpgrade, getSlimeRegen, getRegenMax, markAfkStart, claimAfkScraps, previewAfkScraps, updateBestRoster, calculateSlimeDamage, saveStateToLocal, getScaledEquipmentEffects, getEquipmentQuality, getEquipmentDisplayName, getEquipmentSprite, refreshSlimeMaxHp, ALCHEMIST_UPGRADES, getAlchemistUpgradeLevel, getAlchemistUpgradeCost, buyAlchemistUpgrade, buyAlchemistUpgradeBulk, getSlimeDeathSprite, getSlimeJumpSprite, getSlimeSpecialization } from './state.js';
 import { initAuth, loginWithGoogle, logoutUser } from './auth.js';
 import { startEngine, setGamePaused, isGamePaused } from './engine.js';
 import { updateUI, setAuthScreenState, showFirebaseNotice, playSlimeRainRespawnAnimation, initSlimeModalListeners, initMainTabsListeners, openSlimeInspectorModal, renderSlimeRosterLanes } from './ui.js';
@@ -377,8 +377,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return `<article class="upgrade-card alchemist-upgrade-card ${level === 0 ? 'level-zero' : ''}"><div class="upgrade-info"><img src="images/upgrades/${upgrade.icon}" alt="${upgrade.name}" class="upgrade-icon-img"><div class="upgrade-details"><h4 class="upgrade-card-title">${upgrade.name} <span class="upgrade-current">(Current: <strong>${level}</strong>)</span></h4><span class="upgrade-text">${upgrade.description}</span></div></div><div class="upgrade-action"><button class="btn-plus btn-alchemist-upgrade pixel-btn ${affordable ? 'affordable' : 'disabled'}" data-alchemist-upgrade="${upgrade.key}" ${affordable ? '' : 'disabled'}>+</button><span class="upgrade-cost">${cost} <img src="images/logos/coin.png" alt="Village Coin" class="village-coin-icon"></span></div></article>`;
         }).join('');
         cardsEl.querySelectorAll('[data-alchemist-upgrade]').forEach(button => {
-            button.addEventListener('click', () => {
-                if (!buyAlchemistUpgrade(button.dataset.alchemistUpgrade)) return;
+            button.addEventListener('click', (e) => {
+                if (e.shiftKey) e.preventDefault();
+                const key = button.dataset.alchemistUpgrade;
+                const bought = e.shiftKey ? buyAlchemistUpgradeBulk(key, 10) : (buyAlchemistUpgrade(key) ? 1 : 0);
+                if (bought <= 0) return;
                 updateUI();
                 renderAlchemistPopup(popup);
             });

@@ -1,11 +1,8 @@
 ------------- SOON ----------------
-Lets implement third Tank Talent.
-
-Interception: Intercept attacks targeting Tanks under 50% HP.
-
-In practice: When a Tank Slime under 50% hp recieves damage, look if there is a Tank with the Interception talent that have more than 50% HP, and deal damage to that new target instead.
-
-For now, add no animation, no floating text of any kind.
+- Disable third talent when second isn't bought (common house)
+- Disable talent buttons when not enough coin available (common house)
+- Subtalents
+- Bonus levels
 
 ------------- LATER  ----------------
 - Trophies with Coin rewards:

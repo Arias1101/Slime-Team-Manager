@@ -129,7 +129,7 @@ const SLIME_NAME_POOL = [
     'Monaco', 'La Sardine', 'La Bagarre', 'Paul Ichnel', 'Paul le Saumon',
     'Paradis Yack', 'Incroyable Hulk', 'Iron Blob', 'Godefroy de Montmirail', 'Jackouille la Fripouille',
     'Chaussée aux Moines', 'Martingale la Meringuée', 'Caprice des Dieux', 'Le Rock Fort', 'Tutti Frutti',
-    'Seigneur Merguez', 'Chéa Rome le Romain', 'Goat Granny'
+    'Seigneur Merguez', 'Chéa Rome le Romain', 'Goat Granny', 'Jonny McBravo', 'Bouffon des Ténèbres'
 ];
 
 /**
@@ -279,6 +279,16 @@ export function buyAlchemistUpgrade(key) {
     (gameState.bestRoster || []).forEach(apply);
     saveStateToLocal();
     return true;
+}
+
+/** Bulk-buy an Alchemist upgrade: shift+click unlocks up to 10 levels at once. */
+export function buyAlchemistUpgradeBulk(key, max = 10) {
+    let bought = 0;
+    for (let i = 0; i < max; i++) {
+        if (!buyAlchemistUpgrade(key)) break;
+        bought++;
+    }
+    return bought;
 }
 /** Equipment quality ranges from base (0) through +4. */
 export function getEquipmentQuality(item) {
@@ -717,8 +727,47 @@ export const THIRD_TALENT = {
         icon: 'images/talents/fighterSlide.png',
         shortDescription: '50% chance to Slide to attack the furthest ennemy after an attack.',
         description: '50% chance to Slide to the furthest ennemy after an attack and strike it. Slide and Rebound cannot trigger twice in a row, but they can chain into each other.'
+    },
+    tank: {
+        flag: 'interception',
+        name: 'Interception',
+        icon: 'images/talents/tankInterception.png',
+        shortDescription: 'Intercept attacks targeting Tanks under 50% HP.',
+        description: 'When another Tank under 50% HP would take damage, this Tank intercepts the hit and takes it instead, as long as it has more than 50% HP.'
     }
 };
+
+/** Whether a Slime owns the Interception third talent (Tank, all elements). */
+export function hasInterception(slime) {
+    if (!slime) return false;
+    if ((gameState.newGamePlusCompletions || 0) <= 0) return false;
+    if (getSlimeSpecialization(slime) !== 'tank') return false;
+    return Boolean(slime.talents?.interception);
+}
+
+/**
+ * Interception (Tank third talent): when a Tank drops under 50% HP, another Tank
+ * owning Interception and holding more than 50% HP takes the hit in its place.
+ * Returns the interceptor Slime, or null when nobody intercepts.
+ */
+export function findInterceptorFor(slime) {
+    if (!slime || slime.hp <= 0) return null;
+    if (getSlimeSpecialization(slime) !== 'tank') return null;
+    // Only Tanks already under half of their maximum HP are protected.
+    const maxHp = Math.max(1, Number(slime.maxHp || 1));
+    if (slime.hp >= maxHp * 0.5) return null;
+    const candidates = (gameState.slimes || []).filter(candidate => {
+        if (!candidate || candidate === slime) return false;
+        if (String(candidate.id) === String(slime.id)) return false;
+        if (candidate.hp <= 0) return false;
+        if (!hasInterception(candidate)) return false;
+        // The interceptor must stay healthy enough to soak the hit.
+        return candidate.hp > Math.max(1, Number(candidate.maxHp || 1)) * 0.5;
+    });
+    if (!candidates.length) return null;
+    // Pick the healthiest interceptor so the damage lands on the sturdiest Tank.
+    return candidates.reduce((best, current) => (current.hp > best.hp ? current : best), candidates[0]);
+}
 
 /** The third Talent definition for a Slime's specialization, or null. */
 export function getThirdTalentDef(slimeOrSpec) {
@@ -1702,6 +1751,38 @@ export function buyAfkScrapUpgrade() {
     saveStateToLocal();
     return true;
 }
+
+/**
+ * Bulk-purchase helper: repeats a single `buy` action up to `maxCount` times,
+ * stopping early when a purchase fails (maxed or unaffordable). Returns the
+ * number of successful purchases (0 = nothing bought).
+ */
+export function bulkBuyUpgrade(buy, maxCount = 10) {
+    let bought = 0;
+    for (let i = 0; i < maxCount; i++) {
+        if (!buy()) break;
+        bought++;
+    }
+    return bought;
+}
+
+/** Bulk-buy variants: shift+click unlocks up to 10 levels at once. */
+export function buyArmySizeUpgradeBulk(max = 10) { return bulkBuyUpgrade(buyArmySizeUpgrade, max); }
+export function buyAscensionUpgradeBulk(max = 10) { return bulkBuyUpgrade(buyAscensionUpgrade, max); }
+export function buyAugmentationUpgradeBulk(max = 10) { return bulkBuyUpgrade(buyAugmentationUpgrade, max); }
+export function buyPrecisionUpgradeBulk(max = 10) { return bulkBuyUpgrade(buyPrecisionUpgrade, max); }
+export function buyRegenUpgradeBulk(max = 10) { return bulkBuyUpgrade(buyRegenUpgrade, max); }
+export function buyDigestionUpgradeBulk(max = 10) { return bulkBuyUpgrade(buyDigestionUpgrade, max); }
+export function buyIncubationUpgradeBulk(max = 10) { return bulkBuyUpgrade(buyIncubationUpgrade, max); }
+export function buyIgnitionUpgradeBulk(max = 10) { return bulkBuyUpgrade(buyIgnitionUpgrade, max); }
+export function buyGlaciationUpgradeBulk(max = 10) { return bulkBuyUpgrade(buyGlaciationUpgrade, max); }
+export function buyPetrificationUpgradeBulk(max = 10) { return bulkBuyUpgrade(buyPetrificationUpgrade, max); }
+export function buyIntoxicationUpgradeBulk(max = 10) { return bulkBuyUpgrade(buyIntoxicationUpgrade, max); }
+export function buyAfkScrapCeilingUpgradeBulk(max = 10) { return bulkBuyUpgrade(buyAfkScrapCeilingUpgrade, max); }
+export function buyAfkScrapUpgradeBulk(max = 10) { return bulkBuyUpgrade(buyAfkScrapUpgrade, max); }
+export function buySelectionUpgradeBulk(max = 10) { return bulkBuyUpgrade(buySelectionUpgrade, max); }
+export function buyEvolutionUpgradeBulk(max = 10) { return bulkBuyUpgrade(buyEvolutionUpgrade, max); }
+export function buyExaltationUpgradeBulk(max = 10) { return bulkBuyUpgrade(buyExaltationUpgrade, max); }
 
 export function markAfkStart(timestamp = Date.now()) {
     gameState.afkLastAwayAt = timestamp;

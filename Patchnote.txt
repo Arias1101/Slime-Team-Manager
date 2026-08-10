@@ -1,11 +1,13 @@
 Patch Notes:
 
 v0.25
+- Implemented Bulk upgrade buy with Shift+Clic (buys 10).
 - Increased Rebound Talent chances to 50%.
 - Fixed Rebound travel being capped at 20px so it now reaches target enemy consistantly.
 - Implemented third Fighter talent: "Slide".
 - Fixed "Momentum" sub-talent not actually boosting Rebound damage.
 - Implemented third Support talent: "Resurection".
+- Implemented third Tank talent: "Interception".
 - Fixed issue when returning to village when game is paused.
 
 v0.24

@@ -35,6 +35,14 @@ function markUnitFree(unitEl) {
  * from performance.now() so events can be ordered precisely during a single jump.
  */
 const DEBUG_JUMP_ATTACK = true;
+
+/**
+ * During a Slide, the slime performs a 360° spin on its striking (frame 5) pose
+ * for this many milliseconds. This tail is added to the slide's travel time so
+ * the whole Slide attack reads a touch slower.
+ */
+const SLIDE_SPIN_MS = 300;
+
 function jumpLog(tag, msg, ...rest) {
     if (!DEBUG_JUMP_ATTACK) return;
     const t = Math.round(performance.now());
@@ -552,7 +560,17 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
         const elapsed = now - startTime;
         let progress = Math.min(1.0, elapsed / jumpDuration);
 
-        const dx = baseX + maxDx * progress;
+        // A Slide's duration includes a tail (SLIDE_SPIN_MS) for the striking
+        // 360° spin, so its travel occupies only the leading portion of the
+        // timeline. `slideTravelRatio` is the progress at which it reaches the
+        // target and the spin begins.
+        const slideTravelRatio = isSliding
+            ? Math.max(0, Math.min(1, (jumpDuration - SLIDE_SPIN_MS) / jumpDuration))
+            : 1;
+        // Position uses travel progress (clamped to 1) so the dash finishes at
+        // the target and the slime stays put while it spins.
+        const travelProgress = Math.min(1.0, progress / slideTravelRatio);
+        const dx = baseX + maxDx * travelProgress;
         // A Slide stays glued to the ground: no altitude arc, only horizontal travel.
         const dy = isSliding ? baseY : baseY - 4 * maxAltitude * progress * (1.0 - progress);
 
@@ -560,9 +578,24 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
         // but a Slide must travel the FULL distance first — its hit only lands
         // once the slime has actually reached the furthest enemy, otherwise the
         // damage fires mid-dash and the slime rushes into the next action.
-        const impactThreshold = isSliding ? 1.0 : 0.90;
+        const impactThreshold = isSliding ? slideTravelRatio : 0.90;
 
-        imgEl.style.transform = `translate(${dx}px, ${dy}px)`;
+        // During the Slide's striking tail, spin a full 360° over SLIDE_SPIN_MS
+        // while doing a small hop (like the Blocking slime's jump) for a more
+        // natural, lively strike.
+        let slideSpinDeg = 0;
+        let slideHopPx = 0;
+        if (isSliding && progress >= slideTravelRatio) {
+            const spinProgress = Math.min(1.0, (progress - slideTravelRatio) / (1.0 - slideTravelRatio));
+            slideSpinDeg = spinProgress * 360;
+            // One small hop peaking mid-spin: up then back down to the ground.
+            slideHopPx = -Math.sin(spinProgress * Math.PI) * 6;
+        }
+
+        imgEl.style.transform = `translate(${dx}px, ${dy + slideHopPx}px)${slideSpinDeg ? ` rotate(${slideSpinDeg}deg)` : ''}`;
+        // Center the rotation pivot (the sprite normally pivots from the bottom
+        // for squish/impact effects) so the Slide spin spins in place.
+        imgEl.style.transformOrigin = slideSpinDeg ? 'center center' : '';
 
         // Keep the Ice Barrier shield glued to the jumping slime image.
         const barrierEl = unitEl.querySelector('.slime-ice-barrier');
@@ -571,14 +604,19 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
         }
 
         if (shadowEl) {
-            const shadowScale = isSliding ? 1 : Math.max(0.3, 1.0 - (Math.abs(dy) / (maxAltitude * 1.2)));
+            // While the Slide hops during its spin, shrink/fade the shadow like a
+            // real jump so the hop reads as a small leap off the ground.
+            const effHop = isSliding ? Math.abs(slideHopPx) : Math.abs(dy);
+            const hopRef = isSliding ? 6 : (maxAltitude * 1.2);
+            const shadowScale = Math.max(0.3, 1.0 - (effHop / hopRef));
             shadowEl.style.transform = `translateX(${dx}px) scale(${shadowScale})`;
             shadowEl.style.opacity = shadowScale;
         }
 
-        // A Slide holds frame 8 for the whole dash, then snaps to frame 6 on impact.
+        // A Slide dashes holding frame 8, then performs its striking 360° spin on
+        // frame 5 (the "striking" pose) for the slide tail before returning.
         let spriteFrame = 1;
-        if (isSliding) spriteFrame = progress >= impactThreshold ? 6 : 8;
+        if (isSliding) spriteFrame = progress >= slideTravelRatio ? 5 : 8;
         else if (progress < 0.08) spriteFrame = 1;
         else if (progress < 0.18) spriteFrame = 2;
         else if (progress < 0.32) spriteFrame = 3;
@@ -1017,7 +1055,7 @@ function computeSlideTrajectory(refX, target) {
     // close to it and the generic impact helper would push it further out).
     const targetImpactX = Math.min(420, computeJumpImpactX(refX, target));
     const maxDx = Math.max(0, targetImpactX - refX);
-    const jumpDuration = Math.min(600, Math.max(280, 220 + maxDx * 0.5));
+    const jumpDuration = Math.min(600, Math.max(280, 220 + maxDx * 0.5)) + SLIDE_SPIN_MS;
     return { maxDx, maxAltitude: 0, jumpDuration };
 }
 

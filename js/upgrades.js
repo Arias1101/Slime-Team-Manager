@@ -50,7 +50,23 @@ import {
     getEvolutionUpgradeCost,
     buyEvolutionUpgrade,
     getExaltationUpgradeCost,
-    buyExaltationUpgrade
+    buyExaltationUpgrade,
+    buyArmySizeUpgradeBulk,
+    buyAscensionUpgradeBulk,
+    buyAugmentationUpgradeBulk,
+    buyPrecisionUpgradeBulk,
+    buyRegenUpgradeBulk,
+    buyDigestionUpgradeBulk,
+    buyIncubationUpgradeBulk,
+    buyIgnitionUpgradeBulk,
+    buyGlaciationUpgradeBulk,
+    buyPetrificationUpgradeBulk,
+    buyIntoxicationUpgradeBulk,
+    buyAfkScrapCeilingUpgradeBulk,
+    buyAfkScrapUpgradeBulk,
+    buySelectionUpgradeBulk,
+    buyEvolutionUpgradeBulk,
+    buyExaltationUpgradeBulk
 } from './state.js';
 import { updateUI } from './ui.js';
 
@@ -756,155 +772,39 @@ export function updateUpgradesUI() {
 }
 
 /**
+ * Bind a single upgrade button: shift+click unlocks up to 10 levels at once,
+ * normal click buys a single level.
+ */
+function bindUpgradeButton(id, buySingle, buyBulk) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('click', (e) => {
+        if (e.shiftKey) e.preventDefault();
+        const bought = e.shiftKey ? buyBulk(10) : (buySingle() ? 1 : 0);
+        if (bought > 0) updateUI();
+    });
+}
+
+/**
  * Initialize Upgrade Button Click Listeners
  */
 export function initUpgradesModule() {
-    const btnUpgradeArmySizeEl = document.getElementById('btnUpgradeArmySize');
-    if (btnUpgradeArmySizeEl) {
-        btnUpgradeArmySizeEl.addEventListener('click', () => {
-            const success = buyArmySizeUpgrade();
-            if (success) {
-                updateUI();
-            }
-        });
-    }
-
-    const btnUpgradeAscensionEl = document.getElementById('btnUpgradeAscension');
-    if (btnUpgradeAscensionEl) {
-        btnUpgradeAscensionEl.addEventListener('click', () => {
-            const success = buyAscensionUpgrade();
-            if (success) {
-                updateUI();
-            }
-        });
-    }
-
-    const btnUpgradeAugmentationEl = document.getElementById('btnUpgradeAugmentation');
-    if (btnUpgradeAugmentationEl) {
-        btnUpgradeAugmentationEl.addEventListener('click', () => {
-            const success = buyAugmentationUpgrade();
-            if (success) {
-                updateUI();
-            }
-        });
-    }
-
-    const btnUpgradePrecisionEl = document.getElementById('btnUpgradePrecision');
-    if (btnUpgradePrecisionEl) {
-        btnUpgradePrecisionEl.addEventListener('click', () => {
-            const success = buyPrecisionUpgrade();
-            if (success) {
-                updateUI();
-            }
-        });
-    }
-
-    const btnUpgradeRegenEl = document.getElementById('btnUpgradeRegen');
-    if (btnUpgradeRegenEl) {
-        btnUpgradeRegenEl.addEventListener('click', () => {
-            const success = buyRegenUpgrade();
-            if (success) {
-                updateUI();
-            }
-        });
-    }
-
-    const btnUpgradeDigestionEl = document.getElementById('btnUpgradeDigestion');
-    if (btnUpgradeDigestionEl) {
-        btnUpgradeDigestionEl.addEventListener('click', () => {
-            const success = buyDigestionUpgrade();
-            if (success) {
-                updateUI();
-            }
-        });
-    }
-
-    const btnUpgradeIncubationEl = document.getElementById('btnUpgradeIncubation');
-    if (btnUpgradeIncubationEl) {
-        btnUpgradeIncubationEl.addEventListener('click', () => {
-            const success = buyIncubationUpgrade();
-            if (success) {
-                updateUI();
-            }
-        });
-    }
-
-    const btnUpgradeSelectionEl = document.getElementById('btnUpgradeSelection');
-    if (btnUpgradeSelectionEl) {
-        btnUpgradeSelectionEl.addEventListener('click', () => {
-            const success = buySelectionUpgrade();
-            if (success) {
-                updateUI();
-            }
-        });
-    }
-
-    const btnUpgradeEvolutionEl = document.getElementById('btnUpgradeEvolution');
-    if (btnUpgradeEvolutionEl) {
-        btnUpgradeEvolutionEl.addEventListener('click', () => {
-            const success = buyEvolutionUpgrade();
-            if (success) {
-                updateUI();
-            }
-        });
-    }
-
-    const btnUpgradeExaltationEl = document.getElementById('btnUpgradeExaltation');
-    if (btnUpgradeExaltationEl) {
-        btnUpgradeExaltationEl.addEventListener('click', () => {
-            const success = buyExaltationUpgrade();
-            if (success) {
-                updateUI();
-            }
-        });
-    }
-
-
-
-    const btnUpgradeIgnitionEl = document.getElementById('btnUpgradeIgnition');
-    if (btnUpgradeIgnitionEl) {
-        btnUpgradeIgnitionEl.addEventListener('click', () => {
-            const success = buyIgnitionUpgrade();
-            if (success) {
-                updateUI();
-            }
-        });
-    }
-
-    const btnUpgradeGlaciationEl = document.getElementById('btnUpgradeGlaciation');
-    if (btnUpgradeGlaciationEl) {
-        btnUpgradeGlaciationEl.addEventListener('click', () => {
-            const success = buyGlaciationUpgrade();
-            if (success) {
-                updateUI();
-            }
-        });
-    }
-
-    const btnUpgradePetrificationEl = document.getElementById('btnUpgradePetrification');
-    if (btnUpgradePetrificationEl) {
-        btnUpgradePetrificationEl.addEventListener('click', () => {
-            const success = buyPetrificationUpgrade();
-            if (success) {
-                updateUI();
-            }
-        });
-    }
-
-    const btnUpgradeIntoxicationEl = document.getElementById('btnUpgradeIntoxication');
-    if (btnUpgradeIntoxicationEl) {
-        btnUpgradeIntoxicationEl.addEventListener('click', () => {
-            const success = buyIntoxicationUpgrade();
-            if (success) {
-                updateUI();
-            }
-        });
-    }
-
-    const btnUpgradeAfkScrapCeilingEl = document.getElementById('btnUpgradeAfkScrapCeiling');
-    if (btnUpgradeAfkScrapCeilingEl) btnUpgradeAfkScrapCeilingEl.addEventListener('click', () => { if (buyAfkScrapCeilingUpgrade()) updateUI(); });
-    const btnUpgradeAfkScrapEl = document.getElementById('btnUpgradeAfkScrap');
-    if (btnUpgradeAfkScrapEl) btnUpgradeAfkScrapEl.addEventListener('click', () => { if (buyAfkScrapUpgrade()) updateUI(); });
+    bindUpgradeButton('btnUpgradeArmySize', buyArmySizeUpgrade, buyArmySizeUpgradeBulk);
+    bindUpgradeButton('btnUpgradeAscension', buyAscensionUpgrade, buyAscensionUpgradeBulk);
+    bindUpgradeButton('btnUpgradeAugmentation', buyAugmentationUpgrade, buyAugmentationUpgradeBulk);
+    bindUpgradeButton('btnUpgradePrecision', buyPrecisionUpgrade, buyPrecisionUpgradeBulk);
+    bindUpgradeButton('btnUpgradeRegen', buyRegenUpgrade, buyRegenUpgradeBulk);
+    bindUpgradeButton('btnUpgradeDigestion', buyDigestionUpgrade, buyDigestionUpgradeBulk);
+    bindUpgradeButton('btnUpgradeIncubation', buyIncubationUpgrade, buyIncubationUpgradeBulk);
+    bindUpgradeButton('btnUpgradeSelection', buySelectionUpgrade, buySelectionUpgradeBulk);
+    bindUpgradeButton('btnUpgradeEvolution', buyEvolutionUpgrade, buyEvolutionUpgradeBulk);
+    bindUpgradeButton('btnUpgradeExaltation', buyExaltationUpgrade, buyExaltationUpgradeBulk);
+    bindUpgradeButton('btnUpgradeIgnition', buyIgnitionUpgrade, buyIgnitionUpgradeBulk);
+    bindUpgradeButton('btnUpgradeGlaciation', buyGlaciationUpgrade, buyGlaciationUpgradeBulk);
+    bindUpgradeButton('btnUpgradePetrification', buyPetrificationUpgrade, buyPetrificationUpgradeBulk);
+    bindUpgradeButton('btnUpgradeIntoxication', buyIntoxicationUpgrade, buyIntoxicationUpgradeBulk);
+    bindUpgradeButton('btnUpgradeAfkScrapCeiling', buyAfkScrapCeilingUpgrade, buyAfkScrapCeilingUpgradeBulk);
+    bindUpgradeButton('btnUpgradeAfkScrap', buyAfkScrapUpgrade, buyAfkScrapUpgradeBulk);
     updateUpgradesUI();
 }
 
