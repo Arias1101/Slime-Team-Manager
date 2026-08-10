@@ -3,9 +3,23 @@
  */
 
 import { activeEnemies, triggerLootDrop, activeGroundLoots, formatLootEffects } from './enemies.js';
-import { gameState, SLIME_TYPES, addScraps, updateBestRoster, saveStateToLocal, calculateSlimeDamage, getScaledEquipmentEffects, getSlimeHitEffects, refreshSlimeMaxHp, getSlimeJumpSprite, getSlimeSpecialization, getSlimeGraftMultipliers, getSlimeSubTalentDef, hasMeltingMend, hasIceBarrier, hasLeech, hasStoneSkin, hasIceBurst, hasCorrosivePoison, hasHeavyStrike } from './state.js';
-import { updateUI, requestUIRefresh, updateLootHUD } from './ui.js';
+import { gameState, SLIME_TYPES, addScraps, updateBestRoster, saveStateToLocal, calculateSlimeDamage, getScaledEquipmentEffects, getSlimeHitEffects, refreshSlimeMaxHp, getSlimeJumpSprite, getSlimeSpecialization, getSlimeGraftMultipliers, getSlimeSubTalentDef, hasMeltingMend, hasIceBarrier, hasLeech, hasStoneSkin, hasIceBurst, hasCorrosivePoison, hasHeavyStrike, hasSlide } from './state.js';
+import { updateUI, requestUIRefresh, updateLootHUD, renderSlimeArmy } from './ui.js';
 import { isGamePaused } from './engine.js';
+
+/**
+ * DEBUG logging for the Fighter Rebound/Slide jump sequence. Toggle by setting
+ * DEBUG_JUMP_ATTACK to true. Each line is prefixed with a [ms] timestamp taken
+ * from performance.now() so events can be ordered precisely during a single jump.
+ */
+const DEBUG_JUMP_ATTACK = true;
+function jumpLog(tag, msg, ...rest) {
+    if (!DEBUG_JUMP_ATTACK) return;
+    const t = Math.round(performance.now());
+    // eslint-disable-next-line no-console
+    console.log(`[JUMP ${t}] ${tag} - ${msg}`, ...rest);
+}
+
 /**
  * Convert viewport measurements back into the battlefield's native 500px coordinate space.
  * The wide layout scales the battlefield element as a whole, while gameplay coordinates stay native.
@@ -288,6 +302,37 @@ function playSlimeSupportCastRay(unitEl) {
     setTimeout(() => rayEl.remove(), 200);
 }
 
+/**
+ * Spawn the tall (24x250px) light ray over the resurrecting Support. Its base sits
+ * on the Slime and the rest of the image extends upward, out of frame.
+ */
+function playResurrectionLightRay(unitEl) {
+    const position = getOverlayPosition(unitEl);
+    if (!position) return;
+    const rayEl = document.createElement('div');
+    rayEl.className = 'slime-resurrection-ray';
+    // The ray art sits at the bottom-LEFT of its 24px-wide canvas, so we shift the
+    // box right by 12px to center the visible beam on the Slime, and drop the base
+    // near the Slime's feet so the 250px column rises out of the top of the frame.
+    rayEl.style.left = `${position.x + position.width / 2 - 11 + 3 - 1}px`;
+    rayEl.style.top = `${position.y + position.height - 2 - 250 + 2}px`;
+    position.overlay.appendChild(rayEl);
+    setTimeout(() => rayEl.remove(), 3000);
+}
+
+/** Same ray, but using lightRay2.png (40px wide), aligned identically on the revived target. */
+function playResurrectionLightRayTarget(unitEl) {
+    const position = getOverlayPosition(unitEl);
+    if (!position) return;
+    const rayEl = document.createElement('div');
+    rayEl.className = 'slime-resurrection-ray slime-resurrection-ray-target';
+    // 40px-wide canvas: offset by 20px (half width) to keep it centered on the same point.
+    rayEl.style.left = `${position.x + position.width / 2 - 20 + 3 - 1}px`;
+    rayEl.style.top = `${position.y + position.height - 2 - 250 + 2}px`;
+    position.overlay.appendChild(rayEl);
+    setTimeout(() => rayEl.remove(), 3000);
+}
+
 function playSlimeSupportHealAnimation(targetEl) {
     const position = getOverlayPosition(targetEl);
     if (!position) return;
@@ -311,6 +356,98 @@ function showSlimeSupportHealingNumber(targetEl, restoredAmount, isCrit = false,
     const position = getOverlayPosition(targetEl);
     if (position) showFloatingHealingNumber(position.x + position.width / 2, position.y - 12, restoredAmount, isCrit, isMegaCrit);
 }
+
+/**
+ * Play the Resurrection transition animations:
+ * - Each revived Slime appears in its death sprite "dying2" frame (-19px) for 1s,
+ *   then "dying1" frame (0px) for 2s, then returns to its idle jump sprite.
+ * - The Support that performed the Resurrection briefly switches to the death
+ *   sprite "dying1" frame (0px) for 1s, then returns to its idle jump sprite.
+ */
+export function playResurrectionAnimations(resurrectors, revivedSlimes) {
+    const dieSheetFor = (slimeObj) => {
+        const config = SLIME_TYPES[slimeObj?.type] || SLIME_TYPES.base;
+        return `${config.folder}/die.png`;
+    };
+
+    // Lock every involved Slime (revived + resurrector) from acting during the
+    // whole 3s animation.
+    const unlockUnit = (unit) => {
+        if (!unit) return;
+        unit.dataset.isAttacking = 'false';
+        unit.dataset.isEating = 'false';
+    };
+
+    // A revived Slime reuses the same id as its prior (dying) DOM unit. If that
+    // unit is still mid death-animation, it will be removed by the pending death
+    // cleanup setTimeout and vanish from the battlefield. Drop any stale unit
+    // first, then re-render the army so a fresh, stable unit is created.
+    (revivedSlimes || []).forEach(slimeObj => {
+        const stale = document.querySelector(`.slime-unit[data-slime-id="${String(slimeObj.id)}"]`);
+        if (stale) stale.remove();
+    });
+    renderSlimeArmy();
+
+    const lockUnit = (slimeObj) => {
+        const unit = document.querySelector(`.slime-unit[data-slime-id="${String(slimeObj.id)}"]`);
+        if (!unit) return null;
+        unit.dataset.isAttacking = 'true';
+        unit.dataset.isEating = 'true';
+        return unit;
+    };
+
+    (revivedSlimes || []).forEach(slimeObj => {
+        const unit = lockUnit(slimeObj);
+        if (!unit) return;
+        const img = unit.querySelector('.slime-img');
+        const shadow = unit.querySelector('.slime-shadow-sm');
+        if (!img) { unlockUnit(unit); return; }
+
+        img.style.animation = 'none';
+        img.style.transition = 'none';
+        img.style.transform = 'none';
+        img.src = dieSheetFor(slimeObj);
+        // Dying2 frame (3s) + vibrate, then back to idle
+        img.style.objectPosition = '-19px 0px';
+        unit.classList.add('slime-dying-vibrate');
+        if (shadow) shadow.style.opacity = '0.3';
+        playResurrectionLightRayTarget(unit);
+
+        // Back to idle jump sprite
+        setTimeout(() => {
+            img.src = getSlimeJumpSprite(slimeObj);
+            img.style.objectPosition = '0px 0px';
+            if (shadow) shadow.style.opacity = '';
+            img.style.transition = '';
+            unit.classList.remove('slime-dying-vibrate');
+            unlockUnit(unit);
+        }, 3000);
+    });
+
+    (resurrectors || []).forEach(slimeObj => {
+        const unit = lockUnit(slimeObj);
+        if (!unit) return;
+        const img = unit.querySelector('.slime-img');
+        if (!img) { unlockUnit(unit); return; }
+
+        img.style.animation = 'none';
+        img.style.transition = 'none';
+        img.src = dieSheetFor(slimeObj);
+        // dying1 frame for 3s + vibrate
+        img.style.animation = 'none';
+        img.style.objectPosition = '0px 0px';
+        unit.classList.add('slime-dying-vibrate');
+        playResurrectionLightRay(unit);
+
+        setTimeout(() => {
+            img.src = getSlimeJumpSprite(slimeObj);
+            img.style.objectPosition = '0px 0px';
+            img.style.transition = '';
+            unit.classList.remove('slime-dying-vibrate');
+            unlockUnit(unit);
+        }, 3000);
+    });
+}
 function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
     if (trySupportGraft(unitEl, slimeObj)) return;
     const slimeConfig = SLIME_TYPES[typeId] || SLIME_TYPES.base;
@@ -318,7 +455,10 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
     const shadowEl = unitEl.querySelector('.slime-shadow-sm');
     if (!imgEl) return;
 
-    unitEl.dataset.isAttacking = 'true';
+    // Stable per-call tag so a single Fighter's chained Rebound/Slide sequence
+    // can be followed across the requestAnimationFrame calls in the logs.
+    const jumpTag = `s${slimeObj?.id ?? unitEl.dataset.slimeId ?? '?'}`;
+    jumpLog(jumpTag, 'JUMP START', { typeId, spec: getSlimeSpecialization(slimeObj), rebound: !!slimeObj?.talents?.rebound, slide: hasSlide(slimeObj) });
     unitEl.style.zIndex = '500';
     imgEl.style.animation = 'none';
     imgEl.style.transition = 'none';
@@ -367,6 +507,13 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
     let hasDealtDamage = false;
     let baseX = 0;
     let baseY = 0;
+    // Slide (Fighter third talent) turns the tail of the animation into a flat
+    // ground dash instead of an arc. `lastSpecialMove` tracks which of
+    // Rebound/Slide fired last so the same one never triggers twice in a row
+    // (they can still alternate indefinitely).
+    let isSliding = false;
+    let lastSpecialMove = null;
+    let lastLoggedProgress = -1;
 
     function animateJumpFrame(now) {
         // While the game is paused, freeze the jump animation in place (and shift
@@ -381,7 +528,14 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
         let progress = Math.min(1.0, elapsed / jumpDuration);
 
         const dx = baseX + maxDx * progress;
-        const dy = baseY - 4 * maxAltitude * progress * (1.0 - progress);
+        // A Slide stays glued to the ground: no altitude arc, only horizontal travel.
+        const dy = isSliding ? baseY : baseY - 4 * maxAltitude * progress * (1.0 - progress);
+
+        // A jump/Rebound deals its hit at 90% of the arc (just before landing),
+        // but a Slide must travel the FULL distance first — its hit only lands
+        // once the slime has actually reached the furthest enemy, otherwise the
+        // damage fires mid-dash and the slime rushes into the next action.
+        const impactThreshold = isSliding ? 1.0 : 0.90;
 
         imgEl.style.transform = `translate(${dx}px, ${dy}px)`;
 
@@ -392,13 +546,15 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
         }
 
         if (shadowEl) {
-            const shadowScale = Math.max(0.3, 1.0 - (Math.abs(dy) / (maxAltitude * 1.2)));
+            const shadowScale = isSliding ? 1 : Math.max(0.3, 1.0 - (Math.abs(dy) / (maxAltitude * 1.2)));
             shadowEl.style.transform = `translateX(${dx}px) scale(${shadowScale})`;
             shadowEl.style.opacity = shadowScale;
         }
 
+        // A Slide holds frame 8 for the whole dash, then snaps to frame 6 on impact.
         let spriteFrame = 1;
-        if (progress < 0.08) spriteFrame = 1;
+        if (isSliding) spriteFrame = progress >= impactThreshold ? 6 : 8;
+        else if (progress < 0.08) spriteFrame = 1;
         else if (progress < 0.18) spriteFrame = 2;
         else if (progress < 0.32) spriteFrame = 3;
         else if (progress < 0.48) spriteFrame = 4;
@@ -410,7 +566,17 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
         imgEl.src = getSlimeJumpSprite(slimeObj);
         imgEl.style.objectPosition = `${-(spriteFrame - 1) * 19}px 0px`;
 
-        if (progress >= 0.90 && !hasDealtDamage) {
+        if (DEBUG_JUMP_ATTACK && progress >= lastLoggedProgress + 0.25) {
+            lastLoggedProgress = progress;
+            jumpLog(jumpTag, 'frame', {
+                progress: +progress.toFixed(2),
+                phase: isSliding ? 'slide' : (lastSpecialMove === 'rebound' ? 'rebound' : 'jump'),
+                x: +(baseX + maxDx * progress).toFixed(1),
+                frame: spriteFrame
+            });
+        }
+
+        if (progress >= impactThreshold && !hasDealtDamage) {
             hasDealtDamage = true;
             let currentDamage = slimeObj ? calculateSlimeDamage(slimeObj) : (gameState.slimeDamage || 1);
             let isCrit = false;
@@ -434,32 +600,83 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
                 }
             }
 
+            // Momentum (Rebound sub-talent): the hit landed by a Rebound deals +50%.
+            if (lastSpecialMove === 'rebound' && getSlimeSubTalentDef(slimeObj, 0)?.id === 'momentum') {
+                currentDamage = currentDamage * 1.5;
+            }
+
+            const phase = isSliding ? 'SLIDE' : (lastSpecialMove === 'rebound' ? 'REBOUND' : 'JUMP');
+            jumpLog(jumpTag, `IMPACT (${phase})`, {
+                progress: +progress.toFixed(2),
+                targetEnemyX: targetEnemy?.x,
+                dx: +dx.toFixed(1),
+                isSliding,
+                lastSpecialMove,
+                damage: Math.round(currentDamage)
+            });
+
             dealTargetEnemyDamage(targetEnemy, currentDamage, slimeConfig, isCrit, slimeObj, isMegaCrit);
             // If no target enemies are in range (x <= 450), slime performs jump animation without dealing damage
 
-            // Rebound talent: Fighter slimes get a 10% chance to interrupt this jump and immediately
-            // rejump at the second closest target, looping back to frame 2 of the jump spritesheet.
-            // Only roll when there is actually a second target available.
-            if (getSlimeSpecialization(slimeObj) === 'fighter' && slimeObj?.talents?.rebound) {
-                const reboundTarget = pickReboundTarget(slimeObj);
-                if (reboundTarget && Math.random() < 0.1) {
-                    const momentum = getSlimeSubTalentDef(slimeObj, 0)?.id === 'momentum' ? 1.5 : 1;
-                    const currentArmyX = startX + dx;
-                    const rebound = computeReboundTrajectory(currentArmyX, reboundTarget);
-                    baseX = dx;
-                    baseY = dy;
-                    targetEnemy = reboundTarget;
-                    maxDx = rebound.maxDx;
-                    maxAltitude = rebound.maxAltitude;
-                    jumpDuration = rebound.jumpDuration;
-                    startTime = now;
-                    progress = 0;
-                    hasDealtDamage = false;
-                    spriteFrame = 2;
-                    imgEl.style.objectPosition = `${-(2 - 1) * 19}px 0px`;
-                    showFloatingStatusText(reboundTarget, String.fromCodePoint(0x21AA), 'rebound-text');
-                    if (momentum !== 1) currentDamage = currentDamage * momentum;
+            // Fighter follow-up moves. Rebound rejumps at the second closest target;
+            // Slide dashes along the ground to the furthest one. Each has a 50%
+            // chance, and neither can trigger twice in a row — but they may
+            // alternate indefinitely (Rebound -> Slide -> Rebound -> ...).
+            const isFighter = getSlimeSpecialization(slimeObj) === 'fighter';
+            const canRebound = isFighter && Boolean(slimeObj?.talents?.rebound) && lastSpecialMove !== 'rebound';
+            const canSlide = isFighter && hasSlide(slimeObj) && lastSpecialMove !== 'slide';
+            const currentArmyX = startX + dx;
+
+            let followUp = null;
+            if (canRebound) {
+                const reboundTarget = pickReboundTarget(slimeObj, currentArmyX);
+                if (reboundTarget && Math.random() < 0.5) {
+                    followUp = { move: 'rebound', target: reboundTarget };
                 }
+            }
+            if (!followUp && canSlide) {
+                const slideTarget = pickSlideTarget(currentArmyX);
+                // Don't Slide into the enemy we just hit — the same target can't be
+                // attacked twice in a row, and Slide must reach a further one.
+                if (slideTarget && slideTarget !== targetEnemy && Math.random() < 0.5) {
+                    followUp = { move: 'slide', target: slideTarget };
+                }
+            }
+
+            if (followUp) {
+                const isSlideMove = followUp.move === 'slide';
+                const trajectory = isSlideMove
+                    ? computeSlideTrajectory(currentArmyX, followUp.target)
+                    : computeReboundTrajectory(currentArmyX, followUp.target);
+                baseX = dx;
+                // A Slide starts from the ground, so drop any leftover altitude.
+                baseY = isSlideMove ? 0 : dy;
+                targetEnemy = followUp.target;
+                maxDx = trajectory.maxDx;
+                maxAltitude = trajectory.maxAltitude;
+                jumpDuration = trajectory.jumpDuration;
+                startTime = now;
+                progress = 0;
+                hasDealtDamage = false;
+                isSliding = isSlideMove;
+                lastSpecialMove = followUp.move;
+                // Slide holds frame 8 while dashing; Rebound restarts the jump at frame 2.
+                spriteFrame = isSlideMove ? 8 : 2;
+                imgEl.style.objectPosition = `${-(spriteFrame - 1) * 19}px 0px`;
+                showFloatingStatusText(
+                    followUp.target,
+                    String.fromCodePoint(isSlideMove ? 0x21E2 : 0x21AA),
+                    isSlideMove ? 'slide-text' : 'rebound-text'
+                );
+                jumpLog(jumpTag, `FOLLOW-UP -> ${followUp.move.toUpperCase()}`, {
+                    fromX: +dx.toFixed(1),
+                    toEnemyX: followUp.target?.x,
+                    maxDx: +trajectory.maxDx.toFixed(1),
+                    duration: trajectory.jumpDuration,
+                    nextPhaseIsSlide: isSlideMove
+                });
+            } else {
+                jumpLog(jumpTag, 'NO FOLLOW-UP (end of chain)', { canRebound, canSlide, lastSpecialMove });
             }
         }
 
@@ -473,8 +690,11 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
                 const finalDx = baseX + maxDx;
                 barrierEl.style.transform = `translate(calc(-50% + ${finalDx}px), -50%)`;
             }
+            jumpLog(jumpTag, 'LEG COMPLETE -> scheduling return walk', { isSliding, finalX: +(baseX + maxDx).toFixed(1), lastSpecialMove });
             setTimeout(() => {
-                startSmoothReturnWalk(unitEl, imgEl, shadowEl, slimeConfig, maxDx);
+                // Return over the TOTAL travelled distance (baseX accumulates every
+                // chained Rebound/Slide leg), not just the last leg's maxDx.
+                startSmoothReturnWalk(unitEl, imgEl, shadowEl, slimeConfig, baseX + maxDx);
             }, 90);
         }
     }
@@ -684,19 +904,35 @@ function dealImpactDamage(impactDx, damage, slimeConfig) {
 }
 
 /**
- * Pick the second closest alive enemy in range (closest to the slimes first).
- * Used by the Fighter Rebound talent to rejump at the next target after a hit.
+ * Pick the second closest alive enemy in range, relative to the slime's current
+ * airborne X. Unlike the original "second closest to the slimes" rule, this lets
+ * a Rebound come back leftward onto a nearer enemy — it ranks every valid enemy
+ * by distance from refX (smallest first) and returns the second one.
  */
-function pickReboundTarget(slimeObj) {
+function pickReboundTarget(slimeObj, refX = 20) {
     const candidates = activeEnemies
         .filter(e => e.hp > 0 && e.x >= 90 && e.x <= 450)
-        .sort((a, b) => a.x - b.x);
+        .map(e => ({ e, d: Math.abs(e.x - refX) }))
+        .sort((a, b) => a.d - b.d)
+        .map(o => o.e);
     if (candidates.length < 2) return null;
     if (getSlimeSubTalentDef(slimeObj, 0)?.id === 'chaos') {
         // Chaos: hit a random valid enemy instead of the second closest.
         return candidates[Math.floor(Math.random() * candidates.length)];
     }
     return candidates[1];
+}
+
+/**
+ * Pick the furthest alive enemy for the Fighter Slide talent.
+ * Slide reaches into the backlane but never past X 420, and it must actually
+ * move forward, so anything at or behind the slime's current position is skipped.
+ */
+function pickSlideTarget(refX) {
+    const candidates = activeEnemies
+        .filter(e => e.hp > 0 && e.x >= 90 && e.x <= 420 && e.x > refX)
+        .sort((a, b) => b.x - a.x);
+    return candidates[0] || null;
 }
 
 /**
@@ -716,7 +952,15 @@ function computeJumpImpactX(refStartX, target) {
         const enemyTravel = (target.speed || 0) * (isFrozen ? 0.2 : 1) * estDurationSec;
         predictedX = isRush ? Math.max(90, target.x - enemyTravel) : Math.max(targetX, target.x - enemyTravel);
     }
-    return Math.min(450, Math.max(refStartX + 20, predictedX - 4));
+    // Stop just short of the target (4px). The impact must be allowed to land near
+    // the target even when it is far away — the old ±20px clamp around the launch
+    // point was only meant for the tiny initial hop and silently capped Rebound/
+    // Slide travel at 20px, so the slime "impacted" without ever reaching the
+    // enemy. Clamp instead to the band between launch and target.
+    const desired = predictedX - 4;
+    const bandLow = Math.min(refStartX, predictedX) - 20;
+    const bandHigh = Math.max(refStartX, predictedX) + 20;
+    return Math.min(450, Math.max(bandLow, Math.min(bandHigh, desired)));
 }
 
 /**
@@ -724,10 +968,31 @@ function computeJumpImpactX(refStartX, target) {
  */
 function computeReboundTrajectory(refX, target) {
     const targetImpactX = computeJumpImpactX(refX, target);
-    const maxDx = Math.max(35, targetImpactX - refX);
-    const maxAltitude = Math.min(65, Math.max(35, 25 + maxDx * 0.16));
-    const jumpDuration = Math.min(750, Math.max(480, 450 + maxDx * 0.75));
+    // Signed travel distance: positive = right, negative = left (a back-track
+    // Rebound onto a closer enemy). Keep a minimum arc length so a short hop onto
+    // a near enemy still reads as a jump, but allow it to go negative.
+    const rawDx = targetImpactX - refX;
+    const travel = Math.abs(rawDx);
+    const minTravel = 35;
+    const maxDx = travel < minTravel ? (rawDx >= 0 ? minTravel : -minTravel) : rawDx;
+    const maxAltitude = Math.min(65, Math.max(35, 25 + travel * 0.16));
+    const jumpDuration = Math.min(750, Math.max(480, 450 + travel * 0.75));
     return { maxDx, maxAltitude, jumpDuration };
+}
+
+/**
+ * Recompute the trajectory for a Fighter Slide from the current landing position.
+ * A Slide is a flat ground dash (no altitude) toward the furthest enemy, capped
+ * at X 420, and it travels noticeably faster than a jump of the same length.
+ */
+function computeSlideTrajectory(refX, target) {
+    // Clamp the destination to 420 first, then derive the travel distance from it
+    // so the slide can never overshoot the cap (even when the slime is already
+    // close to it and the generic impact helper would push it further out).
+    const targetImpactX = Math.min(420, computeJumpImpactX(refX, target));
+    const maxDx = Math.max(0, targetImpactX - refX);
+    const jumpDuration = Math.min(600, Math.max(280, 220 + maxDx * 0.5));
+    return { maxDx, maxAltitude: 0, jumpDuration };
 }
 
 

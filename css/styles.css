@@ -1020,6 +1020,10 @@ body.modal-open {
     color: #a78bfa;
 }
 
+.floating-text.slide-text {
+    color: #5eead4;
+}
+
 .floating-text.loot-text {
     color: #fbbf24;
     font-size: 0.85rem;
@@ -6682,6 +6686,43 @@ body.new-game-plus .village-buildings {
     background: linear-gradient(to top, rgba(187, 247, 208, 0), rgba(134, 239, 172, 0.92), rgba(255, 255, 255, 0));
     box-shadow: 0 0 6px rgba(74, 222, 128, 0.9);
     animation: supportCastRay 0.2s ease-out forwards;
+}
+
+.slime-resurrection-ray {
+    position: absolute;
+    width: 24px;
+    height: 250px;
+    pointer-events: none;
+    z-index: 880;
+    background-image: url('../images/projectiles/lightRay.png');
+    background-repeat: no-repeat;
+    background-position: bottom left;
+    background-size: 24px 250px;
+    transform-origin: bottom center;
+    animation: resurrectionRayRevealBottom 3s ease-out forwards;
+}
+
+.slime-resurrection-ray-target {
+    width: 40px;
+    background-image: url('../images/projectiles/lightRay2.png');
+    background-size: 40px 250px;
+    animation: resurrectionRayRevealTop 3s ease-out forwards;
+}
+
+/* First ray: appears bottom-first (near-instant), stays visible, fades only at the very end. */
+@keyframes resurrectionRayRevealBottom {
+    0% { opacity: 0; clip-path: inset(100% 0 0 0); }
+    5% { opacity: 1; clip-path: inset(0 0 0 0); }
+    90% { opacity: 1; clip-path: inset(0 0 0 0); }
+    100% { opacity: 0; clip-path: inset(0 0 0 0); }
+}
+
+/* Target ray: appears top-first (near-instant), stays visible, fades only at the very end. */
+@keyframes resurrectionRayRevealTop {
+    0% { opacity: 0; clip-path: inset(0 0 100% 0); }
+    5% { opacity: 1; clip-path: inset(0 0 0 0); }
+    90% { opacity: 1; clip-path: inset(0 0 0 0); }
+    100% { opacity: 0; clip-path: inset(0 0 0 0); }
 }
 
 .slime-support-heal {

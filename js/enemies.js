@@ -2,11 +2,11 @@
  * Enemy Management & AI Behaviors
  */
 
-import { gameState, addScraps, saveStateToLocal, saveWaveSnapshot, restoreBestRoster, SLIME_TYPES, getSlimeTotalRegen, getSlimeSpecialization, setEquipmentDefinitionResolver, getSlimeSubTalentDef, getSlimeMaxHp, getSlimeHitEffects, getSlimeJumpSprite, hasSpicyBlock, hasIceBlock, hasCounter, hasPolishedSlime } from './state.js';
-import { healAllSlimes, initAscendedAutoAttacks, clearAscendedAutoAttacks, showFloatingDamageNumber, showFloatingHealingNumber, showFloatingHealingNumberFromUnit, showFloatingStatusTextAt, showBattlefieldWaveBanner, triggerSlimeEatLoot, applyHitEffectsToEnemy } from './slimes.js';
+import { gameState, addScraps, saveStateToLocal, saveWaveSnapshot, restoreBestRoster, SLIME_TYPES, getSlimeTotalRegen, getSlimeSpecialization, setEquipmentDefinitionResolver, getSlimeSubTalentDef, getSlimeMaxHp, getSlimeHitEffects, getSlimeJumpSprite, hasSpicyBlock, hasIceBlock, hasCounter, hasPolishedSlime, processWaveEndResurrections } from './state.js';
+import { healAllSlimes, initAscendedAutoAttacks, clearAscendedAutoAttacks, showFloatingDamageNumber, showFloatingHealingNumber, showFloatingHealingNumberFromUnit, showFloatingStatusTextAt, showBattlefieldWaveBanner, triggerSlimeEatLoot, applyHitEffectsToEnemy, playResurrectionAnimations } from './slimes.js';
 import { updateUI, updateLootHUD, requestUIRefresh, playSlimeRainRespawnAnimation } from './ui.js';
 import { openShopModal } from './shop.js';
-import { isGamePaused } from './engine.js';
+import { isGamePaused, setGamePaused } from './engine.js';
 /**
  * Scrap value contributed by one point of each loot attribute.
  * Ice and stun are binary effects, so each occurrence always contributes one point.
@@ -1287,6 +1287,9 @@ export function returnToVillage() {
         const armyContainer2 = document.getElementById('armyContainer');
         if (armyContainer2) armyContainer2.innerHTML = '';
         applyNewGamePlusPresentation();
+        // Returning to the village must fully clear any (manual) pause so the
+        // battlefield card's grayscale "game-paused" state does not linger.
+        setGamePaused(false, true);
         saveStateToLocal();
         updateUI();
         isNewGamePlusTransition = false;
@@ -1336,6 +1339,17 @@ function checkWaveCompletion() {
                 }
             });
         }
+
+        // Support Resurrection: a Support above 80% HP sacrifices 80% to revive a
+        // random dead Slime at half the sacrificed HP. Happens 4s after wave end
+        // (after regen), before the roster advances to the next wave. The revived
+        // Slime is pushed back into gameState.slimes, so updateUI() redeploys it
+        // on the battlefield.
+        setTimeout(() => {
+            const { revived, resurrectors } = processWaveEndResurrections();
+            updateUI();
+            if (revived.length > 0) playResurrectionAnimations(resurrectors, revived);
+        }, 2000);
 
         // Give airborne slimes time to land before sending one to eat.
         if ((gameState.autoEatLevel || 0) > 0) {

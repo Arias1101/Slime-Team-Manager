@@ -610,6 +610,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnHomeGame) {
         btnHomeGame.addEventListener('click', (e) => {
             e.stopPropagation();
+            // Returning to the village fully unpauses (see returnToVillage); reset
+            // the Pause button's visual state to match.
+            if (isGamePaused) {
+                const btnPauseGame = document.getElementById('btnPauseGame');
+                if (btnPauseGame) {
+                    btnPauseGame.textContent = '⏸️';
+                    btnPauseGame.title = 'Pause';
+                    btnPauseGame.classList.remove('paused');
+                }
+            }
             returnToVillage();
         });
     }

@@ -2,7 +2,7 @@
  * User Interface & Authentication Screen Renderer
  */
 
-import { gameState, SLIME_TYPES, killSlime, syncSlimesArray, rerollSlimeType, calculateSlimeDamage, getScaledEquipmentEffects, getEquipmentDisplayName, getEquipmentSprite, saveStateToLocal, getSlimeHitEffects, getEquipmentQuality, getSlimeTotalRegen, sortRosterBySpecialization, updateBestRoster, getSlimeJumpSprite, canSlimeBuyNextTalent, TALENT_SUBTALENTS, SECOND_TALENT, SECOND_TALENT_ICON, getSecondTalentFlag, hasSecondTalent, ensureSlimeSubTalents, getSlimeSubTalent, recalculateSlimeStats } from './state.js';
+import { gameState, SLIME_TYPES, killSlime, syncSlimesArray, rerollSlimeType, calculateSlimeDamage, getScaledEquipmentEffects, getEquipmentDisplayName, getEquipmentSprite, saveStateToLocal, getSlimeHitEffects, getEquipmentQuality, getSlimeTotalRegen, sortRosterBySpecialization, updateBestRoster, getSlimeJumpSprite, canSlimeBuyNextTalent, TALENT_SUBTALENTS, SECOND_TALENT, SECOND_TALENT_ICON, getSecondTalentFlag, hasSecondTalent, ensureSlimeSubTalents, getSlimeSubTalent, recalculateSlimeStats, getThirdTalentDef } from './state.js';
 import { updateUpgradesUI } from './upgrades.js';
 import { activeGroundLoots, formatLootEffects } from './enemies.js';
 import { setGamePaused, isGamePaused } from './engine.js';
@@ -652,7 +652,7 @@ function getSlimeFormationCoordinates(slime) {
 /**
  * Render Slime Army Stack in 3D Perspective with Fixed Slot Indexing
  */
-function renderSlimeArmy() {
+export function renderSlimeArmy() {
     if (!armyContainerEl || isRainAnimating) return;
     if (gameState.isInNewGamePlus) {
         armyContainerEl.innerHTML = '';
@@ -985,7 +985,7 @@ function renderSlimeTalentTree(slime) {
         const genericTalentNames = ['Talent1', 'Talent2', 'Talent3'];
         const talentDescriptions = {
             support: 'Sacrifice 20% of HP to Heal twice that amount to a Slime in need (Can\'t target other Support Slimes).',
-            fighter: '10% chance to re-jump on the second closest ennemy when dealing damage.',
+            fighter: '50% chance to re-jump on the second closest ennemy when dealing damage.',
             tank: '10% chance to ignore incoming damage.'
         };
         const talentFlag = { support: 'graft', fighter: 'rebound', tank: 'block' };
@@ -994,6 +994,9 @@ function renderSlimeTalentTree(slime) {
         // (only the first, dedicated Talent can be bought for now). Locked Talent
         // columns hide their sub-talent buttons entirely.
         const dedicatedUnlocked = normalizedSpecialization ? Boolean(slime.talents?.[talentFlag[normalizedSpecialization]]) : false;
+        // Third Talent (shared by every element of a specialization): Support
+        // Resurrection / Fighter Slide. Tank's is not implemented yet (null).
+        const thirdDef = getThirdTalentDef(normalizedSpecialization);
         const columns = costs.map((cost, index) => {
             const isFirst = index === 0;
             const isSecond = index === 1;
@@ -1004,33 +1007,39 @@ function renderSlimeTalentTree(slime) {
             const secondIcon = isSecond ? SECOND_TALENT_ICON[comboTypeId] : null;
             const iconSource = dedicatedIcon
                 ? `images/talents/${normalizedSpecialization}${dedicatedIcon}.png`
-                : (secondIcon || `images/talents/${normalizedSpecialization}Talent${index + 1}.png`);
+                : (isSecond ? (secondIcon || `images/talents/${normalizedSpecialization}Talent${index + 1}.png`) : (thirdDef?.icon || `images/talents/${normalizedSpecialization}Talent3.png`));
             const talentName = normalizedSpecialization
                 ? (isFirst ? (talentNames[normalizedSpecialization] || 'Talent1') : `Talent${index + 1}`)
                 : genericTalentNames[index];
             const secondFlag = isSecond ? getSecondTalentFlag(comboTypeId) : null;
             const secondOwned = Boolean(secondFlag && slime.talents?.[secondFlag]);
+            const isThird = index === 2;
+            const thirdOwned = Boolean(isThird && thirdDef && slime.talents?.[thirdDef.flag]);
             const secondAvailable = isSecond && dedicatedUnlocked && secondFlag && coins >= cost;
-            const isOwned = isFirst ? dedicatedUnlocked : (isSecond ? secondOwned : false);
+            const isOwned = isFirst ? dedicatedUnlocked : (isSecond ? secondOwned : (isThird ? thirdOwned : false));
+            const thirdAvailable = isThird && Boolean(thirdDef) && dedicatedUnlocked && coins >= cost;
             const buttonState = isOwned
                 ? ''
                 : (isFirst
                     ? (normalizedSpecialization && coins >= cost ? '' : 'disabled')
-                    : (isSecond ? (secondAvailable ? '' : 'disabled') : 'disabled'));
-            const buttonClass = `slime-specialization-talent ${isOwned ? 'unlocked' : ''} ${isFirst && normalizedSpecialization && coins >= cost && !isOwned ? 'available' : ''}${isSecond && secondAvailable ? ' available' : ''}`;
+                    : (isSecond ? (secondAvailable ? '' : 'disabled') : (isThird ? (thirdAvailable ? '' : 'disabled') : 'disabled')));
+            const buttonClass = `slime-specialization-talent ${isOwned ? 'unlocked' : ''} ${isFirst && normalizedSpecialization && coins >= cost && !isOwned ? 'available' : ''}${isSecond && secondAvailable ? ' available' : ''}${isThird && thirdAvailable ? ' available' : ''}`;
             const badgeHtml = normalizedSpecialization
-                ? (secondOwned || (isFirst && dedicatedUnlocked) ? '✔️' : `${cost}<img src="images/logos/coin.png" alt="" class="talent-cost-coin">`)
+                ? (secondOwned || thirdOwned || (isFirst && dedicatedUnlocked) ? '✔️' : `${cost}<img src="images/logos/coin.png" alt="" class="talent-cost-coin">`)
                 : '🔒';
             const button = `<button type="button" class="${buttonClass}" title="${normalizedSpecialization ? '' : 'Specialize to unlock'}" ${buttonState}><img src="${iconSource}" alt="${talentName}"><span>${badgeHtml}</span></button>`;
-            const columnUnlocked = isFirst ? dedicatedUnlocked : (isSecond ? secondOwned : false);
+            const columnUnlocked = isFirst ? dedicatedUnlocked : (isSecond ? secondOwned : (isThird ? thirdOwned : false));
             // Sub-talent icon: Talent 1 & 3 share the per-spec sprite
             // (support/tank/fighterSubtalents.png); Talent 2 uses the unique
             // per-type sprite (e.g. supportFireSubtalents.png) keyed on element.
             const secondTalentDef = index === 1 ? SECOND_TALENT[`${elementMatch ? elementMatch[0] : ''}${normalizedSpecialization.charAt(0).toUpperCase()}${normalizedSpecialization.slice(1)}`] : null;
+            const thirdTalentDef = (index === 2 && thirdDef)
+                ? { name: thirdDef.name, description: thirdDef.description }
+                : null;
             const firstTalentDef = isFirst && (normalizedSpecialization === 'support' || normalizedSpecialization === 'tank' || normalizedSpecialization === 'fighter')
                 ? { name: talentNames[normalizedSpecialization], description: talentDescriptions[normalizedSpecialization] }
                 : null;
-            const tooltipDef = secondTalentDef || firstTalentDef;
+            const tooltipDef = secondTalentDef || thirdTalentDef || firstTalentDef;
             const hasTooltip = Boolean(tooltipDef);
             const tooltipTitle = tooltipDef ? tooltipDef.name : '';
             const tooltipText = tooltipDef ? tooltipDef.description : '';
@@ -1097,6 +1106,27 @@ function renderSlimeTalentTree(slime) {
                         if (!slime.talents?.[firstFlag] || coins < costs[1]) return;
                         gameState.villageCoins = coins - costs[1];
                         slime.talents = { ...(slime.talents || {}), [secondFlag]: true };
+                        updateBestRoster();
+                        saveStateToLocal();
+                        updateUI();
+                        openSlimeInspectorModal(slime);
+                    });
+                }
+            }
+            // Third Talent (index 2): shared per-spec Talent (Support Resurrection,
+            // Fighter Slide). Requires the first Talent as prerequisite.
+            const thirdButton = buttons[2];
+            if (thirdDef && thirdButton) {
+                if (slime.talents?.[thirdDef.flag]) {
+                    thirdButton.classList.add('unlocked');
+                    thirdButton.disabled = false;
+                    const progress = thirdButton.querySelector('span');
+                    if (progress) progress.textContent = '✔️';
+                } else {
+                    thirdButton.addEventListener('click', () => {
+                        if (!slime.talents?.[firstFlag] || coins < costs[2]) return;
+                        gameState.villageCoins = coins - costs[2];
+                        slime.talents = { ...(slime.talents || {}), [thirdDef.flag]: true };
                         updateBestRoster();
                         saveStateToLocal();
                         updateUI();

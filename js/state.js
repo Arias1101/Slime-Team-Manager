@@ -615,6 +615,80 @@ export function hasCounter(slime) {
     return comboTypeId === 'poisonTank' && hasSecondTalent(slime);
 }
 
+/** Whether a Slime owns the Resurrection third talent (Support, all elements). */
+export function hasResurrection(slime) {
+    if (!slime) return false;
+    if ((gameState.newGamePlusCompletions || 0) <= 0) return false;
+    if (getSlimeSpecialization(slime) !== 'support') return false;
+    return Boolean(slime.talents?.resurrection);
+}
+
+/**
+ * At the end of a Wave, each Support with the Resurrection talent and more than
+ * 80% of its life remaining may sacrifice 80% of its HP to bring one random dead
+ * Slime back to life with half of the sacrificed HP.
+ *
+ * Dead Slimes live on in gameState.bestRoster even after they are removed from
+ * the active army (gameState.slimes) at death time. We revive one of those
+ * absent blueprints back into the active roster. Returns the revived Slime
+ * objects (or an empty array when nothing happened).
+ */
+export function processWaveEndResurrections() {
+    const revived = [];
+    const resurrectors = [];
+    if (!gameState.slimes || !gameState.bestRoster) return { revived, resurrectors };
+
+    const activeIds = new Set(gameState.slimes.map(s => String(s.id || s.name)));
+    const deadSlimes = gameState.bestRoster.filter(s => !activeIds.has(String(s.id || s.name)));
+
+    if (deadSlimes.length === 0) return { revived, resurrectors };
+
+    const eligibleResurrectors = gameState.slimes.filter(s => hasResurrection(s) && s.hp > s.maxHp * 0.8);
+    for (const resurrector of eligibleResurrectors) {
+        const stillDead = gameState.bestRoster.filter(s => !activeIds.has(String(s.id || s.name)));
+        if (stillDead.length === 0) break;
+
+        const sacrificedHp = Math.ceil(resurrector.maxHp * 0.8);
+        const reviveHp = Math.round(sacrificedHp / 2);
+        resurrector.hp = Math.max(1, resurrector.hp - sacrificedHp);
+
+        const chosen = stillDead[Math.floor(Math.random() * stillDead.length)];
+        const revivedSlime = {
+            id: chosen.id || chosen.name,
+            name: chosen.name || String(chosen.id),
+            type: chosen.type || 'base',
+            hp: reviveHp,
+            maxHp: chosen.maxHp || 10,
+            baseMaxHp: chosen.baseMaxHp ?? chosen.maxHp ?? 10,
+            damage: calculateSlimeDamage(chosen),
+            critChance: chosen.critChance || 0,
+            regen: chosen.regen || 0,
+            ascended: !!chosen.ascended,
+            specialization: getSlimeSpecialization(chosen),
+            talents: chosen.talents ? JSON.parse(JSON.stringify(chosen.talents)) : {},
+            slotIndex: chosen.slotIndex !== undefined ? chosen.slotIndex : getNextAvailableSlotIndex(),
+            equipment: chosen.equipment ? JSON.parse(JSON.stringify(chosen.equipment)) : []
+        };
+
+        gameState.slimes.push(revivedSlime);
+        activeIds.add(String(revivedSlime.id || revivedSlime.name));
+        revived.push(revivedSlime);
+        resurrectors.push(resurrector);
+    }
+
+    gameState.armySize = gameState.slimes.length;
+    saveStateToLocal();
+    return { revived, resurrectors };
+}
+
+/** Whether a Slime owns the Slide third talent (Fighter, all elements). */
+export function hasSlide(slime) {
+    if (!slime) return false;
+    if ((gameState.newGamePlusCompletions || 0) <= 0) return false;
+    if (getSlimeSpecialization(slime) !== 'fighter') return false;
+    return Boolean(slime.talents?.slide);
+}
+
 /** Per-combo flag key used to store ownership of a Slime's second talent. */
 export function getSecondTalentFlag(typeId) {
     if (!SECOND_TALENT[typeId]) return null;
@@ -623,6 +697,42 @@ export function getSecondTalentFlag(typeId) {
 
 /** Whether a Slime already owns the first Talent of its specialization. */
 const FIRST_TALENT_FLAG = { support: 'graft', fighter: 'rebound', tank: 'block' };
+
+/**
+ * Third Talent definitions, shared by every element of a specialization.
+ * `flag` is the ownership key stored on `slime.talents`; Tank's is not
+ * implemented yet and is therefore absent from the map.
+ */
+export const THIRD_TALENT = {
+    support: {
+        flag: 'resurrection',
+        name: 'Resurrection',
+        icon: 'images/talents/supportResurection.png',
+        shortDescription: 'At the end of a Wave, resurect a Slime at the cost of 80% HP.',
+        description: 'At the end of a Wave, if another Slime is dead and this Support has more than 80% HP, it loses 80% of its HP to Resurrect one dead Slime at random (revived at half the sacrificed HP).'
+    },
+    fighter: {
+        flag: 'slide',
+        name: 'Slide',
+        icon: 'images/talents/fighterSlide.png',
+        shortDescription: '50% chance to Slide to attack the furthest ennemy after an attack.',
+        description: '50% chance to Slide to the furthest ennemy after an attack and strike it. Slide and Rebound cannot trigger twice in a row, but they can chain into each other.'
+    }
+};
+
+/** The third Talent definition for a Slime's specialization, or null. */
+export function getThirdTalentDef(slimeOrSpec) {
+    const spec = typeof slimeOrSpec === 'string' ? slimeOrSpec : getSlimeSpecialization(slimeOrSpec);
+    return THIRD_TALENT[spec] || null;
+}
+
+/** Whether a Slime owns the third Talent of its specialization. */
+export function hasThirdTalent(slime) {
+    if (!slime) return false;
+    const def = getThirdTalentDef(slime);
+    return Boolean(def && slime.talents?.[def.flag]);
+}
+
 export function hasFirstTalent(slime) {
     const spec = getSlimeSpecialization(slime);
     const flag = FIRST_TALENT_FLAG[spec];

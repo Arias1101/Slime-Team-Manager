@@ -9,7 +9,7 @@
  *                 Only slimes from one side can be selected at once.
  */
 
-import { gameState, SLIME_TYPES, getSlimeJumpSprite, getSlimeSpecialization, calculateSlimeDamage, getBaseCritChance, generateUniqueSlimeName, getNextAvailableSlotIndex, saveStateToLocal, updateBestRoster, getEquipmentQuality, sortRosterBySpecialization, TALENT_SUBTALENTS, SECOND_TALENT, SECOND_TALENT_ICON, getSecondTalentFlag, hasFirstTalent, ensureSlimeSubTalents, getSlimeSubTalent, recalculateSlimeStats } from './state.js';
+import { gameState, SLIME_TYPES, getSlimeJumpSprite, getSlimeSpecialization, calculateSlimeDamage, getBaseCritChance, generateUniqueSlimeName, getNextAvailableSlotIndex, saveStateToLocal, updateBestRoster, getEquipmentQuality, sortRosterBySpecialization, TALENT_SUBTALENTS, SECOND_TALENT, SECOND_TALENT_ICON, getSecondTalentFlag, hasFirstTalent, getThirdTalentDef, ensureSlimeSubTalents, getSlimeSubTalent, recalculateSlimeStats } from './state.js';
 import { renderSlimeRosterLanes, updateUI } from './ui.js';
 
 const MAX_MAIN_ROSTER = 60;
@@ -457,7 +457,7 @@ const SPEC_BUTTONS = [
 const TALENT_NAMES = { support: 'Graft', fighter: 'Rebound', tank: 'Block' };
 const TALENT_DESCRIPTIONS = {
     support: 'Sacrifice 20% of HP to Heal twice that amount to a Slime in need (Can\'t target other Support Slimes).',
-    fighter: '10% chance to re-jump on the second closest ennemy when dealing damage.',
+    fighter: '50% chance to re-jump on the second closest ennemy when dealing damage.',
     tank: '10% chance to ignore incoming damage.'
 };
 const TALENT_FLAG = { support: 'graft', fighter: 'rebound', tank: 'block' };
@@ -467,18 +467,18 @@ const TALENT_FLAG = { support: 'graft', fighter: 'rebound', tank: 'block' };
  * Talent row shows the 3 Talent buttons for that combo (placeholder spec icon).
  */
 const TALENT_COMBOS = [
-    { element: 'fire',    spec: 'support', typeId: 'fireSupport' },
-    { element: 'fire',    spec: 'fighter', typeId: 'fireFighter' },
-    { element: 'fire',    spec: 'tank',    typeId: 'fireTank' },
-    { element: 'ice',     spec: 'support', typeId: 'iceSupport' },
-    { element: 'ice',     spec: 'fighter', typeId: 'iceFighter' },
-    { element: 'ice',     spec: 'tank',    typeId: 'iceTank' },
-    { element: 'poison',  spec: 'support', typeId: 'poisonSupport' },
-    { element: 'poison',  spec: 'fighter', typeId: 'poisonFighter' },
-    { element: 'poison',  spec: 'tank',    typeId: 'poisonTank' },
-    { element: 'stone',   spec: 'support', typeId: 'stoneSupport' },
-    { element: 'stone',   spec: 'fighter', typeId: 'stoneFighter' },
-    { element: 'stone',   spec: 'tank',    typeId: 'stoneTank' }
+    { element: 'fire', spec: 'support', typeId: 'fireSupport' },
+    { element: 'fire', spec: 'fighter', typeId: 'fireFighter' },
+    { element: 'fire', spec: 'tank', typeId: 'fireTank' },
+    { element: 'ice', spec: 'support', typeId: 'iceSupport' },
+    { element: 'ice', spec: 'fighter', typeId: 'iceFighter' },
+    { element: 'ice', spec: 'tank', typeId: 'iceTank' },
+    { element: 'poison', spec: 'support', typeId: 'poisonSupport' },
+    { element: 'poison', spec: 'fighter', typeId: 'poisonFighter' },
+    { element: 'poison', spec: 'tank', typeId: 'poisonTank' },
+    { element: 'stone', spec: 'support', typeId: 'stoneSupport' },
+    { element: 'stone', spec: 'fighter', typeId: 'stoneFighter' },
+    { element: 'stone', spec: 'tank', typeId: 'stoneTank' }
 ];
 
 /** Per Talent row: 3 talent buttons, each with 3 sub-talent buttons. */
@@ -558,6 +558,9 @@ function getActionButtonsHtml(selectedSlimes) {
         const specLabel = specDef.label;
         const talentName = TALENT_NAMES[spec] || 'Talent';
         const talentDesc = TALENT_DESCRIPTIONS[spec] || '';
+        // Third Talent shared by every element of this specialization (null when
+        // that specialization's Talent 3 is not implemented yet, e.g. Tank).
+        const thirdDef = getThirdTalentDef(spec);
         const talentCols = Array.from({ length: TALENT_VISIBLE }, (_, t) => {
             if (!visibleTalents.has(t)) {
                 // Keep the slot occupied (blank space holder) without drawing a
@@ -578,13 +581,20 @@ function getActionButtonsHtml(selectedSlimes) {
             // (e.g. supportGraft.png); Talents 2/3 use ${spec}Talent${n}.png.
             const talentIcon = t === 0
                 ? `images/talents/${spec}${talentName.toLowerCase()}.png`
-                : (SECOND_TALENT_ICON[combo.typeId] || `images/talents/${spec}Talent${t + 1}.png`);
+                : t === 1 ? (SECOND_TALENT_ICON[combo.typeId] || `images/talents/${spec}Talent${t + 1}.png`)
+                    : (thirdDef?.icon || `images/talents/${spec}Talent3.png`);
             const secondTalent = t === 1 ? SECOND_TALENT[combo.typeId] : null;
+            const isThirdTalent = t === 2;
+            const thirdTalentName = isThirdTalent && thirdDef ? thirdDef.name : '';
+            const thirdTalentDesc = isThirdTalent && thirdDef ? thirdDef.shortDescription : '';
             const secondFlag = t === 1 ? getSecondTalentFlag(combo.typeId) : null;
-            const talentLabel = t === 1 && secondTalent ? secondTalent.name : `${talentName} (Talent ${t + 1})`;
+            const talentLabel = t === 1 && secondTalent ? secondTalent.name
+                : isThirdTalent && thirdTalentName ? thirdTalentName
+                    : `${talentName} (Talent ${t + 1})`;
             const talentTooltip = t === 1 && secondTalent
                 ? `${secondTalent.name}: ${secondTalent.description}`
-                : `${talentName} (Talent ${t + 1}): ${talentDesc}`;
+                : isThirdTalent && thirdTalentDesc ? `${thirdTalentName}: ${thirdTalentDesc}`
+                    : `${talentName} (Talent ${t + 1}): ${talentDesc}`;
 
             // First Talent: show the cost (slimes still needing it) bottom-right,
             // or a ✔️ when every selected Slime already owns it (then unlocked+disabled).
@@ -620,8 +630,26 @@ function getActionButtonsHtml(selectedSlimes) {
                     talentExtraClass = ' locked';
                     talentDisabled = ' disabled';
                 }
+            } else if (isThirdTalent && thirdDef) {
+                // Third Talent (Support Resurrection / Fighter Slide): requires the
+                // first Talent as prerequisite. Mass-buy applies per eligible Slime.
+                const ownedCount = selectedSlimes.filter(s => s.talents?.[thirdDef.flag]).length;
+                const firstOwnedSome = selectedSlimes.some(s => hasFirstTalent(s));
+                const eligible = selectedSlimes.filter(s => hasFirstTalent(s) && !s.talents?.[thirdDef.flag]).length;
+                const cost = eligible * TALENT_PRICE[t];
+                if (ownedCount === selectedSlimes.length) {
+                    talentBadge = '✔️';
+                    talentExtraClass = ' unlocked';
+                    talentDisabled = ' disabled';
+                } else if (firstOwnedSome) {
+                    talentBadge = `${cost}<img src="images/logos/coin.png" alt="" class="talent-cost-coin">`;
+                } else {
+                    talentBadge = '🔒';
+                    talentExtraClass = ' locked';
+                    talentDisabled = ' disabled';
+                }
             } else {
-                // Talent 3 is not implemented yet: lock the button and its sub-talents.
+                // Talent 3 is not implemented yet for this specialization: lock it.
                 talentExtraClass = ' locked';
                 talentDisabled = ' disabled';
                 talentBadge = '🔒';
@@ -655,7 +683,8 @@ function getActionButtonsHtml(selectedSlimes) {
             }).join('');
             const glassTooltip = (t === 1 && secondTalent)
                 ? { name: secondTalent.name, description: secondTalent.description }
-                : (t === 0 && talentDesc ? { name: talentName, description: talentDesc } : null);
+                : (t === 0 && talentDesc ? { name: talentName, description: talentDesc }
+                    : (isThirdTalent && thirdTalentName ? { name: thirdTalentName, description: thirdTalentDesc } : null));
             const talentButtonHtml = `<button type="button" class="common-house-talent-btn${talentExtraClass}" data-talent="${t}" data-combo="${combo.typeId || ''}" title="${glassTooltip ? '' : talentTooltip}" aria-label="${talentTooltip}"${talentDisabled}><img src="${talentIcon}" alt="${talentLabel}"><span class="common-house-talent-cost">${talentBadge}</span></button>`;
             const talentButtonWrapped = glassTooltip
                 ? `<span class="talent-tooltip-glass">${talentButtonHtml}<span class="talent-tooltip-glass-box"><strong>${glassTooltip.name}</strong><br>${glassTooltip.description}</span></span>`
@@ -756,39 +785,36 @@ function wireTypeButtons(container) {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
             const talentIndex = Number(btn.dataset.talent);
-            // Only the first and second Talents are purchasable (mass-buy for the whole selection).
-            if (talentIndex !== 0 && talentIndex !== 1) return;
+            // Only the first, second, and (Support) third Talents are purchasable.
+            if (talentIndex !== 0 && talentIndex !== 1 && talentIndex !== 2) return;
             const selectedSlimes = getSelectedSlimes();
             if (!selectedSlimes.length) return;
             const spec = getSlimeSpecialization(selectedSlimes[0]);
             const comboTypeId = `${elementOf(selectedSlimes[0])}${spec.charAt(0).toUpperCase()}${spec.slice(1)}`;
-            const flag = talentIndex === 0 ? TALENT_FLAG[spec] : getSecondTalentFlag(comboTypeId);
+            const thirdDef = getThirdTalentDef(spec);
+            let flag;
+            if (talentIndex === 0) flag = TALENT_FLAG[spec];
+            else if (talentIndex === 1) flag = getSecondTalentFlag(comboTypeId);
+            else flag = thirdDef?.flag;
             if (!flag) return;
-            // First Talent: grant to every selected Slime lacking it, charging the
-            // village coin pool per Slime (1/2/3 by tier).
-            // Second Talent: only grant to selected Slimes that already own the first
-            // Talent (never bypass the prerequisite); charge per eligible Slime.
-            if (talentIndex === 1) {
-                const eligible = selectedSlimes.filter(s => hasFirstTalent(s) && !s.talents?.[flag]);
-                if (!eligible.length) return;
-                const totalCost = eligible.length * TALENT_PRICE[talentIndex];
-                if ((gameState.villageCoins || 0) < totalCost) return;
-                gameState.villageCoins -= totalCost;
-                eligible.forEach(slime => {
-                    if (!slime.talents || typeof slime.talents !== 'object') slime.talents = {};
-                    slime.talents[flag] = true;
-                });
-            } else {
-                const needy = selectedSlimes.filter(s => !s.talents?.[flag]);
-                if (!needy.length) return;
-                const totalCost = needy.length * TALENT_PRICE[talentIndex];
-                if ((gameState.villageCoins || 0) < totalCost) return;
-                gameState.villageCoins -= totalCost;
-                needy.forEach(slime => {
-                    if (!slime.talents || typeof slime.talents !== 'object') slime.talents = {};
-                    slime.talents[flag] = true;
-                });
-            }
+            // Prerequisite: Talents 2 and 3 both require the first Talent.
+            const isEligible = (slime) => {
+                if (!slime.talents?.[flag]) {
+                    if (talentIndex === 1) return hasFirstTalent(slime);
+                    if (talentIndex === 2) return hasFirstTalent(slime);
+                    return true;
+                }
+                return false;
+            };
+            const eligible = selectedSlimes.filter(isEligible);
+            if (!eligible.length) return;
+            const totalCost = eligible.length * TALENT_PRICE[talentIndex];
+            if ((gameState.villageCoins || 0) < totalCost) return;
+            gameState.villageCoins -= totalCost;
+            eligible.forEach(slime => {
+                if (!slime.talents || typeof slime.talents !== 'object') slime.talents = {};
+                slime.talents[flag] = true;
+            });
             updateBestRoster();
             saveStateToLocal();
             updateUI();
