@@ -37,7 +37,7 @@ export const SLIME_TYPES = {
         prefix: 'slime',
         frameCount: 8,
         effect: 'stun',
-        stunDuration: 0.5 // Base stun duration; equipment values multiply this
+        stunDuration: 0.3 // Base stun duration; equipment values multiply this
     },
     poison: {
         id: 'poison',
@@ -218,6 +218,7 @@ export const defaultState = {
     ],
     newGamePlusCompletions: 0, // Times Death has ended a run
     villageCoins: 0,            // Permanent currency earned from completed runs
+    disableHealCrit: true,      // TEST: disable heal crits/mega-crits for now
     villageInventory: [],       // Unequipped equipment stored at the Forge
     villageRoster: [],          // Reserve slimes stored at the Common House (max 180)
     alchemistLuckLevel: 0,
@@ -379,13 +380,42 @@ export function getSlimeHitEffects(slime) {
             totals[type] += Math.max(1, Number(effect.value) || 1);
         });
     });
-    // Immolation (Fire Fighter second talent): all burn this Slime applies is doubled.
-    if (hasImmolation(slime)) totals.burn *= 2;
+    // Immolation (Fire Fighter second talent): all burn this Slime applies is
+    // doubled (or tripled with the Greek Fire sub-talent).
+    if (hasImmolation(slime)) totals.burn *= getImmolationParams(slime).burnMultiplier;
+    // Corrosive Poison (Poison Fighter) "Venom" sub-talent: doubles the poison
+    // Stacks this Slime applies (does not affect damage).
+    if (hasCorrosivePoison(slime)) totals.poison *= getCorrosivePoisonParams(slime).poisonMultiplier;
     return totals;
 }
 /** Resolve a Slime path from saved data or its specialized type. */
 export function getSlimeSpecialization(slime) {
     return String(slime?.specialization || '').toLowerCase();
+}
+
+/**
+ * The base elemental type of a Slime (e.g. 'poison' for a 'poisonFighter').
+ * Specialized Slimes store their full combo type in `slime.type`, so the base
+ * element is whatever prefix survives after dropping the specialization suffix.
+ */
+export function getSlimeElement(slime) {
+    const type = String(slime?.type || '');
+    // Specialized Slimes store their full combo type (e.g. 'poisonFighter'); the
+    // base element is the leading known prefix. Order matters: check longer
+    // prefixes first so 'stone' isn't matched inside 'stoneSupport', etc.
+    const ELEMENTS = ['poison', 'fire', 'ice', 'stone'];
+    for (const element of ELEMENTS) {
+        if (type.indexOf(element) === 0) return element;
+    }
+    return type;
+}
+
+/** Build the element+specialization combo typeId used for second-talent keys. */
+function getComboTypeId(slime) {
+    const spec = getSlimeSpecialization(slime);
+    if (!spec) return '';
+    const element = getSlimeElement(slime);
+    return `${element}${spec.charAt(0).toUpperCase()}${spec.slice(1)}`;
 }
 
 /**
@@ -403,16 +433,16 @@ export function getSlimeSpecialization(slime) {
 export const SECOND_TALENT = {
     fireSupport: { name: 'Melting Mend', description: 'Graft heals 30% more over 3 seconds. (Stacks)' },
     iceSupport: { name: 'Ice Barrier', description: 'Graft gives 20% of the heal as barrier. (Stacks)' },
-    poisonSupport: { name: 'Leech', description: 'Self heal 50% of inflicted direct damages.' },
+    poisonSupport: { name: 'Leech', description: 'Self heal 25% of inflicted direct damages.' },
     stoneSupport: { name: 'Stone Skin', description: 'Graft reduces next direct damage by 50% of the heal. (Stacks)' },
     fireFighter: { name: 'Immolation', description: 'All burn Stacks applied are doubled.' },
     iceFighter: { name: 'Ice Burst', description: 'Cold damage equals the target\'s burn + poison Stacks instead of a flat 5.' },
     poisonFighter: { name: 'Corrosive Poison', description: 'Increase direct damage by the target\'s current poison stacks (%).' },
     stoneFighter: { name: 'Heavy Strike', description: 'Pushback ennemies.' },
     fireTank: { name: 'Spicy Block', description: 'On Block, apply triple Slime\'s burn to the attacker.' },
-    iceTank: { name: 'Ice Block', description: 'On death, 10% chance to instead regain 10% HP, but suffer Stun 5.' },
+    iceTank: { name: 'Ice Block', description: 'On death, 20% chance to instead regain 10% HP, but suffer Stun 5.' },
     poisonTank: { name: 'Counter', description: 'Counter Attack on Block and heal for 25% of inflicted damage.' },
-    stoneTank: { name: 'Polished Slime', description: 'On Block, apply double Slime\'s stun to the attacker. Also reduce all incoming damage by 10%.' }
+    stoneTank: { name: 'Polished Slime', description: 'On Block, apply Slime\'s stun to the attacker. Also reduce all incoming damage by 10%.' }
 };
 
 /** Dedicated second-talent button icons (keyed by combo typeId). */
@@ -431,6 +461,76 @@ export const SECOND_TALENT_ICON = {
     poisonTank: 'images/talents/tankCounter.png'
 };
 
+/**
+ * Sub-talent definitions for the unique second talents (Talent2), keyed by the
+ * element+specialization combo typeId (e.g. 'fireSupport'). Each combo lists its
+ * 3 selectable sub-talents. The chosen sub-talent index is stored on
+ * `slime.talents.subTalents[1]` (see TALENT_SUBTALENTS column 1 convention).
+ * Only the Support combos are filled for now; Fighter/Tank combos follow later.
+ */
+export const SECOND_TALENT_SUBTALENTS = {
+    fireSupport: [
+        { id: 'slowMend', name: 'Slow Mend', description: 'Increase HOT duration by 3s.' },
+        { id: 'strongMend', name: 'Strong Mend', description: '50% HOT instead of 30%.' },
+        { id: 'greassySlime', name: 'Greassy Slime', description: '+10% Max HP.' }
+    ],
+    iceSupport: [
+        { id: 'thickIce', name: 'Thick Ice', description: 'Double temporary HP amount.' },
+        { id: 'doubleBarrier', name: 'Twin Shields', description: 'Gives a second Ice Barrier to a random tank.' },
+        { id: 'greassySlime', name: 'Greassy Slime', description: '+10% Max HP.' }
+    ],
+    poisonSupport: [
+        { id: 'suckerSlime', name: 'Sucker Slime', description: 'Double Leech amount.' },
+        { id: 'mindlessSupport', name: 'Mindless Support', description: 'No Graft, but Leech now heals the lowest HP Slime.' },
+        { id: 'damageDealer', name: 'Damage Dealer', description: '+10% Damage.' }
+    ],
+    stoneSupport: [
+        { id: 'standardization', name: 'Standardization', description: 'Reduces next damage by 75% regardless of graft amount.' },
+        { id: 'emeraldSkin', name: 'Emerald Skin', description: 'Double Stone Skin amount.' },
+        { id: 'greassySlime', name: 'Greassy Slime', description: '+10% Max HP.' }
+    ],
+    iceFighter: [
+        { id: 'thermalShock', name: 'Thermal Shock', description: 'Cold damage uses 3x the target\'s burn Stacks instead of burn + poison.' },
+        { id: 'paralysis', name: 'Paralysis', description: 'Cold damage uses 3x the target\'s poison Stacks instead of burn + poison.' },
+        { id: 'damageDealer', name: 'Damage Dealer', description: '+10% Damage.' }
+    ],
+    fireFighter: [
+        { id: 'greekFire', name: 'Greek Fire', description: 'Apply 3x burn Stacks instead of 2x.' },
+        { id: 'oilCombustion', name: 'Oil Combustion', description: 'Transforms poison stacks on the target into burn stacks on hit.' },
+        { id: 'damageDealer', name: 'Damage Dealer', description: '+10% Damage.' }
+    ],
+    poisonFighter: [
+        { id: 'acidic', name: 'Acidic', description: 'Damage increased by 20% of the target\'s poison Stacks instead of 10%.' },
+        { id: 'oilOnFire', name: 'Oil On Fire', description: 'Damage increased by 10% of poison Stacks + 10% of burn Stacks.' },
+        { id: 'venom', name: 'Venom', description: 'No more damage increase, but doubles the poison Stacks applied.' }
+    ],
+    stoneFighter: [
+        { id: 'penetration', name: 'Penetration', description: 'Halves pushback, but +20% Damage.' },
+        { id: 'headbutt', name: 'Headbutt', description: 'Removes pushback, but applies double Stun.' },
+        { id: 'damageDealer', name: 'Damage Dealer', description: '+10% Damage.' }
+    ],
+    fireTank: [
+        { id: 'blazingShield', name: 'Blazing Shield', description: 'Apply Burn Status x6 instead of x3.' },
+        { id: 'cursedShield', name: 'Cursed Shield', description: 'Also apply Poison Status x3.' },
+        { id: 'blockMastery', name: 'Block Mastery', description: '+10% Block chance.' }
+    ],
+    poisonTank: [
+        { id: 'doubleDamage', name: 'Double Damage', description: 'Counter attack deals double damage.' },
+        { id: 'doubleStatus', name: 'Double Status', description: 'Counter attack applies double status.' },
+        { id: 'blockMastery', name: 'Block Mastery', description: '+10% Block chance.' }
+    ],
+    stoneTank: [
+        { id: 'pushback', name: 'Pushback', description: 'Also pushback the Blocked enemy.' },
+        { id: 'dazingBlock', name: 'Dazing Block', description: 'Double the applied Stun.' },
+        { id: 'blockMastery', name: 'Block Mastery', description: '+10% Block chance.' }
+    ],
+    iceTank: [
+        { id: 'coldBlood', name: 'Cold Blood', description: '+20% chance to Ice Block (additive).' },
+        { id: 'iceCure', name: 'Ice Cure', description: 'Regenerate 100% HP over 5s when Ice Block triggers.' },
+        { id: 'blockMastery', name: 'Block Mastery', description: '+10% Block chance.' }
+    ]
+};
+
 export const TALENT_SUBTALENTS = {
     support: [
         [
@@ -439,25 +539,37 @@ export const TALENT_SUBTALENTS = {
             { id: 'endurance', name: 'Endurance', description: '+10% Max HP, +10% HP Regen.' }
         ],
         [],
-        []
+        [
+            { id: 'lowBurden', name: 'Low Burden', description: 'Resurrection costs 40% HP instead of 80%.' },
+            { id: 'reconstitution', name: 'Reconstitution', description: 'Resurrected target returns at full health.' },
+            { id: 'abeasCorpus', name: 'Abeas Corpus', description: '+10% Max HP.' }
+        ]
     ],
     tank: [
         [
-            { id: 'shieldMaster', name: 'Shield Master', description: 'Increases the chance to Block to 20%.' },
+            { id: 'shieldWall', name: 'Shield Wall', description: '+10% Block chance.' },
             { id: 'perfectBlock', name: 'Perfect Block', description: 'When Blocking, heal back to full life.' },
             { id: 'thickSlime', name: 'Thick Slime', description: '+20% Max HP.' }
         ],
         [],
-        []
+        [
+            { id: 'endurance', name: 'Endurance', description: '-10% damage received by Intercepting attacks.' },
+            { id: 'avenge', name: 'Avenge', description: 'Apply your status to intercepted attackers.' },
+            { id: 'defenseOrchestra', name: 'Defense Orchestra', description: '+10% Block chance (stacks).' }
+        ]
     ],
     fighter: [
         [
-            { id: 'chaos', name: 'Chaos', description: 'Rebound targets a random enemy instead of the second closest.' },
-            { id: 'momentum', name: 'Momentum', description: 'Rebound deals +50% damage to its target.' },
+            { id: 'chaos', name: 'Chaos', description: 'Rebound targets a random enemy.' },
+            { id: 'momentum', name: 'Momentum', description: 'Rebound deals +20% damage to its target.' },
             { id: 'training', name: 'Training', description: '+10% Damage, +5% Crit Chance.' }
         ],
         [],
-        []
+        [
+            { id: 'chaos2', name: 'Chaos', description: 'Slide targets a random enemy.' },
+            { id: 'cheapShot', name: 'Cheap Shot', description: '+20% Damage to Slide attacks.' },
+            { id: 'sharpSlime', name: 'Sharp Slime', description: '+10% Damage.' }
+        ]
     ]
 };
 
@@ -479,12 +591,26 @@ export function getSlimeSubTalent(slime, talentIndex) {
     return (typeof value === 'number' || typeof value === 'string') ? Number(value) : null;
 }
 
+/**
+ * The sub-talent column array for a Talent index. Column 0 (dedicated Talent)
+ * and column 2 (third Talent) are keyed by specialization (TALENT_SUBTALENTS).
+ * Column 1 (the unique second talent) is keyed by the element+specialization
+ * combo typeId (SECOND_TALENT_SUBTALENTS). Returns an empty array when none.
+ */
+export function getSlimeSubTalentColumn(slime, talentIndex) {
+    if (talentIndex === 1) {
+        const comboTypeId = getComboTypeId(slime);
+        return SECOND_TALENT_SUBTALENTS[comboTypeId] || [];
+    }
+    const specialization = getSlimeSpecialization(slime);
+    return TALENT_SUBTALENTS[specialization]?.[talentIndex] || [];
+}
+
 /** The chosen sub-talent definition object for a Talent column, or null. */
 export function getSlimeSubTalentDef(slime, talentIndex) {
     const chosen = getSlimeSubTalent(slime, talentIndex);
     if (chosen === null) return null;
-    const specialization = getSlimeSpecialization(slime);
-    const column = TALENT_SUBTALENTS[specialization]?.[talentIndex];
+    const column = getSlimeSubTalentColumn(slime, talentIndex);
     return column?.[chosen] || null;
 }
 
@@ -492,14 +618,17 @@ export function getSlimeSubTalentDef(slime, talentIndex) {
 export function getSlimeSubTalentBonus(slime) {
     const bonus = { maxHpPct: 0, regenPct: 0, damagePct: 0, critPct: 0 };
     const specialization = getSlimeSpecialization(slime);
-    const columns = TALENT_SUBTALENTS[specialization];
-    if (!columns) return bonus;
-    for (let talentIndex = 0; talentIndex < columns.length; talentIndex++) {
+    if (!specialization) return bonus;
+    for (let talentIndex = 0; talentIndex < 3; talentIndex++) {
         const def = getSlimeSubTalentDef(slime, talentIndex);
         if (!def) continue;
         if (def.id === 'endurance') { bonus.maxHpPct += 10; bonus.regenPct += 10; }
         if (def.id === 'training') { bonus.damagePct += 10; bonus.critPct += 5; }
         if (def.id === 'thickSlime') { bonus.maxHpPct += 20; }
+        if (def.id === 'greassySlime') { bonus.maxHpPct += 10; }
+        if (def.id === 'damageDealer') { bonus.damagePct += 10; }
+        if (def.id === 'sharpSlime') { bonus.damagePct += 10; }
+        if (def.id === 'abeasCorpus') { bonus.maxHpPct += 10; }
     }
     return bonus;
 }
@@ -522,8 +651,45 @@ export function hasMeltingMend(slime) {
     // The combo typeId is derived from the slime's element (type) + capitalized specialization
     // (e.g. type 'fire' + spec 'support' => 'fireSupport'), NOT the raw slime.type.
     const spec = getSlimeSpecialization(slime);
-    const comboTypeId = spec ? `${slime.type || ''}${spec.charAt(0).toUpperCase()}${spec.slice(1)}` : '';
+    const comboTypeId = getComboTypeId(slime);
     return comboTypeId === 'fireSupport' && hasSecondTalent(slime);
+}
+
+/**
+ * Melting Mend HOT (Heal on Time) parameters for a Fire Support slime, adjusted
+ * by its chosen second-talent sub-talent (column 1). The base graft grants a HOT
+ * of 5% of the intended healing per 0.5s tick over 3s (6 ticks = 30% total).
+ *  - slowMend:      duration +3s (6s total instead of 3s).
+ *  - strongMend:    50% total HOT instead of 30% (tick fraction scales up).
+ *  - greassySlime:  +10% Max HP (handled by getSlimeSubTalentBonus, not here).
+ * Returns { perTickFraction, duration }.
+ */
+export function getMeltingMendHotParams(slime) {
+    const base = { perTickFraction: 0.05, duration: 3.0 };
+    const def = getSlimeSubTalentDef(slime, 1);
+    if (!def) return base;
+    if (def.id === 'slowMend') return { perTickFraction: 0.05, duration: 6.0 };
+    if (def.id === 'strongMend') return { perTickFraction: 0.05 * (50 / 30), duration: 3.0 };
+    return base;
+}
+
+/**
+ * Ice Barrier parameters for an Ice Support slime, adjusted by its chosen
+ * second-talent sub-talent (column 1). The base graft grants a temporary-HP
+ * pool equal to 20% of the intended healing (capped at 60% of the target's Max
+ * HP).
+ *  - thickIce:      doubles the temporary HP amount (40% instead of 20%).
+ *  - doubleBarrier: also grants a second barrier (same amount) to a random tank.
+ *  - greassySlime:  +10% Max HP (handled by getSlimeSubTalentBonus, not here).
+ * Returns { bonusMultiplier, extraBarrierToRandomTank }.
+ */
+export function getIceBarrierParams(slime) {
+    const base = { bonusMultiplier: 0.20, extraBarrierToRandomTank: false };
+    const def = getSlimeSubTalentDef(slime, 1);
+    if (!def) return base;
+    if (def.id === 'thickIce') return { bonusMultiplier: 0.40, extraBarrierToRandomTank: false };
+    if (def.id === 'doubleBarrier') return { bonusMultiplier: 0.20, extraBarrierToRandomTank: true };
+    return base;
 }
 
 /** Whether a Slime owns the Ice Barrier second talent (Ice Support). */
@@ -533,7 +699,7 @@ export function hasIceBarrier(slime) {
     // Same combo flag convention as Melting Mend: element + capitalized specialization.
     // type 'ice' + spec 'support' => 'iceSupport'.
     const spec = getSlimeSpecialization(slime);
-    const comboTypeId = spec ? `${slime.type || ''}${spec.charAt(0).toUpperCase()}${spec.slice(1)}` : '';
+    const comboTypeId = getComboTypeId(slime);
     return comboTypeId === 'iceSupport' && hasSecondTalent(slime);
 }
 
@@ -544,7 +710,7 @@ export function hasStoneSkin(slime) {
     // Same combo flag convention as the other second talents: element + capitalized specialization.
     // type 'stone' + spec 'support' => 'stoneSupport'.
     const spec = getSlimeSpecialization(slime);
-    const comboTypeId = spec ? `${slime.type || ''}${spec.charAt(0).toUpperCase()}${spec.slice(1)}` : '';
+    const comboTypeId = getComboTypeId(slime);
     return comboTypeId === 'stoneSupport' && hasSecondTalent(slime);
 }
 
@@ -555,8 +721,50 @@ export function hasLeech(slime) {
     // Same combo flag convention as the other second talents: element + capitalized specialization.
     // type 'poison' + spec 'support' => 'poisonSupport'.
     const spec = getSlimeSpecialization(slime);
-    const comboTypeId = spec ? `${slime.type || ''}${spec.charAt(0).toUpperCase()}${spec.slice(1)}` : '';
+    const comboTypeId = getComboTypeId(slime);
     return comboTypeId === 'poisonSupport' && hasSecondTalent(slime);
+}
+
+/**
+ * Leech parameters for a Poison Support slime, adjusted by its chosen
+ * second-talent sub-talent (column 1). The base leech heals the slime for 25%
+ * of the direct damage it inflicts (main hit + freeze bonus).
+ *  - suckerSlime:     doubles the leech amount (50% instead of 25%).
+ *  - mindlessSupport: leech heals the lowest-HP ally instead of the slime itself.
+ *  - damageDealer:    +10% Damage (handled by getSlimeSubTalentBonus, not here).
+ * Returns { multiplier, healLowestAlly }.
+ */
+export function getLeechParams(slime) {
+    const base = { multiplier: 0.25, healLowestAlly: false };
+    const def = getSlimeSubTalentDef(slime, 1);
+    if (!def) return base;
+    if (def.id === 'suckerSlime') return { multiplier: 0.50, healLowestAlly: false };
+    if (def.id === 'mindlessSupport') return { multiplier: 0.25, healLowestAlly: true };
+    return base;
+}
+
+/** Whether a Leech Poison Support has the mindlessSupport sub-talent (no Graft). */
+export function isMindlessSupport(slime) {
+    if (!hasLeech(slime)) return false;
+    return getSlimeSubTalentDef(slime, 1)?.id === 'mindlessSupport';
+}
+
+/**
+ * Stone Skin parameters for a Stone Support slime, adjusted by its chosen
+ * second-talent sub-talent (column 1). The base graft grants a flat "reduction"
+ * pool equal to 50% of the heal, applied to the next direct hit.
+ *  - emeraldSkin:     doubles the reduction pool (100% of the heal).
+ *  - standardization: instead grants a 75% damage reduction on the next direct
+ *                      hit, independent of the graft/heal amount.
+ *  - greassySlime:     +10% Max HP (handled by getSlimeSubTalentBonus, not here).
+ * Returns { mode: 'flat' | 'pct', flatMultiplier, pct }.
+ */
+export function getStoneSkinParams(slime) {
+    const def = getSlimeSubTalentDef(slime, 1);
+    if (!def) return { mode: 'flat', flatMultiplier: 0.50, pct: 0 };
+    if (def.id === 'emeraldSkin') return { mode: 'flat', flatMultiplier: 1.0, pct: 0 };
+    if (def.id === 'standardization') return { mode: 'pct', flatMultiplier: 0, pct: 0.75 };
+    return { mode: 'flat', flatMultiplier: 0.50, pct: 0 };
 }
 
 /** Whether a Slime owns the Immolation second talent (Fire Fighter). */
@@ -565,64 +773,217 @@ export function hasImmolation(slime) {
     // Same combo flag convention as the other second talents: element + capitalized specialization.
     // type 'fire' + spec 'fighter' => 'fireFighter'.
     const spec = getSlimeSpecialization(slime);
-    const comboTypeId = spec ? `${slime.type || ''}${spec.charAt(0).toUpperCase()}${spec.slice(1)}` : '';
+    const comboTypeId = getComboTypeId(slime);
     return comboTypeId === 'fireFighter' && hasSecondTalent(slime);
+}
+
+/**
+ * Immolation parameters for a Fire Fighter slime, adjusted by its chosen
+ * second-talent sub-talent (column 1). The base Immolation doubles all burn
+ * Stacks this Slime applies.
+ *  - greekFire:     triples the burn Stacks instead of doubling (3x).
+ *  - oilCombustion: on hit, converts the target's poison Stacks into burn
+ *                   Stacks (added to the burn applied this hit).
+ *  - damageDealer:  +10% Damage (handled by getSlimeSubTalentBonus, not here).
+ * Returns { burnMultiplier, convertPoisonToBurn }.
+ */
+export function getImmolationParams(slime) {
+    const def = getSlimeSubTalentDef(slime, 1);
+    if (!def) return { burnMultiplier: 2, convertPoisonToBurn: false };
+    if (def.id === 'greekFire') return { burnMultiplier: 3, convertPoisonToBurn: false };
+    if (def.id === 'oilCombustion') return { burnMultiplier: 2, convertPoisonToBurn: true };
+    return { burnMultiplier: 2, convertPoisonToBurn: false };
 }
 
 /** Whether a Slime owns the Ice Burst second talent (Ice Fighter). */
 export function hasIceBurst(slime) {
     if (!slime) return false;
     const spec = getSlimeSpecialization(slime);
-    const comboTypeId = spec ? `${slime.type || ''}${spec.charAt(0).toUpperCase()}${spec.slice(1)}` : '';
+    const comboTypeId = getComboTypeId(slime);
     return comboTypeId === 'iceFighter' && hasSecondTalent(slime);
+}
+
+/**
+ * Ice Burst parameters for an Ice Fighter slime, adjusted by its chosen
+ * second-talent sub-talent (column 1). The base Ice Burst deals cold damage
+ * equal to the target's burn + poison Stacks (per hitEffects.freeze stacks).
+ *  - thermalShock: cold damage uses 3x the target's burn Stacks instead.
+ *  - paralysis:    cold damage uses 3x the target's poison Stacks instead.
+ *  - damageDealer: +10% Damage (handled by getSlimeSubTalentBonus, not here).
+ * Returns { mode: 'sum' | 'burn' | 'poison', multiplier }.
+ */
+export function getIceBurstParams(slime) {
+    const def = getSlimeSubTalentDef(slime, 1);
+    if (!def) return { mode: 'sum', multiplier: 1 };
+    if (def.id === 'thermalShock') return { mode: 'burn', multiplier: 3 };
+    if (def.id === 'paralysis') return { mode: 'poison', multiplier: 3 };
+    return { mode: 'sum', multiplier: 1 };
 }
 
 /** Whether a Slime owns the Corrosive Poison second talent (Poison Fighter). */
 export function hasCorrosivePoison(slime) {
     if (!slime) return false;
     const spec = getSlimeSpecialization(slime);
-    const comboTypeId = spec ? `${slime.type || ''}${spec.charAt(0).toUpperCase()}${spec.slice(1)}` : '';
+    const comboTypeId = getComboTypeId(slime);
     return comboTypeId === 'poisonFighter' && hasSecondTalent(slime);
+}
+
+/**
+ * Corrosive Poison parameters for a Poison Fighter slime, adjusted by its chosen
+ * second-talent sub-talent (column 1). Direct damage is boosted by a fraction of
+ * the target's stacks as a percentage (poisonPct / burnPct are fractions, e.g.
+ * 0.10 => 10% of the stacks). Base: 10% of poison stacks (50 poison => +5%).
+ *  - acidic:    20% of poison stacks instead of 10%.
+ *  - oilOnFire: 10% of poison stacks + 10% of burn stacks.
+ *  - venom:     doesn't boost damage, but doubles the poison Stacks this Slime applies.
+ * Returns { poisonPct, burnPct, poisonMultiplier }.
+ */
+export function getCorrosivePoisonParams(slime) {
+    const def = getSlimeSubTalentDef(slime, 1);
+    if (!def) return { poisonPct: 0.10, burnPct: 0, poisonMultiplier: 1 };
+    if (def.id === 'acidic') return { poisonPct: 0.20, burnPct: 0, poisonMultiplier: 1 };
+    if (def.id === 'oilOnFire') return { poisonPct: 0.10, burnPct: 0.10, poisonMultiplier: 1 };
+    if (def.id === 'venom') return { poisonPct: 0, burnPct: 0, poisonMultiplier: 2 };
+    return { poisonPct: 0.10, burnPct: 0, poisonMultiplier: 1 };
 }
 
 /** Whether a Slime owns the Heavy Strike second talent (Stone Fighter). */
 export function hasHeavyStrike(slime) {
     if (!slime) return false;
     const spec = getSlimeSpecialization(slime);
-    const comboTypeId = spec ? `${slime.type || ''}${spec.charAt(0).toUpperCase()}${spec.slice(1)}` : '';
+    const comboTypeId = getComboTypeId(slime);
     return comboTypeId === 'stoneFighter' && hasSecondTalent(slime);
+}
+
+/**
+ * Heavy Strike parameters for a Stone Fighter slime, adjusted by its chosen
+ * second-talent sub-talent (column 1). The base Heavy Strike knocks the target
+ * back 10px to re-engage its walking state.
+ *  - penetration: halves the pushback distance (5px) but +20% Damage.
+ *  - headbutt:    removes pushback entirely, but doubles the Stun applied on hit.
+ *  - damageDealer: +10% Damage (handled by getSlimeSubTalentBonus, not here).
+ * Returns { pushbackPx, damagePct, stunMultiplier }.
+ */
+export function getHeavyStrikeParams(slime) {
+    const def = getSlimeSubTalentDef(slime, 1);
+    if (!def) return { pushbackPx: 6, damagePct: 0, stunMultiplier: 1 };
+    if (def.id === 'penetration') return { pushbackPx: 3, damagePct: 20, stunMultiplier: 1 };
+    if (def.id === 'headbutt') return { pushbackPx: 0, damagePct: 0, stunMultiplier: 2 };
+    return { pushbackPx: 10, damagePct: 0, stunMultiplier: 1 };
 }
 
 /** Whether a Slime owns the Polished Slime second talent (Stone Tank). */
 export function hasPolishedSlime(slime) {
     if (!slime) return false;
     const spec = getSlimeSpecialization(slime);
-    const comboTypeId = spec ? `${slime.type || ''}${spec.charAt(0).toUpperCase()}${spec.slice(1)}` : '';
+    const comboTypeId = getComboTypeId(slime);
     return comboTypeId === 'stoneTank' && hasSecondTalent(slime);
+}
+
+/**
+ * Polished Slime parameters for a Stone Tank slime, adjusted by its chosen
+ * second-talent sub-talent (column 1). The (nerfed) base Polished Slime reflects
+ * the Slime's stun Status onto the attacker once.
+ *  - pushback:     also knocks the Blocked enemy back 10px.
+ *  - dazingBlock:  doubles the reflected Stun (stunMultiplier 2).
+ *  - blockMastery: +10% Block chance (handled by getBlockChanceBonus, not here).
+ * Returns { stunMultiplier, pushbackPx }.
+ */
+export function getPolishedSlimeParams(slime) {
+    const def = getSlimeSubTalentDef(slime, 1);
+    if (!def) return { stunMultiplier: 1, pushbackPx: 0 };
+    if (def.id === 'pushback') return { stunMultiplier: 1, pushbackPx: 10 };
+    if (def.id === 'dazingBlock') return { stunMultiplier: 2, pushbackPx: 0 };
+    return { stunMultiplier: 1, pushbackPx: 0 };
 }
 
 /** Whether a Slime owns the Spicy Block second talent (Fire Tank). */
 export function hasSpicyBlock(slime) {
     if (!slime) return false;
     const spec = getSlimeSpecialization(slime);
-    const comboTypeId = spec ? `${slime.type || ''}${spec.charAt(0).toUpperCase()}${spec.slice(1)}` : '';
+    const comboTypeId = getComboTypeId(slime);
     return comboTypeId === 'fireTank' && hasSecondTalent(slime);
+}
+
+/**
+ * Spicy Block parameters for a Fire Tank slime, adjusted by its chosen
+ * second-talent sub-talent (column 1). The base Spicy Block reflects the Slime's
+ * burn Status onto the attacker 3 times (triple burn Stacks).
+ *  - blazingShield: applies burn 6 times instead of 3 (hexuple burn Stacks).
+ *  - cursedShield:  also reflects the Slime's poison Status 3 times.
+ *  - blockMastery:  +10% Block chance (handled by getBlockChanceBonus, not here).
+ * Returns { burnApplications, applyPoison }.
+ */
+export function getSpicyBlockParams(slime) {
+    const def = getSlimeSubTalentDef(slime, 1);
+    if (!def) return { burnApplications: 3, applyPoison: false };
+    if (def.id === 'blazingShield') return { burnApplications: 6, applyPoison: false };
+    if (def.id === 'cursedShield') return { burnApplications: 3, applyPoison: true };
+    return { burnApplications: 3, applyPoison: false };
+}
+
+/**
+ * Extra Block chance (0-1 scale) granted by Tank sub-talents, added on top of the
+ * base 10% (or 20% with the Shield Wall column-0 sub-talent). Stacks additively:
+ * Shield Wall (+10%) and the "Block Mastery" second-talent sub-talent (+10%,
+ * available on Spicy Block / Counter) both contribute.
+ */
+export function getBlockChanceBonus(slime) {
+    let bonus = 0;
+    if (getSlimeSubTalentDef(slime, 0)?.id === 'shieldWall') bonus += 0.10;
+    if (getSlimeSubTalentDef(slime, 1)?.id === 'blockMastery') bonus += 0.10;
+    if (getSlimeSubTalentDef(slime, 2)?.id === 'defenseOrchestra') bonus += 0.10;
+    return bonus;
 }
 
 /** Whether a Slime owns the Ice Block second talent (Ice Tank). */
 export function hasIceBlock(slime) {
     if (!slime) return false;
     const spec = getSlimeSpecialization(slime);
-    const comboTypeId = spec ? `${slime.type || ''}${spec.charAt(0).toUpperCase()}${spec.slice(1)}` : '';
+    const comboTypeId = getComboTypeId(slime);
     return comboTypeId === 'iceTank' && hasSecondTalent(slime);
+}
+
+/**
+ * Ice Block parameters for an Ice Tank slime, adjusted by its chosen second-talent
+ * sub-talent (column 1). The base Ice Block rolls a 20% chance (see
+ * ICE_BLOCK_BASE_CHANCE) to survive a lethal blow at 10% HP.
+ *  - coldBlood: +20% Ice Block chance (additive, up to 40% with the base 20%).
+ *  - iceCure:    when Ice Block triggers, regenerate 100% of Max HP over 5s
+ *                (10% per 0.5s tick) via the Heal-on-Time system.
+ *  - blockMastery: +10% Block chance (handled by getBlockChanceBonus, not here).
+ * Returns { chanceBonus }.
+ */
+export function getIceBlockParams(slime) {
+    const def = getSlimeSubTalentDef(slime, 1);
+    if (!def) return { chanceBonus: 0 };
+    if (def.id === 'coldBlood') return { chanceBonus: 0.20 };
+    return { chanceBonus: 0 };
 }
 
 /** Whether a Slime owns the Counter second talent (Poison Tank). */
 export function hasCounter(slime) {
     if (!slime) return false;
     const spec = getSlimeSpecialization(slime);
-    const comboTypeId = spec ? `${slime.type || ''}${spec.charAt(0).toUpperCase()}${spec.slice(1)}` : '';
+    const comboTypeId = getComboTypeId(slime);
     return comboTypeId === 'poisonTank' && hasSecondTalent(slime);
+}
+
+/**
+ * Counter parameters for a Poison Tank slime, adjusted by its chosen second-talent
+ * sub-talent (column 1). The base Counter strikes back for 25% of the Slime's
+ * damage and applies its on-hit status effects once.
+ *  - doubleDamage: the Counter attack deals double damage.
+ *  - doubleStatus: the Counter attack applies its status effects twice.
+ *  - blockMastery: +10% Block chance (handled by getBlockChanceBonus, not here).
+ * Returns { damageMultiplier, statusApplications }.
+ */
+export function getCounterParams(slime) {
+    const def = getSlimeSubTalentDef(slime, 1);
+    if (!def) return { damageMultiplier: 1, statusApplications: 1 };
+    if (def.id === 'doubleDamage') return { damageMultiplier: 2, statusApplications: 1 };
+    if (def.id === 'doubleStatus') return { damageMultiplier: 1, statusApplications: 2 };
+    return { damageMultiplier: 1, statusApplications: 1 };
 }
 
 /** Whether a Slime owns the Resurrection third talent (Support, all elements). */
@@ -631,6 +992,24 @@ export function hasResurrection(slime) {
     if ((gameState.newGamePlusCompletions || 0) <= 0) return false;
     if (getSlimeSpecialization(slime) !== 'support') return false;
     return Boolean(slime.talents?.resurrection);
+}
+
+/**
+ * Resurrection (Support third talent) parameters, adjusted by its chosen third-talent
+ * sub-talent (column 2). The base Resurrection sacrifices 80% of the Support's HP
+ * and revives a dead Slime with half of that sacrificed HP.
+ *  - lowBurden:      sacrifice cost is 40% of Max HP instead of 80% (revived HP is
+ *                    still half of the sacrificed HP).
+ *  - reconstitution:  the revived Slime returns at full health instead of half.
+ *  - abeasCorpus:    +10% Max HP (handled by getSlimeSubTalentBonus, not here).
+ * Returns { sacrificePct, fullHealthOnRevive }.
+ */
+export function getResurrectionParams(slime) {
+    const def = getSlimeSubTalentDef(slime, 2);
+    if (!def) return { sacrificePct: 0.80, fullHealthOnRevive: false };
+    if (def.id === 'lowBurden') return { sacrificePct: 0.40, fullHealthOnRevive: false };
+    if (def.id === 'reconstitution') return { sacrificePct: 0.80, fullHealthOnRevive: true };
+    return { sacrificePct: 0.80, fullHealthOnRevive: false };
 }
 
 /**
@@ -658,11 +1037,15 @@ export function processWaveEndResurrections() {
         const stillDead = gameState.bestRoster.filter(s => !activeIds.has(String(s.id || s.name)));
         if (stillDead.length === 0) break;
 
-        const sacrificedHp = Math.ceil(resurrector.maxHp * 0.8);
-        const reviveHp = Math.round(sacrificedHp / 2);
+        const resurrectParams = getResurrectionParams(resurrector);
+        const chosen = stillDead[Math.floor(Math.random() * stillDead.length)];
+        const targetMaxHp = chosen.maxHp || 10;
+        const sacrificedHp = Math.ceil(resurrector.maxHp * resurrectParams.sacrificePct);
+        const reviveHp = resurrectParams.fullHealthOnRevive
+            ? targetMaxHp
+            : Math.round(sacrificedHp / 2);
         resurrector.hp = Math.max(1, resurrector.hp - sacrificedHp);
 
-        const chosen = stillDead[Math.floor(Math.random() * stillDead.length)];
         const revivedSlime = {
             id: chosen.id || chosen.name,
             name: chosen.name || String(chosen.id),
@@ -697,6 +1080,22 @@ export function hasSlide(slime) {
     if ((gameState.newGamePlusCompletions || 0) <= 0) return false;
     if (getSlimeSpecialization(slime) !== 'fighter') return false;
     return Boolean(slime.talents?.slide);
+}
+
+/**
+ * Slide (Fighter third talent) parameters, adjusted by its chosen third-talent
+ * sub-talent (column 2). Base Slide dashes to the furthest enemy.
+ *  - chaos2:      Slide targets a random valid enemy instead of the furthest.
+ *  - cheapShot:   the Slide hit deals +20% damage.
+ *  - sharpSlime:  +10% Base Damage (handled by getSlimeSubTalentBonus, not here).
+ * Returns { randomTarget, slideDamagePct }.
+ */
+export function getSlideParams(slime) {
+    const def = getSlimeSubTalentDef(slime, 2);
+    if (!def) return { randomTarget: false, slideDamagePct: 0 };
+    if (def.id === 'chaos2') return { randomTarget: true, slideDamagePct: 0 };
+    if (def.id === 'cheapShot') return { randomTarget: false, slideDamagePct: 20 };
+    return { randomTarget: false, slideDamagePct: 0 };
 }
 
 /** Per-combo flag key used to store ownership of a Slime's second talent. */
@@ -746,6 +1145,25 @@ export function hasInterception(slime) {
 }
 
 /**
+ * Interception (Tank third talent) parameters, adjusted by its chosen third-talent
+ * sub-talent (column 2). The base Interception redirects a wounded Tank's hit to a
+ * healthy Interception-owning Tank.
+ *  - endurance:         the intercepting Slime takes 10% less damage from the
+ *                       intercepted attack.
+ *  - avenge:            the intercepting Slime applies its own status effects
+ *                       (burn/poison/freeze/stun) to the attacker.
+ *  - defenseOrchestra:  +10% Block chance (handled by getBlockChanceBonus, not here).
+ * Returns { damageReduction, applyStatus }.
+ */
+export function getInterceptionParams(slime) {
+    const def = getSlimeSubTalentDef(slime, 2);
+    if (!def) return { damageReduction: 0, applyStatus: false };
+    if (def.id === 'endurance') return { damageReduction: 0.10, applyStatus: false };
+    if (def.id === 'avenge') return { damageReduction: 0, applyStatus: true };
+    return { damageReduction: 0, applyStatus: false };
+}
+
+/**
  * Interception (Tank third talent): when a Tank drops under 50% HP, another Tank
  * owning Interception and holding more than 50% HP takes the hit in its place.
  * Returns the interceptor Slime, or null when nobody intercepts.
@@ -791,8 +1209,7 @@ export function hasFirstTalent(slime) {
 /** Whether a Slime owns the second talent of its element+specialization combo. */
 export function hasSecondTalent(slime) {
     if (!slime) return false;
-    const spec = getSlimeSpecialization(slime);
-    const comboTypeId = spec ? `${slime.type || ''}${spec.charAt(0).toUpperCase()}${spec.slice(1)}` : '';
+    const comboTypeId = getComboTypeId(slime);
     const flag = getSecondTalentFlag(comboTypeId);
     return Boolean(flag && slime.talents?.[flag]);
 }

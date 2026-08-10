@@ -2,7 +2,7 @@
  * Enemy Management & AI Behaviors
  */
 
-import { gameState, addScraps, saveStateToLocal, saveWaveSnapshot, restoreBestRoster, SLIME_TYPES, getSlimeTotalRegen, getSlimeSpecialization, setEquipmentDefinitionResolver, getSlimeSubTalentDef, getSlimeMaxHp, getSlimeHitEffects, getSlimeJumpSprite, hasSpicyBlock, hasIceBlock, hasCounter, hasPolishedSlime, findInterceptorFor, processWaveEndResurrections } from './state.js';
+import { gameState, addScraps, saveStateToLocal, saveWaveSnapshot, restoreBestRoster, SLIME_TYPES, getSlimeTotalRegen, getSlimeSpecialization, setEquipmentDefinitionResolver, getSlimeSubTalentDef, getSlimeMaxHp, getSlimeHitEffects, getSlimeJumpSprite, hasSpicyBlock, getSpicyBlockParams, getBlockChanceBonus, getCounterParams, getPolishedSlimeParams, getIceBlockParams, getInterceptionParams, hasIceBlock, hasCounter, hasPolishedSlime, findInterceptorFor, processWaveEndResurrections } from './state.js';
 import { healAllSlimes, initAscendedAutoAttacks, clearAscendedAutoAttacks, showFloatingDamageNumber, showFloatingHealingNumber, showFloatingHealingNumberFromUnit, showFloatingStatusTextAt, showBattlefieldWaveBanner, triggerSlimeEatLoot, applyHitEffectsToEnemy, playResurrectionAnimations } from './slimes.js';
 import { updateUI, updateLootHUD, requestUIRefresh, playSlimeRainRespawnAnimation } from './ui.js';
 import { openShopModal } from './shop.js';
@@ -639,31 +639,46 @@ export const ENEMY_TYPES = {
         loot_effect: { stat: 'hp', value: 1 },
         loot_priority: 'tank',
     },
-    testtank: {
-        id: 'tank',
+    testmelee: {
+        id: 'beggar',
         type: 'melee',        // Melee attacker
         projectile: 'slash1',
         tier: -1,
-        hp: 10,
-        maxHp: 10,
-        damage: 1,
-        attackSpeed: 0,     // 0.5 attacks per second
-        moveSpeed: 0.6,       // Slow move speed
-        targetX: 250,         // Center of battlefield
+        hp: 9999999999,
+        maxHp: 9999999999,
+        damage: 10,
+        attackSpeed: 0.5,     // 0.5 attacks per second
+        moveSpeed: 5,       // Slow move speed
+        targetX: 200,         // Center of battlefield
+        loot_name: 'You Should Not See This',
+        loot_effect: { stat: 'hp', value: 1 },
+        loot_priority: 'tank',
+    },
+    testtank: {
+        id: 'beggar',
+        type: 'tank',        // Melee attacker
+        projectile: 'slash1',
+        tier: -1,
+        hp: 9999999999,
+        maxHp: 9999999999,
+        damage: 0,
+        attackSpeed: 1,     // 0.5 attacks per second
+        moveSpeed: 5,       // Slow move speed
+        targetX: 300,         // Center of battlefield
         loot_name: 'You Should Not See This',
         loot_effect: { stat: 'hp', value: 1 },
         loot_priority: 'tank',
     },
     testrange: {
-        id: 'catapult',
+        id: 'beggar',
         type: 'range',
-        projectile: 'boulder',
+        projectile: 'arrow',
         tier: -1,
-        hp: 99999,
-        maxHp: 99999,
-        damage: 1,
+        hp: 9999999999,
+        maxHp: 9999999999,
+        damage: 0,
         attackSpeed: 0.5,   // Attacks per second
-        moveSpeed: 0.3,
+        moveSpeed: 5,
         targetX: 400,       // 250 = Center of battlefield, 100 = Slimes, 400 = long range
         loot_name: 'You Should Not See This',
         loot_effect: { stat: 'hp', value: 1 },
@@ -889,7 +904,7 @@ export function parseEnemyList(rawList) {
  */
 function generateWaveComposition(waveNum) {
     // Tests
-    //return [0.15, 'assassin:10'];
+    //return [0.15, 'testtank:1', 'testmelee:1', 'testrange:1'];
 
     // 1-10, Manual play, Villagers
     if (waveNum === 1) return [0, 'beggar:1'];
@@ -1992,6 +2007,27 @@ export function updateEnemies(deltaSeconds) {
                     rosterItem.classList.toggle('is-heal-on-time', slime.effects.healOnTimeTimer > 0);
                     rosterItem.classList.toggle('is-ice-barrier', (slime.effects.iceBarrierBonusHp || 0) > 0);
                     rosterItem.classList.toggle('is-stone-skin', (slime.reduction || 0) > 0);
+                    // Live-update the Ice Barrier secondary HP bar width every frame so
+                    // the consumed temporary HP is reflected without a full roster rebuild.
+                    const bonusHp = Number(slime.effects?.iceBarrierBonusHp || 0);
+                    const bonusBar = rosterItem.querySelector('.roster-hp-bonus');
+                    if (bonusHp > 0) {
+                        if (!bonusBar) {
+                            const bar = rosterItem.querySelector('.roster-grid-hp-bar');
+                            if (bar) {
+                                const sec = document.createElement('div');
+                                sec.className = 'roster-grid-hp-bar roster-grid-hp-bar-secondary';
+                                const fill = document.createElement('div');
+                                fill.className = 'roster-hp-bonus';
+                                sec.appendChild(fill);
+                                bar.insertAdjacentElement('afterend', sec);
+                            }
+                        }
+                        const fillEl = rosterItem.querySelector('.roster-hp-bonus');
+                        if (fillEl) fillEl.style.width = `${Math.min(100, (bonusHp / Math.max(1, slime.maxHp)) * 100)}%`;
+                    } else if (bonusBar) {
+                        bonusBar.parentNode?.remove();
+                    }
                 }
             }
         }
@@ -2406,7 +2442,8 @@ function updateSlimeIceBarrier(unit, active) {
  */
 function resolveTankBlock(slime, damageAmount, dmgType, sourceEnemy) {
     if (!slime || getSlimeSpecialization(slime) !== 'tank' || !slime.talents?.block) return false;
-    const blockChance = getSlimeSubTalentDef(slime, 0)?.id === 'shieldMaster' ? 0.2 : 0.1;
+    const baseBlockChance = getSlimeSubTalentDef(slime, 0)?.id === 'shieldWall' ? 0.2 : 0.1;
+    const blockChance = baseBlockChance + getBlockChanceBonus(slime);
     if (Math.random() >= blockChance) return false;
 
     spawnBlockEffect(slime);
@@ -2422,16 +2459,22 @@ function resolveTankBlock(slime, damageAmount, dmgType, sourceEnemy) {
         slime.hp = getSlimeMaxHp(slime);
     }
     // Spicy Block (Fire Tank second talent): reflect the slime's own status
-    // effect profile onto the attacker — applied twice.
+    // effect profile onto the attacker. Base applies burn 3 times (triple burn
+    // Stacks); sub-talents can raise the count or also apply poison.
     if (hasSpicyBlock(slime) && sourceEnemy && sourceEnemy.effects !== undefined) {
         const hitEffects = getSlimeHitEffects(slime);
         const isControlImmune = sourceEnemy.typeId === 'death';
-        // Spicy Block: reflect the Slime's burn status onto the attacker
-        // three times (triple burn stacks).
+        const spicyParams = getSpicyBlockParams(slime);
         const burnOnly = { burn: hitEffects.burn };
-        applyHitEffectsToEnemy(sourceEnemy, burnOnly, slime, isControlImmune);
-        applyHitEffectsToEnemy(sourceEnemy, burnOnly, slime, isControlImmune);
-        applyHitEffectsToEnemy(sourceEnemy, burnOnly, slime, isControlImmune);
+        for (let i = 0; i < spicyParams.burnApplications; i++) {
+            applyHitEffectsToEnemy(sourceEnemy, burnOnly, slime, isControlImmune);
+        }
+        if (spicyParams.applyPoison) {
+            const poisonOnly = { poison: hitEffects.poison };
+            applyHitEffectsToEnemy(sourceEnemy, poisonOnly, slime, isControlImmune);
+            applyHitEffectsToEnemy(sourceEnemy, poisonOnly, slime, isControlImmune);
+            applyHitEffectsToEnemy(sourceEnemy, poisonOnly, slime, isControlImmune);
+        }
         // Spicy Block: swap the Slime's sprite to the spicy block pose for a
         // second (the block jump animation is already playing), then revert.
         const spicyUnit = document.querySelector(`[data-slime-id="${slime.id}"]`);
@@ -2445,14 +2488,26 @@ function resolveTankBlock(slime, damageAmount, dmgType, sourceEnemy) {
             }, 1000);
         }
     }
-    // Polished Slime (Stone Tank second talent): reflect the slime's own
-    // stun status onto the attacker twice (double stun stacks).
+    // Polished Slime (Stone Tank second talent): reflect the slime's own stun
+    // Status onto the attacker. Base applies it once (nerfed from twice);
+    // "Dazing Block" doubles it, "Pushback" also knocks the enemy back.
     if (hasPolishedSlime(slime) && sourceEnemy && sourceEnemy.effects !== undefined) {
         const hitEffects = getSlimeHitEffects(slime);
         const isControlImmune = sourceEnemy.typeId === 'death';
-        const stunOnly = { stun: hitEffects.stun };
+        const polishedParams = getPolishedSlimeParams(slime);
+        const stunOnly = { stun: hitEffects.stun * polishedParams.stunMultiplier };
         applyHitEffectsToEnemy(sourceEnemy, stunOnly, slime, isControlImmune);
-        applyHitEffectsToEnemy(sourceEnemy, stunOnly, slime, isControlImmune);
+        if (polishedParams.pushbackPx > 0 && sourceEnemy.type !== 'rush') {
+            sourceEnemy.x = Math.min(450, sourceEnemy.x + polishedParams.pushbackPx);
+            sourceEnemy.state = 'walking';
+            sourceEnemy.attackTimer = 0;
+            if (sourceEnemy.el) {
+                sourceEnemy.el.style.left = `${sourceEnemy.x}px`;
+                sourceEnemy.el.classList.remove('enemy-attacking', 'enemy-tanking', 'enemy-range', 'enemy-support');
+                sourceEnemy.el.classList.add('enemy-walking');
+            }
+            showFloatingStatusText(sourceEnemy, String.fromCodePoint(0x1F4A5), 'pushback-text');
+        }
         // Polished Slime: swap the Slime's sprite to the polished pose for
         // a second (the block jump animation is already playing), then revert.
         const polishedUnit = document.querySelector(`[data-slime-id="${slime.id}"]`);
@@ -2470,11 +2525,15 @@ function resolveTankBlock(slime, damageAmount, dmgType, sourceEnemy) {
     // 25% of the Slime's damage (with its on-hit effects) and heal the
     // Slime for 25% of that counter damage.
     if (hasCounter(slime) && sourceEnemy && sourceEnemy.hp > 0) {
-        const counterDamage = gameState.slimeDamage;
+        const counterParams = getCounterParams(slime);
+        const counterDamage = gameState.slimeDamage * counterParams.damageMultiplier;
         const damageToApply = Math.min(sourceEnemy.hp, counterDamage);
         sourceEnemy.hp -= damageToApply;
         const isControlImmune = sourceEnemy.typeId === 'death';
-        applyHitEffectsToEnemy(sourceEnemy, getSlimeHitEffects(slime), slime, isControlImmune);
+        const counterEffects = getSlimeHitEffects(slime);
+        for (let i = 0; i < counterParams.statusApplications; i++) {
+            applyHitEffectsToEnemy(sourceEnemy, counterEffects, slime, isControlImmune);
+        }
         showFloatingDamageNumber(sourceEnemy.x || 250, sourceEnemy.y || 130, damageToApply, 'enemy-dmg');
         // Counter: swap the Slime's sprite to the counter pose (the block
         // jump animation is already playing from the successful Block above),
@@ -2535,8 +2594,19 @@ export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg', 
             // another interception lookup (it is the designated absorber).
             const blocked = resolveTankBlock(slime, damageAmount, dmgType, sourceEnemy);
             if (blocked) return slime;
+            // Interception sub-talents applied to the redirected hit.
+            const interceptParams = getInterceptionParams(interceptor);
+            let interceptedDamage = damageAmount;
+            if (interceptParams.damageReduction > 0) {
+                interceptedDamage = Math.max(0, Math.round(interceptedDamage * (1 - interceptParams.damageReduction)));
+            }
+            // Avenge: the intercepting Tank reflects its own status onto the attacker.
+            if (interceptParams.applyStatus && sourceEnemy && sourceEnemy.effects !== undefined) {
+                const isControlImmune = sourceEnemy.typeId === 'death';
+                applyHitEffectsToEnemy(sourceEnemy, getSlimeHitEffects(interceptor), interceptor, isControlImmune);
+            }
             spawnInterceptEffect(interceptor);
-            return damageSpecificSlime(interceptor, damageAmount, dmgType, sourceEnemy, false);
+            return damageSpecificSlime(interceptor, interceptedDamage, dmgType, sourceEnemy, false);
         }
     }
 
@@ -2548,7 +2618,7 @@ export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg', 
     }
 
     // Tank Block talent: base 10% chance to ignore incoming damage.
-    // Shield Master raises it to 20%. Perfect Block heals to full on a successful block.
+    // shieldWall increases it by 10 more %. Perfect Block heals to full on a successful block.
     // Status effect DoT ticks (burn/poison) pass allowBlock=false and can never be blocked.
     // Returns true when the hit was blocked (and Counter/Spicy/Polished fired), false otherwise.
     if (allowBlock) {
@@ -2564,6 +2634,12 @@ export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg', 
         const reduced = Math.min(slime.reduction, damageAmount);
         slime.reduction = 0;
         damageAmount -= reduced;
+    }
+    // Stone Skin standardization sub-talent: a percentage damage reduction on the
+    // next direct hit (independent of the graft/heal amount). Consumed once.
+    if (allowBlock && (slime.reductionPct || 0) > 0) {
+        damageAmount = Math.max(0, Math.round(damageAmount * (1 - slime.reductionPct)));
+        slime.reductionPct = 0;
     }
 
     // Ice Barrier (Ice Support): temporary HP absorbs damage BEFORE real HP.
@@ -2595,11 +2671,19 @@ export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg', 
     // instead survive at 10% of Max HP. Used as a death-substitute, so when it
     // triggers we skip all death handling and the unit death animation.
     if (slime.hp <= 0 && hasIceBlock(slime)) {
-        const ICE_BLOCK_CHANCE = 0.10; // 10% chance to survive at 10% HP
-        if (Math.random() < ICE_BLOCK_CHANCE) {
+        const ICE_BLOCK_BASE_CHANCE = 0.20; // 20% base chance to survive at 10% HP
+        const iceBlockChance = ICE_BLOCK_BASE_CHANCE + getIceBlockParams(slime).chanceBonus;
+        if (Math.random() < iceBlockChance) {
             slime.hp = Math.max(1, Math.round(slime.maxHp * 0.10));
             if (!slime.effects) {
                 slime.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0, stunTimer: 0, healOnTimeTimer: 0, healOnTimeTickTimer: 0, healOnTimePerTick: 0, iceBarrierTimer: 0, iceBarrierBonusHp: 0 };
+            }
+            const iceCure = getSlimeSubTalentDef(slime, 1)?.id === 'iceCure';
+            if (iceCure) {
+                // Ice Cure: regenerate 100% of Max HP over 5s (10% per 0.5s tick).
+                slime.effects.healOnTimeTimer = 5;
+                slime.effects.healOnTimeTickTimer = 0;
+                slime.effects.healOnTimePerTick = Math.max(1, Math.round(slime.maxHp * 0.10));
             }
             // Surviving via Ice Block leaves the Slime stunned for 5s and shows the
             // ice block sprite for the duration of that stun.

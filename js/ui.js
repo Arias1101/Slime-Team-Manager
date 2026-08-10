@@ -2,7 +2,7 @@
  * User Interface & Authentication Screen Renderer
  */
 
-import { gameState, SLIME_TYPES, killSlime, syncSlimesArray, rerollSlimeType, calculateSlimeDamage, getScaledEquipmentEffects, getEquipmentDisplayName, getEquipmentSprite, saveStateToLocal, getSlimeHitEffects, getEquipmentQuality, getSlimeTotalRegen, sortRosterBySpecialization, updateBestRoster, getSlimeJumpSprite, canSlimeBuyNextTalent, TALENT_SUBTALENTS, SECOND_TALENT, SECOND_TALENT_ICON, getSecondTalentFlag, hasSecondTalent, ensureSlimeSubTalents, getSlimeSubTalent, recalculateSlimeStats, getThirdTalentDef } from './state.js';
+import { gameState, SLIME_TYPES, killSlime, syncSlimesArray, rerollSlimeType, calculateSlimeDamage, getScaledEquipmentEffects, getEquipmentDisplayName, getEquipmentSprite, saveStateToLocal, getSlimeHitEffects, getEquipmentQuality, getSlimeTotalRegen, sortRosterBySpecialization, updateBestRoster, getSlimeJumpSprite, canSlimeBuyNextTalent, TALENT_SUBTALENTS, SECOND_TALENT, SECOND_TALENT_ICON, getSecondTalentFlag, hasSecondTalent, ensureSlimeSubTalents, getSlimeSubTalent, getSlimeSubTalentColumn, recalculateSlimeStats, getThirdTalentDef } from './state.js';
 import { updateUpgradesUI } from './upgrades.js';
 import { activeGroundLoots, formatLootEffects } from './enemies.js';
 import { setGamePaused, isGamePaused } from './engine.js';
@@ -21,6 +21,12 @@ const SLIME_IMG_SRC = 'images/slimes/base/jump.png';
 const SLIME_FALLBACK_SRC = 'images/slimes/army.png';
 
 let lastRenderedArmySize = -1;
+let lastArmyTypeSig = '';
+/** Signature of every Slime's id+type+specialization, used to detect when the
+ *  army's composition (not just its size) changed and needs a re-render. */
+function armyTypeSignature() {
+    return (gameState.slimes || []).map(s => `${s.id}|${s.type}|${s.specialization || ''}`).join(',');
+}
 let currentInspectedSlime = null;
 let activeSlimeSheetTab = 'stats';
 let isRainAnimating = false;
@@ -118,9 +124,24 @@ export function updateUI() {
         }
     }
 
-    if (!armyContainerEl || armyContainerEl.children.length === 0 || lastRenderedArmySize !== gameState.armySize) {
+    if (!armyContainerEl || armyContainerEl.children.length === 0 || lastRenderedArmySize !== gameState.armySize || armyTypeSignature() !== lastArmyTypeSig) {
         lastRenderedArmySize = gameState.armySize;
+        lastArmyTypeSig = armyTypeSignature();
         renderSlimeArmy();
+    }
+
+    // Keep an open Slime Inspector's Talent tree in sync with state changes made
+    // elsewhere (e.g. specializing / buying Talents / picking sub-talents from the
+    // Common House). Without this the sheet's sub-talents stay stale until a full
+    // page reload.
+    if (currentInspectedSlime && !document.getElementById('slimeModalBackdrop')?.classList.contains('hidden')) {
+        const liveSlime = (gameState.slimes || []).find(s => s.id === currentInspectedSlime.id || s.name === currentInspectedSlime.name)
+            || (gameState.villageRoster || []).find(s => s.id === currentInspectedSlime.id || s.name === currentInspectedSlime.name)
+            || (gameState.bestRoster || []).find(s => s.id === currentInspectedSlime.id || s.name === currentInspectedSlime.name);
+        if (liveSlime) {
+            currentInspectedSlime = liveSlime;
+            renderSlimeTalentTree(liveSlime);
+        }
     }
 
     updateSlimeRoster();
@@ -440,7 +461,8 @@ function updateSlimeRoster() {
     // so the talent-available pulse animation isn't restarted on every UI refresh.
     const signature = entries.map(e => {
         const s = e.slime || {};
-        return `${s.id || s.name}|${s.hp}|${s.maxHp}|${e.dead ? 'dead' : ''}|${s.ascended ? 'a' : ''}|${canSlimeBuyNextTalent(s) ? 't' : ''}`;
+        const spec = String(s.specialization || SLIME_TYPES[s.type]?.specialization || '').toLowerCase();
+        return `${s.id || s.name}|${s.type}|${spec}|${s.hp}|${s.maxHp}|${s.effects?.iceBarrierBonusHp || 0}|${e.dead ? 'dead' : ''}|${s.ascended ? 'a' : ''}|${canSlimeBuyNextTalent(s) ? 't' : ''}`;
     }).join(',');
     if (signature === lastRosterSignature) return;
     lastRosterSignature = signature;
@@ -692,6 +714,20 @@ export function renderSlimeArmy() {
                 existingUnit.insertBefore(statusRow, existingUnit.firstChild);
             }
             slimeObj.statusRowEl = statusRow;
+            // Refresh the sprite when the Slime's type or specialization changed
+            // (e.g. rerolling a type or choosing a specialization while in-game),
+            // so the battlefield shows the correct artwork without a full reload.
+            const imgEl = existingUnit.querySelector('.slime-img');
+            if (imgEl) {
+                const expectedSrc = getSlimeJumpSprite(slimeObj);
+                // Compare resolved (absolute) URLs: a reroll may keep the same
+                // filename (jump.png) but change only the folder, so a bare
+                // filename check would wrongly skip the update.
+                const resolvedExpected = new URL(expectedSrc, document.baseURI).href;
+                if (imgEl.src !== resolvedExpected) {
+                    imgEl.src = expectedSrc;
+                }
+            }
             if (existingUnit.dataset.isAttacking !== 'true' && existingUnit.dataset.isEating !== 'true') {
                 existingUnit.style.left = `${coords.posX}px`;
                 existingUnit.style.top = `${coords.posY}px`;
@@ -1052,7 +1088,7 @@ function renderSlimeTalentTree(slime) {
             const subButtons = columnUnlocked
                 ? Array.from({ length: subTalentsPerTalent }, (_, subIndex) => {
                     const subLabel = `${talentName} sub-talent ${subIndex + 1}`;
-                    const subDef = TALENT_SUBTALENTS[normalizedSpecialization]?.[index]?.[subIndex];
+                    const subDef = getSlimeSubTalentColumn(slime, index)?.[subIndex];
                     const selected = columnUnlocked && getSlimeSubTalent(slime, index) === subIndex;
                     const selectedClass = selected ? ' selected' : '';
                     return `<button type="button" class="slime-specialization-subtalent${selectedClass}" title="${subDef ? `${subDef.name}: ${subDef.description}` : subLabel}" aria-label="${subLabel}" data-talent-index="${index}" data-subtalent-index="${subIndex}" ${columnUnlocked ? '' : 'disabled'}><img src="${subtalentIcon}" alt="${talentName}"></button>`;
@@ -1148,6 +1184,7 @@ function specializeInspectedSlime(specialization) {
     if (!typeId || !SLIME_TYPES[typeId]) return;
     target.type = elementalPrefix || target.type;
     target.specialization = specialization;
+    ensureSlimeSubTalents(target);
     sortRosterBySpecialization();
     updateBestRoster();
     // Force the existing battlefield units to take their new formation immediately.

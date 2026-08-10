@@ -1,5 +1,28 @@
-Patch Notes:
+Patch Notes (do not edit this I handle it manually):
 v0.26
+- Removed Critical Heal (for now, since they were a bit OP).
+- Fixed issue allowing to unlock third talent when second isn't.
+- Fixed issue where talents buy buttons appeared enabled while not having enough coins.
+- Fixed refresh issue regarding Temporary Hp in Roster.
+- Fixed Common House needing to be refreshed to unlock some Subtalents.
+- Fixed an issue that was slowing down manual attacks.
+- Fixed Corrosive Poison Talent not increasing damage.
+- Fixed Slime appearance not refreshing immediatly when changing it while in game.
+- Implemented Melting Mend Subtalents.
+- Implemented Ice Barrier Subtalents.
+- Implemented Leech Subtalents.
+- Implemented Stone Skin Subtalents.
+- Implemented Ice Burst Subtalents.
+- Implemented Immolation Subtalents.
+- Implemented Corrosive Poison Subtalents.
+- Implemented Heavy Strike Subtalents.
+- Implemented Spicy Block Subtalents.
+- Implemented Counter Subtalents.
+- Nerfed Polished Slime to apply Stun x1 (was x2) and implemented its Subtalents.
+- Increased Ice Block base chance to 20% and implemented its Subtalents.
+- Implemented Slide Subtalents.
+- Implemented Interception Subtalents.
+- Implemented Resurection Subtalents.
 
 v0.25
 - Implemented Bulk upgrade buy with Shift+Clic (buys 10).

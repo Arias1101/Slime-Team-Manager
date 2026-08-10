@@ -548,6 +548,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnFeedCheat) {
         btnFeedCheat.addEventListener('click', () => {
             addScraps(1000);
+            gameState.villageCoins = (gameState.villageCoins || 0) + 10;
             updateUI();
         });
     }
@@ -577,8 +578,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (battlefieldCard) {
         battlefieldCard.addEventListener('click', (e) => {
             // Ignore click if clicking directly on a button inside the card
-            if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
-            if (isGamePaused) return;
+            if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+                console.log('[CLICK] ignored: click landed on a button');
+                return;
+            }
+            if (isGamePaused) {
+                console.log('[CLICK] ignored: game is paused');
+                return;
+            }
+            console.log('[CLICK] battlefield click received -> triggerRandomSlimeAttack()');
             triggerRandomSlimeAttack();
         });
     }

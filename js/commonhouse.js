@@ -9,7 +9,7 @@
  *                 Only slimes from one side can be selected at once.
  */
 
-import { gameState, SLIME_TYPES, getSlimeJumpSprite, getSlimeSpecialization, calculateSlimeDamage, getBaseCritChance, generateUniqueSlimeName, getNextAvailableSlotIndex, saveStateToLocal, updateBestRoster, getEquipmentQuality, sortRosterBySpecialization, TALENT_SUBTALENTS, SECOND_TALENT, SECOND_TALENT_ICON, getSecondTalentFlag, hasFirstTalent, getThirdTalentDef, ensureSlimeSubTalents, getSlimeSubTalent, recalculateSlimeStats } from './state.js';
+import { gameState, SLIME_TYPES, getSlimeJumpSprite, getSlimeSpecialization, calculateSlimeDamage, getBaseCritChance, generateUniqueSlimeName, getNextAvailableSlotIndex, saveStateToLocal, updateBestRoster, getEquipmentQuality, sortRosterBySpecialization, TALENT_SUBTALENTS, SECOND_TALENT, SECOND_TALENT_ICON, getSecondTalentFlag, hasFirstTalent, getThirdTalentDef, ensureSlimeSubTalents, getSlimeSubTalent, getSlimeSubTalentColumn, recalculateSlimeStats } from './state.js';
 import { renderSlimeRosterLanes, updateUI } from './ui.js';
 
 const MAX_MAIN_ROSTER = 60;
@@ -587,7 +587,7 @@ function getActionButtonsHtml(selectedSlimes) {
             const isThirdTalent = t === 2;
             const thirdTalentName = isThirdTalent && thirdDef ? thirdDef.name : '';
             const thirdTalentDesc = isThirdTalent && thirdDef ? thirdDef.shortDescription : '';
-            const secondFlag = t === 1 ? getSecondTalentFlag(combo.typeId) : null;
+            const secondFlag = combo.typeId ? getSecondTalentFlag(combo.typeId) : null;
             const talentLabel = t === 1 && secondTalent ? secondTalent.name
                 : isThirdTalent && thirdTalentName ? thirdTalentName
                     : `${talentName} (Talent ${t + 1})`;
@@ -601,9 +601,10 @@ function getActionButtonsHtml(selectedSlimes) {
             let talentBadge = '';
             let talentExtraClass = '';
             let talentDisabled = '';
+            let cost = 0;
             if (t === 0) {
                 const ownedCount = selectedSlimes.filter(hasFirstTalent).length;
-                const cost = (selectedSlimes.length - ownedCount) * TALENT_PRICE[t];
+                cost = (selectedSlimes.length - ownedCount) * TALENT_PRICE[t];
                 if (cost === 0) {
                     talentBadge = '✔️';
                     talentExtraClass = ' unlocked';
@@ -618,7 +619,7 @@ function getActionButtonsHtml(selectedSlimes) {
                 const ownedCount = secondFlag ? selectedSlimes.filter(s => s.talents?.[secondFlag]).length : 0;
                 const firstOwnedSome = selectedSlimes.some(s => hasFirstTalent(s));
                 const eligible = selectedSlimes.filter(s => hasFirstTalent(s) && !s.talents?.[secondFlag]).length;
-                const cost = eligible * TALENT_PRICE[t];
+                cost = eligible * TALENT_PRICE[t];
                 if (ownedCount === selectedSlimes.length) {
                     talentBadge = '✔️';
                     talentExtraClass = ' unlocked';
@@ -631,18 +632,35 @@ function getActionButtonsHtml(selectedSlimes) {
                     talentDisabled = ' disabled';
                 }
             } else if (isThirdTalent && thirdDef) {
-                // Third Talent (Support Resurrection / Fighter Slide): requires the
-                // first Talent as prerequisite. Mass-buy applies per eligible Slime.
+                // Third Talent (Support Resurrection / Fighter Slide): requires BOTH
+                // the first Talent AND the second Talent as prerequisites. If any
+                // selected Slime hasn't bought its second Talent yet, the third is
+                // locked. Mass-buy applies per eligible Slime.
+                const hasSecondTalent = (s) => {
+                    const spec = getSlimeSpecialization(s);
+                    if (!spec) return false;
+                    const typeId = `${elementOf(s)}${spec.charAt(0).toUpperCase()}${spec.slice(1)}`;
+                    const flag = getSecondTalentFlag(typeId);
+                    return flag ? !!s.talents?.[flag] : false;
+                };
                 const ownedCount = selectedSlimes.filter(s => s.talents?.[thirdDef.flag]).length;
-                const firstOwnedSome = selectedSlimes.some(s => hasFirstTalent(s));
-                const eligible = selectedSlimes.filter(s => hasFirstTalent(s) && !s.talents?.[thirdDef.flag]).length;
-                const cost = eligible * TALENT_PRICE[t];
+                const secondOwnedSome = selectedSlimes.some(s => hasSecondTalent(s));
+                const secondOwnedAll = selectedSlimes.length > 0 && selectedSlimes.every(s => hasSecondTalent(s));
+                const eligible = selectedSlimes.filter(s => hasSecondTalent(s) && !s.talents?.[thirdDef.flag]).length;
+                cost = eligible * TALENT_PRICE[t];
                 if (ownedCount === selectedSlimes.length) {
                     talentBadge = '✔️';
                     talentExtraClass = ' unlocked';
                     talentDisabled = ' disabled';
-                } else if (firstOwnedSome) {
+                } else if (secondOwnedAll) {
                     talentBadge = `${cost}<img src="images/logos/coin.png" alt="" class="talent-cost-coin">`;
+                } else if (secondOwnedSome) {
+                    // At least one selected Slime owns its second Talent but another
+                    // does not: show the price of the ones that are eligible while
+                    // still gating the buy behind full second-Talent ownership.
+                    talentBadge = `${cost}<img src="images/logos/coin.png" alt="" class="talent-cost-coin">`;
+                    talentExtraClass = ' locked';
+                    talentDisabled = ' disabled';
                 } else {
                     talentBadge = '🔒';
                     talentExtraClass = ' locked';
@@ -655,11 +673,27 @@ function getActionButtonsHtml(selectedSlimes) {
                 talentBadge = '🔒';
             }
 
-            const subDisabled = t === 0 ? '' : ' disabled';
+            // Disable the Talent button when there are not enough Village Coins to
+            // buy it (only when it is still purchasable, i.e. not already unlocked).
+            if (cost > 0 && (gameState.villageCoins || 0) < cost) {
+                talentDisabled = ' disabled';
+                if (!talentExtraClass.includes('locked') && !talentExtraClass.includes('unlocked')) {
+                    talentExtraClass += ' no-coins';
+                }
+            }
+
+            // Sub-talents are selectable for the first Talent (t === 0) once it is
+            // owned, and for the second (t === 1) and third (t === 2) Talents once
+            // their prerequisite second Talent is owned by all selected Slimes.
+            // Otherwise they stay disabled.
+            const secondOwnedAll = selectedSlimes.length > 0
+                && selectedSlimes.every(s => secondFlag && s.talents?.[secondFlag]);
+            const subEnabled = t === 0 ? true : (t === 1 || t === 2 ? secondOwnedAll : false);
+            const subDisabled = subEnabled ? '' : ' disabled';
             // A sub-talent is "selected" only when every selected Slime already
             // has the same one enabled (otherwise none are highlighted).
             const sharedSub = (() => {
-                if (t !== 0 || !selectedSlimes.length) return null;
+                if (!subEnabled || !selectedSlimes.length) return null;
                 const first = getSlimeSubTalent(selectedSlimes[0], t);
                 const allSame = selectedSlimes.every(s => getSlimeSubTalent(s, t) === first);
                 return allSame ? first : null;
@@ -674,7 +708,7 @@ function getActionButtonsHtml(selectedSlimes) {
                 ? `images/talents/subtalents/${spec}${elementCap}Subtalents.png`
                 : `images/talents/subtalents/${spec}Subtalents.png`;
             const subtalents = Array.from({ length: SUBTALENTS_PER_TALENT }, (_, s) => {
-                const subDef = TALENT_SUBTALENTS[spec]?.[t]?.[s];
+                const subDef = getSlimeSubTalentColumn(selectedSlimes[0], t)?.[s];
                 const subTitle = subDef ? `${subDef.name}: ${subDef.description}` : `${talentName} Sub-talent ${t + 1}.${s + 1}`;
                 const subSelected = sharedSub === s ? ' selected' : '';
                 return `
@@ -769,6 +803,7 @@ function wireTypeButtons(container) {
                 if (SLIME_TYPES[typeId]) {
                     slime.type = typeId;
                     slime.specialization = newSpec;
+                    ensureSlimeSubTalents(slime);
                 }
             });
 
@@ -797,11 +832,21 @@ function wireTypeButtons(container) {
             else if (talentIndex === 1) flag = getSecondTalentFlag(comboTypeId);
             else flag = thirdDef?.flag;
             if (!flag) return;
-            // Prerequisite: Talents 2 and 3 both require the first Talent.
+            // Per-slime second-talent ownership (used as the Talent-3 prerequisite).
+            const hasSecondTalent = (slime) => {
+                const sSpec = getSlimeSpecialization(slime);
+                if (!sSpec) return false;
+                const typeId = `${elementOf(slime)}${sSpec.charAt(0).toUpperCase()}${sSpec.slice(1)}`;
+                const sFlag = getSecondTalentFlag(typeId);
+                return sFlag ? !!slime.talents?.[sFlag] : false;
+            };
+            // Prerequisites:
+            //  - Talent 2 requires the first Talent.
+            //  - Talent 3 requires BOTH the first Talent AND the second Talent.
             const isEligible = (slime) => {
                 if (!slime.talents?.[flag]) {
                     if (talentIndex === 1) return hasFirstTalent(slime);
-                    if (talentIndex === 2) return hasFirstTalent(slime);
+                    if (talentIndex === 2) return hasFirstTalent(slime) && hasSecondTalent(slime);
                     return true;
                 }
                 return false;
@@ -827,7 +872,7 @@ function wireTypeButtons(container) {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
             const talentIndex = Number(btn.dataset.talent);
-            if (talentIndex !== 0) return;
+            if (talentIndex !== 0 && talentIndex !== 1 && talentIndex !== 2) return;
             const subIndex = Number(btn.dataset.subtalent);
             const selectedSlimes = getSelectedSlimes();
             if (!selectedSlimes.length) return;

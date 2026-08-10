@@ -1,7 +1,11 @@
-------------- SOON ----------------
-- Disable third talent when second isn't bought (common house)
-- Disable talent buttons when not enough coin available (common house)
-- Subtalents
+------------- NOW ----------------
+
+
+------------- LATER ----------------
+can't manually attack with slimes in quick succession. When clicking, the game should check how many slimes are available, and send a random one attack.
+
+
+
 - Bonus levels
 
 ------------- LATER  ----------------

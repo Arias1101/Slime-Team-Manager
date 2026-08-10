@@ -3,7 +3,7 @@
  */
 
 import { activeEnemies, triggerLootDrop, activeGroundLoots, formatLootEffects } from './enemies.js';
-import { gameState, SLIME_TYPES, addScraps, updateBestRoster, saveStateToLocal, calculateSlimeDamage, getScaledEquipmentEffects, getSlimeHitEffects, refreshSlimeMaxHp, getSlimeJumpSprite, getSlimeSpecialization, getSlimeGraftMultipliers, getSlimeSubTalentDef, hasMeltingMend, hasIceBarrier, hasLeech, hasStoneSkin, hasIceBurst, hasCorrosivePoison, hasHeavyStrike, hasSlide } from './state.js';
+import { gameState, SLIME_TYPES, addScraps, updateBestRoster, saveStateToLocal, calculateSlimeDamage, getScaledEquipmentEffects, getSlimeHitEffects, refreshSlimeMaxHp, getSlimeJumpSprite, getSlimeSpecialization, getSlimeGraftMultipliers, getSlimeSubTalentDef, getMeltingMendHotParams, getIceBarrierParams, getLeechParams, getStoneSkinParams, getIceBurstParams, getImmolationParams, getCorrosivePoisonParams, getHeavyStrikeParams, getSlideParams, isMindlessSupport, hasMeltingMend, hasIceBarrier, hasLeech, hasStoneSkin, hasIceBurst, hasImmolation, hasCorrosivePoison, hasHeavyStrike, hasSlide } from './state.js';
 import { updateUI, requestUIRefresh, updateLootHUD, renderSlimeArmy } from './ui.js';
 import { isGamePaused } from './engine.js';
 
@@ -30,25 +30,11 @@ function markUnitFree(unitEl) {
 }
 
 /**
- * DEBUG logging for the Fighter Rebound/Slide jump sequence. Toggle by setting
- * DEBUG_JUMP_ATTACK to true. Each line is prefixed with a [ms] timestamp taken
- * from performance.now() so events can be ordered precisely during a single jump.
- */
-const DEBUG_JUMP_ATTACK = true;
-
-/**
  * During a Slide, the slime performs a 360° spin on its striking (frame 5) pose
  * for this many milliseconds. This tail is added to the slide's travel time so
  * the whole Slide attack reads a touch slower.
  */
 const SLIDE_SPIN_MS = 300;
-
-function jumpLog(tag, msg, ...rest) {
-    if (!DEBUG_JUMP_ATTACK) return;
-    const t = Math.round(performance.now());
-    // eslint-disable-next-line no-console
-    console.log(`[JUMP ${t}] ${tag} - ${msg}`, ...rest);
-}
 
 /**
  * Convert viewport measurements back into the battlefield's native 500px coordinate space.
@@ -170,17 +156,25 @@ export function triggerRandomSlimeAttack(overrideTypeId = null) {
     if (!armyContainer) return;
 
     const slimeUnits = Array.from(armyContainer.querySelectorAll('.slime-unit'));
-    if (slimeUnits.length === 0) return;
+    if (slimeUnits.length === 0) {
+        console.log('[ATTACK] no .slime-unit elements in armyContainer');
+        return;
+    }
 
-    const availableSlimes = slimeUnits.filter(unit => unit.dataset.isAttacking !== 'true' && unit.dataset.isEating !== 'true' && !unit.classList.contains('is-stunned'));
-    if (availableSlimes.length === 0) return;
+    const availableSlimes = slimeUnits.filter(unit => !isUnitBusy(unit) && unit.dataset.isEating !== 'true' && !unit.classList.contains('is-stunned'));
+    console.log(`[ATTACK] units=${slimeUnits.length} available=${availableSlimes.length} paused=${isGamePaused}`);
+    if (availableSlimes.length === 0) {
+        console.log('[ATTACK] NO available slimes (all attacking/eating/stunned) -> click ignored');
+        return;
+    }
 
     const graftNeeded = (gameState.slimes || []).some(slime => slime.hp > 0 && slime.hp < slime.maxHp * 0.75);
     const graftSupportEl = graftNeeded ? availableSlimes.find(unit => {
         const slime = (gameState.slimes || []).find(candidate => String(candidate.id) === String(unit.dataset.slimeId));
-        return slime?.talents?.graft && getSlimeSpecialization(slime) === 'support' && slime.hp >= slime.maxHp * 0.5;
+        return slime?.talents?.graft && !isMindlessSupport(slime) && getSlimeSpecialization(slime) === 'support' && slime.hp >= slime.maxHp * 0.5;
     }) : null;
     const randomSlimeEl = graftSupportEl || availableSlimes[Math.floor(Math.random() * availableSlimes.length)];
+    console.log(`[ATTACK] chosen slimeId=${randomSlimeEl.dataset.slimeId} graft=${Boolean(graftSupportEl)}`);
 
     // Read exact slime object from gameState.slimes array using slimeId dataset
     const rawSlimeId = randomSlimeEl.dataset.slimeId;
@@ -195,7 +189,7 @@ export function triggerRandomSlimeAttack(overrideTypeId = null) {
  * Executes a 60 FPS parabolic jump attack animation dynamically targeting the closest enemy
  */
 function trySupportGraft(unitEl, support) {
-    if (!support?.talents?.graft || getSlimeSpecialization(support) !== 'support' || support.hp < support.maxHp * 0.5) return false;
+    if (!support?.talents?.graft || isMindlessSupport(support) || getSlimeSpecialization(support) !== 'support' || support.hp < support.maxHp * 0.5) return false;
     const target = (gameState.slimes || []).filter(s => s.id !== support.id && getSlimeSpecialization(s) !== 'support' && s.hp > 0 && s.hp < s.maxHp * .75).sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0];
     if (!target) return false;
 
@@ -223,7 +217,7 @@ function trySupportGraft(unitEl, support) {
         // intended healing. This roll MUST happen before any support talents are
         // applied, since Melting Mend / Ice Barrier / Stone Skin all scale off the
         // (possibly crit-doubled) intended healing.
-        const graftCritChance = liveSupport.critChance || 0;
+        const graftCritChance = (gameState.disableHealCrit ? 0 : (liveSupport.critChance || 0));
         let isHealCrit = false;
         let isHealMegaCrit = false;
         let healCritMultiplier = 1;
@@ -241,21 +235,27 @@ function trySupportGraft(unitEl, support) {
         const intendedHealing = sacrificedAmount * 2 * graftMult.heal * healCritMultiplier;
         const restoredAmount = Math.min(liveTarget.maxHp - liveTarget.hp, intendedHealing);
         const overhealAmount = Math.max(0, intendedHealing - restoredAmount);
-        const overhealRecovery = Math.round(overhealAmount / 2);
+        // Half of the overflow is refunded to the grafting slime (graft doubles the
+        // sacrificed HP into healing). The refund is capped to the original sacrificed
+        // amount so crits/mega-crits can never return more HP than was spent.
+        const overhealRecovery = Math.min(sacrificedAmount, Math.round(overhealAmount / 2));
         liveSupport.hp = Math.min(liveSupport.maxHp, Math.max(1, liveSupport.hp - sacrificedAmount) + overhealRecovery);
         liveTarget.hp += restoredAmount;
 
         // Melting Mend (Fire Support second talent): the grafted ally gains a
-        // "Heal on Time" status that restores 5% of the INTENDED (theoretical)
-        // healing every 0.5s. The duration is always exactly HOT_DURATION (3s) and
-        // reapplying RESETS the timer (it never extends). Only the per-tick heal
-        // value accumulates across repeated grafts. Ticks can show +0 when rounding down.
+        // "Heal on Time" status that restores a fraction of the INTENDED (theoretical)
+        // healing every 0.5s. The base is 5% per tick over 3s (30% total). Sub-talents
+        // adjust this via getMeltingMendHotParams: slowMend extends duration to 6s,
+        // strongMend raises the per-tick fraction (50% total). Reapplying RESETS the
+        // timer (it never extends). Only the per-tick heal value accumulates across
+        // repeated grafts. Ticks can show +0 when rounding down.
         if (hasMeltingMend(liveSupport)) {
             if (!liveTarget.effects) {
                 liveTarget.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0, stunTimer: 0 };
             }
-            const perTick = Math.max(0, Math.round(intendedHealing * 0.05));
-            const HOT_DURATION = 3.0;
+            const hotParams = getMeltingMendHotParams(liveSupport);
+            const perTick = Math.max(0, Math.round(intendedHealing * hotParams.perTickFraction));
+            const HOT_DURATION = hotParams.duration;
             // Timer resets to a fixed 3s (never stacks in length).
             liveTarget.effects.healOnTimeTimer = HOT_DURATION;
             liveTarget.effects.healOnTimeTickTimer = (liveTarget.effects.healOnTimeTickTimer || 0);
@@ -271,23 +271,44 @@ function trySupportGraft(unitEl, support) {
         // temporary HP is fully depleted by damage. Stackable: repeated grafts add 20%
         // of the heal. Total temporary HP is capped at 60% of the target's Max HP.
         if (hasIceBarrier(liveSupport)) {
-            if (!liveTarget.effects) {
-                liveTarget.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0, stunTimer: 0 };
+            const iceBarrierParams = getIceBarrierParams(liveSupport);
+            const applyBarrier = (target) => {
+                if (!target || target.hp <= 0) return;
+                if (!target.effects) {
+                    target.effects = { burnTimer: 0, burnTickTimer: 0, burnStacks: 0, poisonTimer: 0, poisonTickTimer: 0, poisonStacks: 0, stunTimer: 0 };
+                }
+                const bonus = Math.round(intendedHealing * iceBarrierParams.bonusMultiplier);
+                const MAX_BARRIER_BONUS = Math.round(target.maxHp * 0.60);
+                const current = target.effects.iceBarrierBonusHp || 0;
+                target.effects.iceBarrierBonusHp = Math.min(MAX_BARRIER_BONUS, current + bonus);
+                target.effects.iceBarrierTimer = 0;
+            };
+            applyBarrier(liveTarget);
+            // doubleBarrier: also grant a second barrier (same amount) to a random
+            // OTHER alive tank.
+            if (iceBarrierParams.extraBarrierToRandomTank) {
+                const tanks = (gameState.slimes || []).filter(s =>
+                    s.hp > 0 && s !== liveTarget && getSlimeSpecialization(s) === 'tank');
+                if (tanks.length) {
+                    const randomTank = tanks[Math.floor(Math.random() * tanks.length)];
+                    applyBarrier(randomTank);
+                }
             }
-            const bonusHp = Math.round(intendedHealing * 0.20);
-            const MAX_BARRIER_BONUS = Math.round(liveTarget.maxHp * 0.60);
-            const currentBonus = liveTarget.effects.iceBarrierBonusHp || 0;
-            liveTarget.effects.iceBarrierBonusHp = Math.min(MAX_BARRIER_BONUS, currentBonus + bonusHp);
-            liveTarget.effects.iceBarrierTimer = 0;
         }
 
-        // Stone Skin (Stone Support second talent): the grafted ally gains a "reduction"
-        // pool equal to 50% of the heal provided. The next instance of direct damage is
-        // reduced by the reduction amount (down to 0), then the pool resets to 0. It is
-        // stackable across multiple Stone Support grafts on the same target.
+        // Stone Skin (Stone Support second talent): the grafted ally gains a damage
+        // reduction on the next direct hit. Base is a flat pool equal to 50% of the
+        // heal (stackable). Sub-talents change this via getStoneSkinParams:
+        // emeraldSkin doubles the flat pool; standardization grants a 75% damage
+        // reduction on the next direct hit regardless of the graft/heal amount.
         if (hasStoneSkin(liveSupport)) {
-            const reductionGain = Math.round(intendedHealing * 0.5);
-            liveTarget.reduction = (liveTarget.reduction || 0) + reductionGain;
+            const stoneParams = getStoneSkinParams(liveSupport);
+            if (stoneParams.mode === 'pct') {
+                liveTarget.reductionPct = Math.max(liveTarget.reductionPct || 0, stoneParams.pct);
+            } else {
+                const reductionGain = Math.round(intendedHealing * stoneParams.flatMultiplier);
+                liveTarget.reduction = (liveTarget.reduction || 0) + reductionGain;
+            }
         }
 
         const targetEl = Array.from(document.querySelectorAll('.slime-unit')).find(el => String(el.dataset.slimeId) === String(liveTarget.id));
@@ -479,19 +500,22 @@ export function playResurrectionAnimations(resurrectors, revivedSlimes) {
     });
 }
 function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
-    if (trySupportGraft(unitEl, slimeObj)) return;
+    if (trySupportGraft(unitEl, slimeObj)) {
+        console.log(`[ATTACK] ${unitEl.dataset.slimeId}: support graft consumed the click (no jump)`);
+        return;
+    }
     // Never start an attack on a unit that is already mid-attack or eating loot.
-    if (isUnitBusy(unitEl)) return;
+    if (isUnitBusy(unitEl)) {
+        console.log(`[ATTACK] ${unitEl.dataset.slimeId}: unit busy (already attacking/eating) -> jump skipped`);
+        return;
+    }
     markUnitBusy(unitEl);
+    console.log(`[ATTACK] ${unitEl.dataset.slimeId}: jump attack started`);
     const slimeConfig = SLIME_TYPES[typeId] || SLIME_TYPES.base;
     const imgEl = unitEl.querySelector('.slime-img');
     const shadowEl = unitEl.querySelector('.slime-shadow-sm');
     if (!imgEl) return;
 
-    // Stable per-call tag so a single Fighter's chained Rebound/Slide sequence
-    // can be followed across the requestAnimationFrame calls in the logs.
-    const jumpTag = `s${slimeObj?.id ?? unitEl.dataset.slimeId ?? '?'}`;
-    jumpLog(jumpTag, 'JUMP START', { typeId, spec: getSlimeSpecialization(slimeObj), rebound: !!slimeObj?.talents?.rebound, slide: hasSlide(slimeObj) });
     unitEl.style.zIndex = '500';
     imgEl.style.animation = 'none';
     imgEl.style.transition = 'none';
@@ -546,7 +570,6 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
     // (they can still alternate indefinitely).
     let isSliding = false;
     let lastSpecialMove = null;
-    let lastLoggedProgress = -1;
 
     function animateJumpFrame(now) {
         // While the game is paused, freeze the jump animation in place (and shift
@@ -629,17 +652,7 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
         imgEl.src = getSlimeJumpSprite(slimeObj);
         imgEl.style.objectPosition = `${-(spriteFrame - 1) * 19}px 0px`;
 
-        if (DEBUG_JUMP_ATTACK && progress >= lastLoggedProgress + 0.25) {
-            lastLoggedProgress = progress;
-            jumpLog(jumpTag, 'frame', {
-                progress: +progress.toFixed(2),
-                phase: isSliding ? 'slide' : (lastSpecialMove === 'rebound' ? 'rebound' : 'jump'),
-                x: +(baseX + maxDx * progress).toFixed(1),
-                frame: spriteFrame
-            });
-        }
-
-        if (progress >= impactThreshold && !hasDealtDamage) {
+        if (progress >= 1 && !hasDealtDamage) {
             hasDealtDamage = true;
             let currentDamage = slimeObj ? calculateSlimeDamage(slimeObj) : (gameState.slimeDamage || 1);
             let isCrit = false;
@@ -663,22 +676,14 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
                 }
             }
 
-            // Momentum (Rebound sub-talent): the hit landed by a Rebound deals +50%.
+            // Momentum (Rebound sub-talent): the hit landed by a Rebound deals +20%.
             if (lastSpecialMove === 'rebound' && getSlimeSubTalentDef(slimeObj, 0)?.id === 'momentum') {
-                currentDamage = currentDamage * 1.5;
+                currentDamage = currentDamage * 1.2;
             }
 
-            dealTargetEnemyDamage(targetEnemy, currentDamage, slimeConfig, isCrit, slimeObj, isMegaCrit);
+            dealTargetEnemyDamage(targetEnemy, currentDamage, slimeConfig, isCrit, slimeObj, isMegaCrit, lastSpecialMove);
 
             const phase = isSliding ? 'SLIDE' : (lastSpecialMove === 'rebound' ? 'REBOUND' : 'JUMP');
-            jumpLog(jumpTag, `IMPACT (${phase})`, {
-                progress: +progress.toFixed(2),
-                targetEnemyX: targetEnemy?.x,
-                dx: +dx.toFixed(1),
-                isSliding,
-                lastSpecialMove,
-                damage: Math.round(currentDamage)
-            });
             // If no target enemies are in range (x <= 450), slime performs jump animation without dealing damage
 
             // Fighter follow-up moves. Rebound rejumps at the second closest target;
@@ -692,13 +697,13 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
 
             let followUp = null;
             if (canRebound) {
-                const reboundTarget = pickReboundTarget(slimeObj, currentArmyX);
+                const reboundTarget = pickReboundTarget(slimeObj, currentArmyX, targetEnemy);
                 if (reboundTarget && Math.random() < 0.5) {
                     followUp = { move: 'rebound', target: reboundTarget };
                 }
             }
             if (!followUp && canSlide) {
-                const slideTarget = pickSlideTarget(currentArmyX);
+                const slideTarget = pickSlideTarget(currentArmyX, slimeObj, targetEnemy);
                 // Don't Slide into the enemy we just hit — the same target can't be
                 // attacked twice in a row, and Slide must reach a further one.
                 if (slideTarget && slideTarget !== targetEnemy && Math.random() < 0.5) {
@@ -731,15 +736,6 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
                     String.fromCodePoint(isSlideMove ? 0x21E2 : 0x21AA),
                     isSlideMove ? 'slide-text' : 'rebound-text'
                 );
-                jumpLog(jumpTag, `FOLLOW-UP -> ${followUp.move.toUpperCase()}`, {
-                    fromX: +dx.toFixed(1),
-                    toEnemyX: followUp.target?.x,
-                    maxDx: +trajectory.maxDx.toFixed(1),
-                    duration: trajectory.jumpDuration,
-                    nextPhaseIsSlide: isSlideMove
-                });
-            } else {
-                jumpLog(jumpTag, 'NO FOLLOW-UP (end of chain)', { canRebound, canSlide, lastSpecialMove });
             }
         }
 
@@ -753,7 +749,6 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
                 const finalDx = baseX + maxDx;
                 barrierEl.style.transform = `translate(calc(-50% + ${finalDx}px), -50%)`;
             }
-            jumpLog(jumpTag, 'LEG COMPLETE -> scheduling return walk', { isSliding, finalX: +(baseX + maxDx).toFixed(1), lastSpecialMove });
             setTimeout(() => {
                 // Return over the TOTAL travelled distance (baseX accumulates every
                 // chained Rebound/Slide leg), not just the last leg's maxDx.
@@ -791,11 +786,32 @@ export function applyHitEffectsToEnemy(enemy, hitEffects, sourceSlime = null, is
             : hitEffects.poison;
         effects.poisonTimer = 5.0;
     }
+    // Immolation (Fire Fighter) "Oil Combustion" sub-talent: convert the target's
+    // current poison Stacks into burn Stacks on hit (poison is cleared, burn added).
+    if (sourceSlime && hasImmolation(sourceSlime) && getImmolationParams(sourceSlime).convertPoisonToBurn) {
+        const converted = effects.poisonStacks || 0;
+        if (converted > 0) {
+            effects.burnStacks = effects.burnTimer > 0
+                ? (effects.burnStacks || 0) + converted
+                : converted;
+            effects.burnTimer = 5.0;
+            effects.poisonStacks = 0;
+            effects.poisonTimer = 0;
+        }
+    }
     if (hitEffects.freeze > 0 && !isControlImmune) {
         effects.freezeTimer = 1 * hitEffects.freeze;
-        const baseFreeze = hasIceBurst(sourceSlime)
-            ? ((effects.burnStacks || 0) + (effects.poisonStacks || 0))
-            : 5;
+        let baseFreeze = 5;
+        if (hasIceBurst(sourceSlime)) {
+            const iceBurstParams = getIceBurstParams(sourceSlime);
+            if (iceBurstParams.mode === 'burn') {
+                baseFreeze = (effects.burnStacks || 0) * iceBurstParams.multiplier;
+            } else if (iceBurstParams.mode === 'poison') {
+                baseFreeze = (effects.poisonStacks || 0) * iceBurstParams.multiplier;
+            } else {
+                baseFreeze = ((effects.burnStacks || 0) + (effects.poisonStacks || 0));
+            }
+        }
         const freezeDmg = baseFreeze * hitEffects.freeze;
         freezeDmgDealt = Math.min(enemy.hp, freezeDmg);
         if (freezeDmgDealt > 0) {
@@ -805,8 +821,13 @@ export function applyHitEffectsToEnemy(enemy, hitEffects, sourceSlime = null, is
         }
     }
     if (hitEffects.stun > 0 && !isControlImmune) {
-        // Stun fully disables the enemy's attack for the duration.
-        const stunDuration = (SLIME_TYPES[sourceSlime?.type]?.stunDuration || 0.5) * hitEffects.stun;
+        // Stun fully disables the enemy's attack for the duration. Heavy Strike
+        // "Headbutt" sub-talent doubles the applied Stun.
+        let stunMultiplier = 1;
+        if (sourceSlime && hasHeavyStrike(sourceSlime)) {
+            stunMultiplier = getHeavyStrikeParams(sourceSlime).stunMultiplier;
+        }
+        const stunDuration = (SLIME_TYPES[sourceSlime?.type]?.stunDuration || 0.3) * hitEffects.stun * stunMultiplier;
         effects.stunTimer = Math.max(effects.stunTimer || 0, stunDuration);
         showFloatingStatusText(enemy, String.fromCodePoint(0x1F4AB), 'stun-text');
     }
@@ -816,7 +837,7 @@ export function applyHitEffectsToEnemy(enemy, hitEffects, sourceSlime = null, is
 /**
  * Deal damage & apply elemental status effects (Fire Burn / Frost Freeze) to target enemy.
  */
-function dealTargetEnemyDamage(targetEnemy, damageAmount, slimeConfig, isCrit = false, slimeObj = null, isMegaCrit = false) {
+function dealTargetEnemyDamage(targetEnemy, damageAmount, slimeConfig, isCrit = false, slimeObj = null, isMegaCrit = false, move = 'jump') {
     // If the jump attack was launched without a target in range, deal no damage
     if (!targetEnemy) return;
 
@@ -837,30 +858,49 @@ function dealTargetEnemyDamage(targetEnemy, damageAmount, slimeConfig, isCrit = 
 
     // Apply damage to currentTarget (excess damage beyond currentTarget.hp is lost!)
     // Corrosive Poison (Poison Fighter second talent): direct damage is boosted by
-    // the target's current poison stacks as a percentage (e.g. 10 stacks => +10%).
+    // a fraction of the target's current stacks as a percentage (base: 10% of poison
+    // stacks, e.g. 50 poison => +5% damage).
     let effectiveDamage = damageAmount;
     if (slimeObj && hasCorrosivePoison(slimeObj) && currentTarget.effects) {
+        const corrosiveParams = getCorrosivePoisonParams(slimeObj);
         const poisonStacks = currentTarget.effects.poisonStacks || 0;
-        if (poisonStacks > 0) effectiveDamage = effectiveDamage * (1 + poisonStacks / 100);
+        const burnStacks = currentTarget.effects.burnStacks || 0;
+        const bonusPct = (poisonStacks * corrosiveParams.poisonPct + burnStacks * corrosiveParams.burnPct) / 100;
+        if (bonusPct > 0) effectiveDamage = effectiveDamage * (1 + bonusPct);
+    }
+    // Cheap Shot (Slide sub-talent): the Slide hit deals +20% damage. Only applies
+    // when this hit was dealt by a Slide follow-up (move === 'slide').
+    if (slimeObj && move === 'slide' && getSlideParams(slimeObj).slideDamagePct > 0) {
+        effectiveDamage = effectiveDamage * (1 + getSlideParams(slimeObj).slideDamagePct / 100);
+    }
+    // Heavy Strike (Stone Fighter second talent): "Penetration" sub-talent adds a
+    // +20% damage bonus (applied here, before the single damage resolution below).
+    if (slimeObj && hasHeavyStrike(slimeObj)) {
+        const heavyParams = getHeavyStrikeParams(slimeObj);
+        if (heavyParams.damagePct > 0) effectiveDamage = effectiveDamage * (1 + heavyParams.damagePct / 100);
     }
     const damageToApply = Math.min(currentTarget.hp, Math.round(effectiveDamage));
 
     currentTarget.hp -= damageToApply;
 
-    // Heavy Strike (Stone Fighter second talent): knock the target back 10px to the
-    // right and force it to re-approach its targetX before it can attack again.
+    // Heavy Strike (Stone Fighter second talent): knock the target back and force
+    // it to re-approach its targetX before it can attack again. Sub-talents can
+    // halve/remove the pushback ("Penetration" -> 5px, "Headbutt" -> none).
     if (slimeObj && hasHeavyStrike(slimeObj) && currentTarget.type !== 'rush') {
-        currentTarget.x = Math.min(450, currentTarget.x + 10);
-        // Re-engage the walking state so the movement phase makes it walk back to
-        // targetX (and only resumes attacking once it arrives).
-        currentTarget.state = 'walking';
-        currentTarget.attackTimer = 0;
-        if (currentTarget.el) {
-            currentTarget.el.style.left = `${currentTarget.x}px`;
-            currentTarget.el.classList.remove('enemy-attacking', 'enemy-tanking', 'enemy-range', 'enemy-support');
-            currentTarget.el.classList.add('enemy-walking');
+        const heavyParams = getHeavyStrikeParams(slimeObj);
+        if (heavyParams.pushbackPx > 0) {
+            currentTarget.x = Math.min(450, currentTarget.x + heavyParams.pushbackPx);
+            // Re-engage the walking state so the movement phase makes it walk back to
+            // targetX (and only resumes attacking once it arrives).
+            currentTarget.state = 'walking';
+            currentTarget.attackTimer = 0;
+            if (currentTarget.el) {
+                currentTarget.el.style.left = `${currentTarget.x}px`;
+                currentTarget.el.classList.remove('enemy-attacking', 'enemy-tanking', 'enemy-range', 'enemy-support');
+                currentTarget.el.classList.add('enemy-walking');
+            }
+            showFloatingStatusText(currentTarget, String.fromCodePoint(0x1F4A5), 'pushback-text');
         }
-        showFloatingStatusText(currentTarget, String.fromCodePoint(0x1F4A5), 'pushback-text');
     }
 
     // Pop floating pixel art damage number on currentTarget (golden glowing crit-dmg for critical hits)
@@ -880,14 +920,28 @@ function dealTargetEnemyDamage(targetEnemy, damageAmount, slimeConfig, isCrit = 
     const isControlImmune = currentTarget.typeId === 'death';
     const sourceSlime = slimeObj || { type: slimeConfig?.id || 'base', equipment: [] };
     const freezeDmgDealt = applyHitEffectsToEnemy(currentTarget, getSlimeHitEffects(sourceSlime), sourceSlime, isControlImmune);
-    // direct damage it inflicts (main hit + freeze bonus damage), up to its Max HP.
+    // direct damage it inflicts (main hit + freeze bonus damage), up to the target's Max HP.
     if (slimeObj && hasLeech(slimeObj)) {
-        const leechAmount = ((damageToApply || 0) + (typeof freezeDmgDealt === 'number' ? freezeDmgDealt : 0)) * 0.5;
-        if (leechAmount > 0 && slimeObj.hp > 0) {
-            const healed = Math.min(slimeObj.maxHp - slimeObj.hp, leechAmount);
-            slimeObj.hp += healed;
-            const leechUnit = document.querySelector(`.slime-unit[data-slime-id="${slimeObj.id}"]`);
-            if (leechUnit) showFloatingHealingNumberFromUnit(leechUnit, healed);
+        const leechParams = getLeechParams(slimeObj);
+        const leechAmount = ((damageToApply || 0) + (typeof freezeDmgDealt === 'number' ? freezeDmgDealt : 0)) * leechParams.multiplier;
+        if (leechAmount > 0) {
+            // mindlessSupport: redirect the heal to the lowest-HP living ally
+            // (the leeching slime itself excluded) instead of self.
+            let healTarget = slimeObj;
+            if (leechParams.healLowestAlly) {
+                const allies = (gameState.slimes || []).filter(s => s !== slimeObj && s.hp > 0 && s.hp < s.maxHp);
+                let lowest = null;
+                for (const a of allies) {
+                    if (!lowest || (a.hp / a.maxHp) < (lowest.hp / lowest.maxHp)) lowest = a;
+                }
+                if (lowest) healTarget = lowest;
+            }
+            if (healTarget.hp > 0) {
+                const healed = Math.min(healTarget.maxHp - healTarget.hp, leechAmount);
+                healTarget.hp += healed;
+                const healUnit = document.querySelector(`.slime-unit[data-slime-id="${healTarget.id}"]`);
+                if (healUnit) showFloatingHealingNumberFromUnit(healUnit, healed);
+            }
         }
     }
     // Visual WHITE hit flash on currentTarget sprite
@@ -973,18 +1027,19 @@ function dealImpactDamage(impactDx, damage, slimeConfig) {
  * a Rebound come back leftward onto a nearer enemy — it ranks every valid enemy
  * by distance from refX (smallest first) and returns the second one.
  */
-function pickReboundTarget(slimeObj, refX = 20) {
+function pickReboundTarget(slimeObj, refX = 20, excludeTarget = null) {
     const candidates = activeEnemies
-        .filter(e => e.hp > 0 && e.x >= 90 && e.x <= 450)
+        .filter(e => e.hp > 0 && e.x >= 90 && e.x <= 450 && e !== excludeTarget)
         .map(e => ({ e, d: Math.abs(e.x - refX) }))
         .sort((a, b) => a.d - b.d)
         .map(o => o.e);
-    if (candidates.length < 2) return null;
+    if (candidates.length < 1) return null;
     if (getSlimeSubTalentDef(slimeObj, 0)?.id === 'chaos') {
-        // Chaos: hit a random valid enemy instead of the second closest.
+        // Chaos: hit a random valid enemy (never the one just struck) instead of
+        // the second closest.
         return candidates[Math.floor(Math.random() * candidates.length)];
     }
-    return candidates[1];
+    return candidates[1] || candidates[0];
 }
 
 /**
@@ -992,11 +1047,15 @@ function pickReboundTarget(slimeObj, refX = 20) {
  * Slide reaches into the backlane but never past X 420, and it must actually
  * move forward, so anything at or behind the slime's current position is skipped.
  */
-function pickSlideTarget(refX) {
+function pickSlideTarget(refX, slimeObj, excludeTarget = null) {
     const candidates = activeEnemies
-        .filter(e => e.hp > 0 && e.x >= 90 && e.x <= 420 && e.x > refX)
-        .sort((a, b) => b.x - a.x);
-    return candidates[0] || null;
+        .filter(e => e.hp > 0 && e.x >= 90 && e.x <= 420 && e.x > refX && e !== excludeTarget);
+    if (candidates.length === 0) return null;
+    // Chaos (Slide sub-talent): target a random valid enemy instead of the furthest.
+    if (slimeObj && getSlideParams(slimeObj).randomTarget) {
+        return candidates[Math.floor(Math.random() * candidates.length)];
+    }
+    return candidates.sort((a, b) => b.x - a.x)[0];
 }
 
 /**
@@ -1095,8 +1154,6 @@ function dispatchSingleSlimeToEat() {
     if (slimeUnits.length === 0) return;
 
     const unitEl = slimeUnits[Math.floor(Math.random() * slimeUnits.length)];
-    const lootTag = `s${unitEl.dataset.slimeId ?? '?'}`;
-    jumpLog(lootTag, 'LOOT DISPATCH', { loots: availableLoots.length, isAttacking: unitEl.dataset.isAttacking, isEating: unitEl.dataset.isEating, candidates: slimeUnits.length });
     unitEl.dataset.isEating = 'true';
     markUnitBusy(unitEl);
 
@@ -1155,7 +1212,6 @@ function dispatchSingleSlimeToEat() {
 
     const slideDuration = Math.round(Math.max(450, distance * 3.8));
     const startSlideTime = performance.now();
-    jumpLog(lootTag, 'LOOT FORWARD SLIDE START', { distance: +distance.toFixed(1), duration: slideDuration, target: { x: targetLoot.x, y: targetLoot.y } });
 
     // --- PHASE 1: 60 FPS Forward Slide to Loot ---
     function animateForwardSlide(now) {
@@ -1175,7 +1231,6 @@ function dispatchSingleSlimeToEat() {
         if (progress < 1.0) {
             requestAnimationFrame(animateForwardSlide);
         } else {
-            jumpLog(lootTag, 'LOOT REACHED -> eating');
             eatLootAndReturn();
         }
     }
@@ -1259,7 +1314,6 @@ function dispatchSingleSlimeToEat() {
             // --- PHASE 2: 60 FPS Return Walk back to Pyramid ---
             const returnDuration = Math.round(Math.max(500, distance * 4.0));
             const startReturnTime = performance.now();
-            jumpLog(lootTag, 'LOOT RETURN WALK START', { duration: returnDuration });
 
             function animateReturnWalk(now) {
                 const elapsed = now - startReturnTime;
@@ -1277,7 +1331,6 @@ function dispatchSingleSlimeToEat() {
                 if (progress < 1.0) {
                     requestAnimationFrame(animateReturnWalk);
                 } else {
-                    jumpLog(lootTag, 'LOOT RETURNED -> idle reset');
                     // Return complete! Clean up & reset idle state with sprite 1
                     imgEl.src = getSlimeJumpSprite(slimeObj);
                     imgEl.style.objectPosition = '0px 0px';
