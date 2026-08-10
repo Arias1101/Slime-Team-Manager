@@ -1,4 +1,5 @@
 Patch Notes:
+v0.26
 
 v0.25
 - Implemented Bulk upgrade buy with Shift+Clic (buys 10).
