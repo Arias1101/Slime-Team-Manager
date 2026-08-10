@@ -589,6 +589,42 @@ body.modal-open {
     margin: 0 auto;
 }
 
+/* Decorative village fountain: plays a 4-frame 19x19 sprite sheet
+   (fountain.png, 76x19) while the player is in the village intermission,
+   and is hidden once a run starts. Rendered with the same object-fit/position
+   sprite-sheet technique as .slime-img, at the original 19x19 proportions. */
+.village-fountain {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(calc(-50% - 2px), calc(-50% - 30px));
+    width: 19px;
+    height: 19px;
+    pointer-events: none;
+    z-index: 1;
+}
+.village-fountain img {
+    width: 19px;
+    height: 19px;
+    object-fit: none;
+    object-position: 0px 0px;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    image-rendering: -webkit-optimize-contrast;
+    animation: fountainLoop 0.4s infinite steps(1), fountainWobble 1.6s ease-in-out infinite;
+}
+@keyframes fountainLoop {
+    0%   { object-position: 0px 0px; }
+    25%  { object-position: -19px 0px; }
+    50%  { object-position: -38px 0px; }
+    75%  { object-position: -57px 0px; }
+    100% { object-position: 0px 0px; }
+}
+@keyframes fountainWobble {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-2px); }
+}
+
 .battlefield-overlay {
     flex: 1;
     display: grid;
@@ -4659,7 +4695,7 @@ body.new-game-plus .village-buildings {
 }
 
 .village-door-common-house {
-    left: calc(65% - 95px);
+    left: calc(65% - 75px);
     top: calc(17% + 8px);
 }
 

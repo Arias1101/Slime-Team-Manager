@@ -32,9 +32,21 @@ let activeSlimeSheetTab = 'stats';
 let isRainAnimating = false;
 
 /**
+ * Show the decorative village fountain (4-frame sprite loop) only while the
+ * player is in the village intermission; hide it once a run starts.
+ */
+function updateVillageFountain() {
+    const fountainEl = document.getElementById('villageFountain');
+    if (!fountainEl) return;
+    const inVillage = gameState.isInNewGamePlus === true;
+    fountainEl.classList.toggle('hidden', !inVillage);
+}
+
+/**
  * Main UI Update Function
  */
 export function updateUI() {
+    updateVillageFountain();
     if (scrapsCountEl) scrapsCountEl.textContent = gameState.scraps || 0;
     if (scoreCountEl) scoreCountEl.textContent = gameState.score || 0;
     if (waveCountEl) waveCountEl.textContent = gameState.currentWave || 1;

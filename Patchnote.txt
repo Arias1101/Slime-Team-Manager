@@ -1,4 +1,7 @@
 Patch Notes (do not edit this I handle it manually):
+v0.27
+- Added the rotating wet Slime.
+
 v0.26
 - Removed Critical Heal (for now, since they were a bit OP).
 - Fixed issue allowing to unlock third talent when second isn't.
