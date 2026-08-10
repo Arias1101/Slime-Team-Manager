@@ -1,14 +1,10 @@
 Patch Notes:
-v0.27
-- Rebound and Slide chances set to 50% each; tooltips updated to match.
-- Fixed Slide/Rebound travel being capped at 20px, so they now reach the target enemy.
-
-v0.26
-- Implemented third Fighter talent: "Slide".
-- Fixed "Momentum" sub-talent not actually boosting Rebound damage.
-- Fixed return walk duration after a Rebound not accounting for the full travelled distance.
 
 v0.25
+- Increased Rebound Talent chances to 50%.
+- Fixed Rebound travel being capped at 20px so it now reaches target enemy consistantly.
+- Implemented third Fighter talent: "Slide".
+- Fixed "Momentum" sub-talent not actually boosting Rebound damage.
 - Implemented third Support talent: "Resurection".
 - Fixed issue when returning to village when game is paused.
 

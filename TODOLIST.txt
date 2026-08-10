@@ -1,18 +1,13 @@
 ------------- SOON ----------------
+Lets implement third Tank Talent.
+
+Interception: Intercept attacks targeting Tanks under 50% HP.
+
+In practice: When a Tank Slime under 50% hp recieves damage, look if there is a Tank with the Interception talent that have more than 50% HP, and deal damage to that new target instead.
+
+For now, add no animation, no floating text of any kind.
 
 ------------- LATER  ----------------
-3d SupportTalent (Resurrection): DONE
-At the end of Wave, if another Slime is dead and this Support has >80% HP, it loses 80% of its HP to Resurrect one dead Slime at random (revived at half the sacrificed HP).
-
-3d FighterTalent (Slide): DONE
-10% chance to Slide to attack the furthest ennemy (max X 420) after an attack. Slide and Rebound cannot trigger twice in a row, but can alternate.
-
-3d TankTalent:
-Interception: If at more than 50% PV, and another tank takes damage while under 50% PV, intercept it.
-
-- Alchemist Upgrade: Increase Base Effect of Slime Types
-- Include status priority on auto equip.
-
 - Trophies with Coin rewards:
 Ideas:
 Run, You Fools: Beat the Mage.

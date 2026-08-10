@@ -8,6 +8,28 @@ import { updateUI, requestUIRefresh, updateLootHUD, renderSlimeArmy } from './ui
 import { isGamePaused } from './engine.js';
 
 /**
+ * Synchronous mutual-exclusion lock over Slime units. A Slime may be either
+ * attacking (jump/Rebound/Slide) or eating loot, but never both at once — and a
+ * unit that is busy must not be picked up by the other system. The dataset
+ * `isAttacking`/`isEating` flags can race (a loot dispatch can read a unit as
+ * "free" in the same tick its attack starts), so we track liveness here
+ * synchronously at dispatch time to make the exclusion bulletproof.
+ */
+const busySlimeIds = new Set();
+function isUnitBusy(unitEl) {
+    const id = unitEl?.dataset?.slimeId;
+    return Boolean(id) && busySlimeIds.has(id);
+}
+function markUnitBusy(unitEl) {
+    const id = unitEl?.dataset?.slimeId;
+    if (id) busySlimeIds.add(id);
+}
+function markUnitFree(unitEl) {
+    const id = unitEl?.dataset?.slimeId;
+    if (id) busySlimeIds.delete(id);
+}
+
+/**
  * DEBUG logging for the Fighter Rebound/Slide jump sequence. Toggle by setting
  * DEBUG_JUMP_ATTACK to true. Each line is prefixed with a [ms] timestamp taken
  * from performance.now() so events can be ordered precisely during a single jump.
@@ -450,6 +472,9 @@ export function playResurrectionAnimations(resurrectors, revivedSlimes) {
 }
 function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
     if (trySupportGraft(unitEl, slimeObj)) return;
+    // Never start an attack on a unit that is already mid-attack or eating loot.
+    if (isUnitBusy(unitEl)) return;
+    markUnitBusy(unitEl);
     const slimeConfig = SLIME_TYPES[typeId] || SLIME_TYPES.base;
     const imgEl = unitEl.querySelector('.slime-img');
     const shadowEl = unitEl.querySelector('.slime-shadow-sm');
@@ -605,6 +630,8 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
                 currentDamage = currentDamage * 1.5;
             }
 
+            dealTargetEnemyDamage(targetEnemy, currentDamage, slimeConfig, isCrit, slimeObj, isMegaCrit);
+
             const phase = isSliding ? 'SLIDE' : (lastSpecialMove === 'rebound' ? 'REBOUND' : 'JUMP');
             jumpLog(jumpTag, `IMPACT (${phase})`, {
                 progress: +progress.toFixed(2),
@@ -614,8 +641,6 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
                 lastSpecialMove,
                 damage: Math.round(currentDamage)
             });
-
-            dealTargetEnemyDamage(targetEnemy, currentDamage, slimeConfig, isCrit, slimeObj, isMegaCrit);
             // If no target enemies are in range (x <= 450), slime performs jump animation without dealing damage
 
             // Fighter follow-up moves. Rebound rejumps at the second closest target;
@@ -886,6 +911,7 @@ function startSmoothReturnWalk(unitEl, imgEl, shadowEl, slimeConfig, maxDx = 100
         const originalZ = unitEl.dataset.originalZ || '1';
         unitEl.style.zIndex = originalZ;
         unitEl.dataset.isAttacking = 'false';
+        markUnitFree(unitEl);
 
         imgEl.style.animation = '';
     }, returnDuration);
@@ -1026,12 +1052,15 @@ function dispatchSingleSlimeToEat() {
     if (!armyContainer) return;
 
     const slimeUnits = Array.from(armyContainer.querySelectorAll('.slime-unit'))
-        .filter(u => u.dataset.isAttacking !== 'true' && u.dataset.isEating !== 'true' && !u.classList.contains('is-stunned'));
+        .filter(u => u.dataset.isAttacking !== 'true' && u.dataset.isEating !== 'true' && !u.classList.contains('is-stunned') && !isUnitBusy(u));
 
     if (slimeUnits.length === 0) return;
 
     const unitEl = slimeUnits[Math.floor(Math.random() * slimeUnits.length)];
+    const lootTag = `s${unitEl.dataset.slimeId ?? '?'}`;
+    jumpLog(lootTag, 'LOOT DISPATCH', { loots: availableLoots.length, isAttacking: unitEl.dataset.isAttacking, isEating: unitEl.dataset.isEating, candidates: slimeUnits.length });
     unitEl.dataset.isEating = 'true';
+    markUnitBusy(unitEl);
 
     const imgEl = unitEl.querySelector('.slime-img');
     const shadowEl = unitEl.querySelector('.slime-shadow-sm');
@@ -1088,6 +1117,7 @@ function dispatchSingleSlimeToEat() {
 
     const slideDuration = Math.round(Math.max(450, distance * 3.8));
     const startSlideTime = performance.now();
+    jumpLog(lootTag, 'LOOT FORWARD SLIDE START', { distance: +distance.toFixed(1), duration: slideDuration, target: { x: targetLoot.x, y: targetLoot.y } });
 
     // --- PHASE 1: 60 FPS Forward Slide to Loot ---
     function animateForwardSlide(now) {
@@ -1107,6 +1137,7 @@ function dispatchSingleSlimeToEat() {
         if (progress < 1.0) {
             requestAnimationFrame(animateForwardSlide);
         } else {
+            jumpLog(lootTag, 'LOOT REACHED -> eating');
             eatLootAndReturn();
         }
     }
@@ -1190,6 +1221,7 @@ function dispatchSingleSlimeToEat() {
             // --- PHASE 2: 60 FPS Return Walk back to Pyramid ---
             const returnDuration = Math.round(Math.max(500, distance * 4.0));
             const startReturnTime = performance.now();
+            jumpLog(lootTag, 'LOOT RETURN WALK START', { duration: returnDuration });
 
             function animateReturnWalk(now) {
                 const elapsed = now - startReturnTime;
@@ -1207,6 +1239,7 @@ function dispatchSingleSlimeToEat() {
                 if (progress < 1.0) {
                     requestAnimationFrame(animateReturnWalk);
                 } else {
+                    jumpLog(lootTag, 'LOOT RETURNED -> idle reset');
                     // Return complete! Clean up & reset idle state with sprite 1
                     imgEl.src = getSlimeJumpSprite(slimeObj);
                     imgEl.style.objectPosition = '0px 0px';
@@ -1222,6 +1255,7 @@ function dispatchSingleSlimeToEat() {
 
                     unitEl.style.zIndex = originalZ;
                     unitEl.dataset.isEating = 'false';
+                    markUnitFree(unitEl);
                 }
             }
 
@@ -1237,14 +1271,30 @@ function dispatchSingleSlimeToEat() {
  * Digestion upgrade determines how many slimes go to eat in quick succession!
  */
 export function triggerSlimeEatLoot() {
-    const countToDispatch = 1 + (gameState.digestionLevel || 0);
+    const armyContainer = document.getElementById('armyContainer');
+    if (!armyContainer) return;
+
+    // Count slimes that are currently free to eat (not attacking, not already
+    // eating, not stunned). Never dispatch more than are actually available —
+    // e.g. with a high Digestion level but only one free Slime, send just one.
+    const isFree = (u) =>
+        u.dataset.isAttacking !== 'true' &&
+        u.dataset.isEating !== 'true' &&
+        !u.classList.contains('is-stunned');
+    const availableCount = Array.from(armyContainer.querySelectorAll('.slime-unit')).filter(isFree).length;
+    if (availableCount === 0) return;
+
+    const countToDispatch = Math.min(1 + (gameState.digestionLevel || 0), availableCount);
 
     for (let i = 0; i < countToDispatch; i++) {
         if (i === 0) {
             dispatchSingleSlimeToEat();
         } else {
+            // Re-check availability at fire time so we never send a Slime that
+            // became busy, and so each dispatch picks from the still-free pool.
             setTimeout(() => {
-                dispatchSingleSlimeToEat();
+                const stillFree = Array.from(armyContainer.querySelectorAll('.slime-unit')).filter(isFree).length;
+                if (stillFree > 0) dispatchSingleSlimeToEat();
             }, i * 140);
         }
     }
