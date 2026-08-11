@@ -129,7 +129,8 @@ const SLIME_NAME_POOL = [
     'Monaco', 'La Sardine', 'La Bagarre', 'Paul Ichnel', 'Paul le Saumon',
     'Paradis Yack', 'Incroyable Hulk', 'Iron Blob', 'Godefroy de Montmirail', 'Jackouille la Fripouille',
     'Chaussée aux Moines', 'Martingale la Meringuée', 'Caprice des Dieux', 'Le Rock Fort', 'Tutti Frutti',
-    'Seigneur Merguez', 'Chéa Rome le Romain', 'Goat Granny', 'Jonny McBravo', 'Bouffon des Ténèbres'
+    'Seigneur Merguez', 'Chéa Rome le Romain', 'Goat Granny', 'Jonny McBravo', 'Bouffon des Ténèbres',
+    'Test Cedric', 'Smakky Boy'
 ];
 
 /**
@@ -300,7 +301,8 @@ export function getEquipmentQuality(item) {
 }
 
 export function getEquipmentMultiplier(item) {
-    return 1 + getEquipmentQuality(item);
+    // Quality scales the stat geometrically: 1, 2, 4, 8, 16 for +0..+4.
+    return Math.pow(2, getEquipmentQuality(item));
 }
 
 /**

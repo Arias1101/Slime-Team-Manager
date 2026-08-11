@@ -1517,7 +1517,7 @@ export function startNewGamePlusRun() {
 function checkWaveCompletion() {
     if (isWaveActive && activeEnemies.length === 0) {
         isWaveActive = false;
-        console.log('[WAVE CLEARED] Last enemy defeated!');
+        //console.log('[WAVE CLEARED] Last enemy defeated!');
 
         // Clear all status effects (like burning) on slimes when wave ends
         if (gameState.slimes) {
@@ -1587,6 +1587,8 @@ function checkWaveCompletion() {
         // A cleared bonus wave returns to the normal progression wave that was
         // stashed when the bonus was entered (otherwise just advance by one).
         if (clearedWaveNum >= 900) {
+            // Beating a bonus wave rewards 5 Village Coins.
+            gameState.villageCoins = (gameState.villageCoins || 0) + 5;
             gameState.currentWave = gameState.bonusReturnWave || (clearedWaveNum + 1);
             gameState.bonusReturnWave = null;
         } else {
@@ -1595,10 +1597,10 @@ function checkWaveCompletion() {
         saveStateToLocal();
         updateUI();
 
-        // Every 10th wave (10, 20, 30...) the Merchant arrives � unless No Merchant
+        // Every 10th wave (10, 20, 30...) the Merchant arrives  unless No Merchant
         // Mode is active, in which case we skip the shop and go straight to the next wave.
         if (clearedWaveNum > 0 && clearedWaveNum % 10 === 0 && !gameState.noMerchant) {
-            console.log(`[MERCHANT SHOP] Wave ${clearedWaveNum} cleared! Waiting for slimes to eat all ground loots...`);
+            //console.log(`[MERCHANT SHOP] Wave ${clearedWaveNum} cleared! Waiting for slimes to eat all ground loots...`);
             const checkLootInterval = setInterval(() => {
                 const hasRemainingLoot = activeGroundLoots && activeGroundLoots.length > 0;
 
@@ -1618,7 +1620,7 @@ function checkWaveCompletion() {
                 }
             }, 150);
         } else if (isAutoPlay) {
-            console.log('[AUTO PLAY] Triggering next wave countdown...');
+            //console.log('[AUTO PLAY] Triggering next wave countdown...');
             startNextWaveCountdown(gameState.isFastMode ? 5 : 10);
         }
     }

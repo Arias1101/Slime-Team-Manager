@@ -191,7 +191,7 @@ export const ACHIEVEMENTS = [
     },
     {
         id: 'warWeapons',
-        icon: 'images/achievements/runYouFools.png',
+        icon: 'images/achievements/warWeapons.png',
         title: 'War Weapons',
         desc: 'Defeat the Tank.',
         reward: 10,
