@@ -6,6 +6,7 @@ import { activeEnemies, triggerLootDrop, activeGroundLoots, formatLootEffects, m
 import { gameState, SLIME_TYPES, addScraps, updateBestRoster, saveStateToLocal, calculateSlimeDamage, getScaledEquipmentEffects, getSlimeHitEffects, refreshSlimeMaxHp, getSlimeJumpSprite, getSlimeSpecialization, getSlimeGraftMultipliers, getSlimeSubTalentDef, getMeltingMendHotParams, getIceBarrierParams, getLeechParams, getStoneSkinParams, getIceBurstParams, getImmolationParams, getCorrosivePoisonParams, getHeavyStrikeParams, getSlideParams, isMindlessSupport, hasMeltingMend, hasIceBarrier, hasLeech, hasStoneSkin, hasIceBurst, hasImmolation, hasCorrosivePoison, hasHeavyStrike, hasSlide } from './state.js';
 import { updateUI, requestUIRefresh, updateLootHUD, renderSlimeArmy } from './ui.js';
 import { isGamePaused } from './engine.js';
+import { playJumpSound, playLootSound } from './audio.js';
 
 /**
  * Synchronous mutual-exclusion lock over Slime units. A Slime may be either
@@ -190,7 +191,13 @@ export function triggerRandomSlimeAttack(overrideTypeId = null) {
  */
 function trySupportGraft(unitEl, support) {
     if (!support?.talents?.graft || isMindlessSupport(support) || getSlimeSpecialization(support) !== 'support' || support.hp < support.maxHp * 0.5) return false;
-    const target = (gameState.slimes || []).filter(s => s.id !== support.id && getSlimeSpecialization(s) !== 'support' && s.hp > 0 && s.hp < s.maxHp * .75).sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0];
+    // Prefer a non-Support ally in need. If only Support Slimes remain alive in
+    // the roster, fall back to grafting another wounded Support instead.
+    const woundedNonSupport = (gameState.slimes || []).filter(s => s.id !== support.id && getSlimeSpecialization(s) !== 'support' && s.hp > 0 && s.hp < s.maxHp * .75);
+    const woundedSupport = (gameState.slimes || []).filter(s => s.id !== support.id && getSlimeSpecialization(s) === 'support' && s.hp > 0 && s.hp < s.maxHp * .75);
+    const allAliveAreSupport = (gameState.slimes || []).filter(s => s.id !== support.id && s.hp > 0).every(s => getSlimeSpecialization(s) === 'support');
+    const candidatePool = woundedNonSupport.length > 0 ? woundedNonSupport : (allAliveAreSupport ? woundedSupport : []);
+    const target = candidatePool.sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0];
     if (!target) return false;
 
     const img = unitEl.querySelector('.slime-img');
@@ -511,6 +518,7 @@ function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
     }
     markUnitBusy(unitEl);
     //console.log(`[ATTACK] ${unitEl.dataset.slimeId}: jump attack started`);
+    playJumpSound();
     const slimeConfig = SLIME_TYPES[typeId] || SLIME_TYPES.base;
     const imgEl = unitEl.querySelector('.slime-img');
     const shadowEl = unitEl.querySelector('.slime-shadow-sm');
@@ -1158,6 +1166,7 @@ function dispatchSingleSlimeToEat() {
     const unitEl = slimeUnits[Math.floor(Math.random() * slimeUnits.length)];
     unitEl.dataset.isEating = 'true';
     markUnitBusy(unitEl);
+    playLootSound();
 
     const imgEl = unitEl.querySelector('.slime-img');
     const shadowEl = unitEl.querySelector('.slime-shadow-sm');

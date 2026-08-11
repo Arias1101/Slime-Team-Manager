@@ -1016,9 +1016,9 @@ function renderSelectedSlimeCard() {
         const specLabel = specialization.charAt(0).toUpperCase() + specialization.slice(1);
         const typeName = (SLIME_TYPES[slime.type] || SLIME_TYPES.base).name || slime.type || 'Slime';
         const roster = selectedSide === 'main' ? gameState.slimes : gameState.villageRoster;
-        // The Main roster must always keep at least one Slime; the Village roster
-        // can be emptied entirely.
-        const canSacrifice = selectedSide === 'village' ? (roster || []).length > 0 : (roster || []).length > 1;
+        // Both rosters may be emptied entirely, so the last remaining Slime(s)
+        // can always be sacrificed.
+        const canSacrifice = (roster || []).length > 0;
 
         container.innerHTML = `
             <button type="button" class="modal-kill-btn common-house-kill-btn${canSacrifice ? '' : ' disabled'}" title="${canSacrifice ? 'Sacrifice / Kill Slime' : 'Cannot sacrifice the last remaining slime!'}"${canSacrifice ? '' : ' disabled'}>💀</button>
@@ -1054,10 +1054,9 @@ function renderSelectedSlimeCard() {
     const lines = [...counts.entries()].map(([label, n]) => `${label} x${n}`);
 
     const roster = selectedSide === 'main' ? gameState.slimes : gameState.villageRoster;
-    // The Main roster must keep at least one Slime; the Village roster can be fully emptied.
-    const canSacrifice = selectedSide === 'village'
-        ? (roster || []).length >= selectedSlimes.length && selectedSlimes.length > 0
-        : (roster || []).length > selectedSlimes.length;
+    // Both rosters may be emptied entirely, so the last remaining Slime(s)
+    // can always be sacrificed.
+    const canSacrifice = (roster || []).length >= selectedSlimes.length && selectedSlimes.length > 0;
 
     container.innerHTML = `
         <button type="button" class="modal-kill-btn common-house-kill-btn${canSacrifice ? '' : ' disabled'}" title="${canSacrifice ? `Sacrifice / Kill ${selectedSlimes.length} Slimes` : 'Cannot sacrifice the last remaining slime!'}"${canSacrifice ? '' : ' disabled'}>💀</button>
@@ -1092,11 +1091,9 @@ function sacrificeSlimeFromRoster(slimes) {
     if (list.length === 0) return false;
 
     const roster = selectedSide === 'main' ? gameState.slimes : gameState.villageRoster;
-    // The Main roster must always keep at least one Slime; the Village roster may
-    // be emptied entirely.
+    // Both rosters may be emptied entirely.
     if (!Array.isArray(roster)) return false;
-    if (selectedSide === 'main' && roster.length <= list.length) return false;
-    if (selectedSide === 'village' && list.length === 0) return false;
+    if (list.length === 0) return false;
 
     const removeIds = new Set(list.map(s => s.id || s.name).filter(Boolean));
     // Send each sacrificed Slime's equipment to the Village Forge Inventory first.

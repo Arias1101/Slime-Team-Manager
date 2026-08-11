@@ -8,7 +8,7 @@ import { updateUI, updateLootHUD, requestUIRefresh, playSlimeRainRespawnAnimatio
 import { openShopModal } from './shop.js';
 import { isGamePaused, setGamePaused } from './engine.js';
 import { notifyAchievementEvent, checkAchievements, grantAchievement } from './achievements.js';
-import { playMainMusic, playVillageMusic, playKillSound } from './audio.js';
+import { playMainMusic, playVillageMusic, playKillSound, playDieSound } from './audio.js';
 import { recordRunWipe, resetRunWipeTracking } from './state.js';
 /**
  * Scrap value contributed by one point of each loot attribute.
@@ -151,6 +151,7 @@ export const ENEMY_TYPES = {
         tier: 0,
         hp: 250,
         maxHp: 250,
+        controlImmune: true,
         damage: 5,            // Damage per projectile
         attackSpeed: 1,     // attacks per second
         moveSpeed: 2,
@@ -165,10 +166,11 @@ export const ENEMY_TYPES = {
         type: 'melee',
         projectile: 'slash1',
         tier: 0,
-        hp: 5000,
-        maxHp: 5000,
+        hp: 4000,
+        maxHp: 4000,
+        controlImmune: true,
         damage: 15,            // Damages
-        attackSpeed: 1.2,     // attacks per second
+        attackSpeed: 1,     // attacks per second
         moveSpeed: 3,
         targetX: 190,         // 400=right border, 100 = Slime army
         loot_name: 'Berserker Greataxe',
@@ -1058,9 +1060,9 @@ function generateWaveComposition(waveNum) {
     if (waveNum === 33) return [0.2, 'ent:2', 'elf:4', 'rabbit:2'];
     if (waveNum === 34) return [0.1, 'wolf:10', 'rabbit:2'];
     if (waveNum === 35) return [0.1, 'ent:3', 'alchemist:2', 'fairy:2'];
-    if (waveNum === 36) return [0.1, 'berserker:2', 'elf:5', 'fairy:2'];
+    if (waveNum === 36) return [0.1, 'berserker:1', 'elf:5', 'fairy:2'];
     if (waveNum === 37) return [0.1, 'ent:2', 'redfairy:2', 'fairy:2'];
-    if (waveNum === 38) return [0.1, 'bear:2', 'berserker:2', 'fairy:5'];
+    if (waveNum === 38) return [0.1, 'bear:2', 'berserker:1', 'fairy:5'];
     if (waveNum === 39) return [0.1, 'bear:3', 'ent:2', 'redfairy:2'];
     if (waveNum === 40) return [0.2, 'ent:2', 'stonegolem:1', 'fairy:5', 'redfairy:3'];
 
@@ -1097,7 +1099,7 @@ function generateWaveComposition(waveNum) {
  * Overall flat chance (0-1) that a cleared boss wave diverts into a bonus
  * stage. Independent of which bonus stage is then chosen.
  */
-const BONUS_STAGE_CHANCE = 0.10; // 10% flat chance for any bonus stage
+const BONUS_STAGE_CHANCE = 0.06; // 10% flat chance for any bonus stage
 
 /**
  * Bonus stages and their relative apparition weight when a bonus stage is
@@ -3028,6 +3030,8 @@ export function playSlimeDeathAnimation(unit, slime, onDeathComplete = null) {
         if (onDeathComplete) onDeathComplete();
         return;
     }
+
+    playDieSound();
 
     const typeId = slime ? (slime.type || unit.dataset.slimeType || 'base') : (unit.dataset.slimeType || 'base');
     const slimeConfig = SLIME_TYPES[typeId] || SLIME_TYPES.base;

@@ -186,19 +186,22 @@ export function isMusicMuted() {
 const EFFECTS_BASE_PATH = 'images/sounds/effects/';
 
 const EFFECT_FILES = {
-    kill: ['kill1.mp3', 'kill2.mp3']
+    kill: ['kill1.mp3', 'kill2.mp3'],
+    jump: ['jump1.mp3', 'jump2.mp3', 'jump3.mp3', 'jump4.mp3', 'jump5.mp3', 'jump6.mp3'],
+    loot: ['loot1.mp3', 'loot2.mp3', 'loot3.mp3'],
+    die: ['die1.mp3', 'die2.mp3', 'die3.mp3']
 };
 
 let effectsMuted = false; // Master mute for sound effects.
 
 /** Play a randomly chosen file from the named effect pool (e.g. "kill"). */
-export function playSoundEffect(name) {
+export function playSoundEffect(name, volume = 0.5) {
     if (effectsMuted) return;
     const pool = EFFECT_FILES[name];
     if (!pool || !pool.length) return;
     const file = pool[Math.floor(Math.random() * pool.length)];
     const el = new Audio(EFFECTS_BASE_PATH + file);
-    el.volume = 0.5;
+    el.volume = volume;
     const playPromise = el.play();
     if (playPromise && typeof playPromise.catch === 'function') {
         playPromise.catch(() => {});
@@ -209,6 +212,21 @@ export function playSoundEffect(name) {
 /** Convenience wrapper: play a random "kill" sound effect (kill1 / kill2). */
 export function playKillSound() {
     playSoundEffect('kill');
+}
+
+/** Convenience wrapper: play a random "jump" sound effect (jump1..jump6) at 10% volume. */
+export function playJumpSound() {
+    playSoundEffect('jump', 0.1);
+}
+
+/** Convenience wrapper: play a random "loot" sound effect (loot1..loot3) at 15% volume. */
+export function playLootSound() {
+    playSoundEffect('loot', 0.15);
+}
+
+/** Convenience wrapper: play a random "die" sound effect (die1..die3) at full volume. */
+export function playDieSound() {
+    playSoundEffect('die', 1.0);
 }
 
 /** Toggle the sound effects mute. Returns the new muted state. */

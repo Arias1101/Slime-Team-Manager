@@ -1,4 +1,9 @@
 Patch Notes (do not edit this I handle it manually):
+v1.2
+- Allowed Support Slimes to heal each other when all other Slimes are dead.
+- Removed Slime deletion restrictions in Common House.
+- Added loot, attack, and die songs for Slimes.
+
 v1.1
 - Fixed icons blurring on button hover in village.
 - Hidden control buttons while not on NG+
@@ -8,6 +13,9 @@ v1.1
 - Added songs to game and village.
 - Added mute songs / mute effects buttons.
 - Added sound effects to ennemy death.
+- Increased ennemies hp and NG+ scalings.
+- Fixed Subtalents being unlockable for first Talent despite it being locked.
+- Tried to fix slimes not being able to regenerate at ends of waves.
 
 v1.0
 - Reworked Common House Toolbar buttons to work like additive filters.
