@@ -438,7 +438,7 @@ function getComboTypeId(slime) {
 export const SECOND_TALENT = {
     fireSupport: { name: 'Melting Mend', description: 'Graft heals 30% more over 3 seconds. (Stacks)' },
     iceSupport: { name: 'Ice Barrier', description: 'Graft gives 20% of the heal as barrier. (Stacks)' },
-    poisonSupport: { name: 'Leech', description: 'Self heal 25% of inflicted direct damages.' },
+    poisonSupport: { name: 'Leech', description: 'Self heal 10% of inflicted direct damages.' },
     stoneSupport: { name: 'Stone Skin', description: 'Graft reduces next direct damage by 50% of the heal. (Stacks)' },
     fireFighter: { name: 'Immolation', description: 'All burn Stacks applied are doubled.' },
     iceFighter: { name: 'Ice Burst', description: 'Cold damage equals the target\'s burn + poison Stacks instead of a flat 5.' },
@@ -485,7 +485,7 @@ export const SECOND_TALENT_SUBTALENTS = {
         { id: 'greassySlime', name: 'Greassy Slime', description: '+10% Max HP.' }
     ],
     poisonSupport: [
-        { id: 'suckerSlime', name: 'Sucker Slime', description: 'Double Leech amount.' },
+        { id: 'suckerSlime', name: 'Sucker Slime', description: 'Double Leech amount (20% total).' },
         { id: 'mindlessSupport', name: 'Mindless Support', description: 'No Graft, but Leech now heals the lowest HP Slime.' },
         { id: 'damageDealer', name: 'Damage Dealer', description: '+10% Damage.' }
     ],
@@ -732,19 +732,19 @@ export function hasLeech(slime) {
 
 /**
  * Leech parameters for a Poison Support slime, adjusted by its chosen
- * second-talent sub-talent (column 1). The base leech heals the slime for 25%
+ * second-talent sub-talent (column 1). The base leech heals the slime for 10%
  * of the direct damage it inflicts (main hit + freeze bonus).
- *  - suckerSlime:     doubles the leech amount (50% instead of 25%).
+ *  - suckerSlime:     doubles the leech amount (20% instead of 10%).
  *  - mindlessSupport: leech heals the lowest-HP ally instead of the slime itself.
  *  - damageDealer:    +10% Damage (handled by getSlimeSubTalentBonus, not here).
  * Returns { multiplier, healLowestAlly }.
  */
 export function getLeechParams(slime) {
-    const base = { multiplier: 0.25, healLowestAlly: false };
+    const base = { multiplier: 0.10, healLowestAlly: false };
     const def = getSlimeSubTalentDef(slime, 1);
     if (!def) return base;
-    if (def.id === 'suckerSlime') return { multiplier: 0.50, healLowestAlly: false };
-    if (def.id === 'mindlessSupport') return { multiplier: 0.25, healLowestAlly: true };
+    if (def.id === 'suckerSlime') return { multiplier: 0.20, healLowestAlly: false };
+    if (def.id === 'mindlessSupport') return { multiplier: 0.10, healLowestAlly: true };
     return base;
 }
 

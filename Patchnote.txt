@@ -1,8 +1,13 @@
 Patch Notes (do not edit this I handle it manually):
+v1.6
+- Adjusted Coin Reward (more on bosses, less on run completion).
+- Nerfed Leech Talent base amount to 10%.
+
 v1.5
 - Increased coin rewards for finishing a run.
 - Added LOTS of slimes songs.
 - Adjusted zindex for resurection sprite animations.
+- Adjusted coin reward (more on boss, less on runs).
 
 v1.4
 - Added 5 coin reward for passing bonus waves.

@@ -1405,7 +1405,7 @@ export function enterNewGamePlus() {
         slotIndex: slime.slotIndex !== undefined ? slime.slotIndex : index
     }));
     const completedRuns = (gameState.newGamePlusCompletions || 0) + 1;
-    const villageCoinReward = completedRuns * 4;
+    const villageCoinReward = completedRuns * 3;
 
     resetGameFull({ startWave: false, preserveUpgrades: true });
     gameState.newGamePlusCompletions = completedRuns;
@@ -1579,9 +1579,10 @@ function checkWaveCompletion() {
             grantAchievement('selfDefense');
         }
 
-        // Clearing a boss wave (10/20/30/40/50) rewards 1 Village Coin.
+        // Clearing a boss wave (10/20/30/40/50) rewards coins scaling with the
+        // wave number: 1 at wave 10, 2 at wave 20, ... 5 at wave 50.
         if (clearedWaveNum > 0 && clearedWaveNum % 10 === 0) {
-            gameState.villageCoins = (gameState.villageCoins || 0) + 1;
+            gameState.villageCoins = (gameState.villageCoins || 0) + Math.floor(clearedWaveNum / 10);
         }
 
         // A cleared bonus wave returns to the normal progression wave that was
