@@ -6967,9 +6967,9 @@ body.new-game-plus .village-buildings {
     left: auto;
     width: 210px;
     padding: 10px 12px;
-    border: 1px solid rgba(255, 255, 255, 0.32);
-    border-radius: 10px;
-    background: rgba(15, 23, 42, 0.92);
+    border: 1px solid rgba(227, 199, 101, 0.7);
+    border-radius: 0;
+    background: rgba(15, 23, 42, 0.6);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     color: #f8fafc;

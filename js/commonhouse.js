@@ -523,17 +523,17 @@ function slimeGroupLabel(slime) {
 
 /** The four elemental Type buttons shown for non-specialized selections. */
 const TYPE_BUTTONS = [
-    { id: 'fire', label: 'Fire', icon: 'images/upgrades/ignition.png' },
-    { id: 'ice', label: 'Ice', icon: 'images/upgrades/glaciation.png' },
-    { id: 'poison', label: 'Poison', icon: 'images/upgrades/Intoxication.png' },
-    { id: 'stone', label: 'Stone', icon: 'images/upgrades/petrification.png' }
+    { id: 'fire', label: 'Fire', icon: 'images/upgrades/ignition.png', tooltip: 'Fire Slime' },
+    { id: 'ice', label: 'Ice', icon: 'images/upgrades/glaciation.png', tooltip: 'Ice Slime' },
+    { id: 'poison', label: 'Poison', icon: 'images/upgrades/Intoxication.png', tooltip: 'Poison Slime' },
+    { id: 'stone', label: 'Stone', icon: 'images/upgrades/petrification.png', tooltip: 'Stone Slime' }
 ];
 
 /** The three Specialization buttons shown for non-specialized selections. */
 const SPEC_BUTTONS = [
-    { id: 'support', label: 'Support', icon: 'images/talents/supportSpec.png' },
-    { id: 'fighter', label: 'Fighter', icon: 'images/talents/fighterSpec.png' },
-    { id: 'tank', label: 'Tank', icon: 'images/talents/tankSpec.png' }
+    { id: 'support', label: 'Support', icon: 'images/talents/supportSpec.png', tooltip: 'Support:\nCan heal and resurect other Slimes from the back-line.' },
+    { id: 'fighter', label: 'Fighter', icon: 'images/talents/fighterSpec.png', tooltip: 'Fighter:\nCan attack multiple time and do a lot of damage.' },
+    { id: 'tank', label: 'Tank', icon: 'images/talents/tankSpec.png', tooltip: 'Tank:\nTake focus from ennemies and mitigate their attacks in the front-line.' }
 ];
 
 /** Talent display data, reused from the character-sheet Talent sheet. */
@@ -613,19 +613,25 @@ function getActionButtonsHtml(selectedSlimes) {
     const typeRowHidden = anySpecialized ? ' hidden-row' : '';
     const specRowHidden = anySpecialized ? ' hidden-row' : '';
 
+    const wrapGlass = (btn, tooltip) => {
+        const [name, ...rest] = (tooltip || '').split('\n');
+        const desc = rest.join(' ');
+        return `<span class="talent-tooltip-glass">${btn}<span class="talent-tooltip-glass-box"><strong>${name}</strong>${desc ? `<br>${desc}` : ''}</span></span>`;
+    };
+
     const typeRow = `
         <div class="common-house-grid-row common-house-type-row${typeRowHidden}" data-row="type">
-            ${TYPE_BUTTONS.map(t => `
-                <button type="button" class="common-house-type-btn${selectedType === t.id ? ' selected' : ''}" data-type="${t.id}" title="${t.label}" aria-label="${t.label}"><img src="${t.icon}" alt="${t.label}"></button>
-            `).join('')}
+            ${TYPE_BUTTONS.map(t => wrapGlass(`
+                <button type="button" class="common-house-type-btn${selectedType === t.id ? ' selected' : ''}" data-type="${t.id}" aria-label="${t.label}"><img src="${t.icon}" alt="${t.label}"></button>
+            `, t.tooltip)).join('')}
         </div>
     `;
 
     const specRow = `
         <div class="common-house-grid-row common-house-spec-row${specRowHidden}" data-row="spec">
-            ${SPEC_BUTTONS.map(s => `
-                <button type="button" class="common-house-spec-btn" data-spec="${s.id}" title="${s.label}" aria-label="${s.label}"${specDisabled}><img src="${s.icon}" alt="${s.label}"></button>
-            `).join('')}
+            ${SPEC_BUTTONS.map(s => wrapGlass(`
+                <button type="button" class="common-house-spec-btn" data-spec="${s.id}" aria-label="${s.label}"${specDisabled}><img src="${s.icon}" alt="${s.label}"></button>
+            `, s.tooltip)).join('')}
         </div>
     `;
 
