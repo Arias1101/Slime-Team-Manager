@@ -1579,6 +1579,11 @@ function checkWaveCompletion() {
             grantAchievement('selfDefense');
         }
 
+        // Clearing a boss wave (10/20/30/40/50) rewards 1 Village Coin.
+        if (clearedWaveNum > 0 && clearedWaveNum % 10 === 0) {
+            gameState.villageCoins = (gameState.villageCoins || 0) + 1;
+        }
+
         // A cleared bonus wave returns to the normal progression wave that was
         // stashed when the bonus was entered (otherwise just advance by one).
         if (clearedWaveNum >= 900) {
@@ -1704,7 +1709,11 @@ export function spawnEnemy(typeId = 'beggar', hpMultiplier = 1.0) {
     const newGamePlusDmgMultiplier = Math.pow(1.2, Math.max(0, gameState.newGamePlusCompletions || 0));
     const scaledHp = Math.max(1, Math.round(baseHp * hpMultiplier * newGamePlusHpMultiplier));
     const scaledDamage = Math.max(0, Math.round((def.damage || 0) * newGamePlusDmgMultiplier));
-    const scaledMoveSpeed = (def.moveSpeed || 0) * 25 * (gameState.isFastMode ? 2 : 1);
+    // Apply the Fast Mode multiplier to the base moveSpeed, then cap the
+    // resulting effective moveSpeed at 15 so fast enemies never exceed it
+    // (base moveSpeed is always under 15, so normal enemies are unaffected).
+    const effectiveMoveSpeed = Math.min(15, (def.moveSpeed || 0) * (gameState.isFastMode ? 2 : 1));
+    const scaledMoveSpeed = effectiveMoveSpeed * 25;
 
     // Add a small -10 to +10 stop offset to reduce overlapping.
     const baseTargetX = def.targetX !== undefined ? def.targetX : 300;

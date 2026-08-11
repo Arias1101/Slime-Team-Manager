@@ -1,5 +1,5 @@
 ------------- NOW ----------------
-redo delete confirmation popup with pixel art style.
+Order by type in Roster ?
 
 ------------- LATER ----------------
 
