@@ -17,7 +17,7 @@ export const ACHIEVEMENTS = [
         id: 'runYouFools',
         icon: 'images/achievements/youShallPass.png',
         title: 'You Shall Pass',
-        desc: 'Beat the Mage.',
+        desc: 'Defeat the Mage.',
         reward: 1,
         event: 'enemyDefeated',
         matchesEnemy: 'mage'
@@ -184,7 +184,7 @@ export const ACHIEVEMENTS = [
         id: 'imFastAsF',
         icon: 'images/achievements/imFastAsF.png',
         title: "I'm Fast As F",
-        desc: 'Beat the F40.',
+        desc: 'Defeat the F40.',
         reward: 10,
         event: 'enemyDefeated',
         matchesEnemy: 'car'
@@ -193,7 +193,7 @@ export const ACHIEVEMENTS = [
         id: 'warWeapons',
         icon: 'images/achievements/runYouFools.png',
         title: 'War Weapons',
-        desc: 'Beat the Tank.',
+        desc: 'Defeat the Tank.',
         reward: 10,
         event: 'enemyDefeated',
         matchesEnemy: 'char'
@@ -202,7 +202,7 @@ export const ACHIEVEMENTS = [
         id: 'wildMissingno',
         icon: 'images/achievements/wildMissingno.png',
         title: 'A Wild Missingno Appears !',
-        desc: 'Beat Missingno.',
+        desc: 'Defeat Missingno.',
         reward: 10,
         event: 'enemyDefeated',
         matchesEnemy: 'missingno'

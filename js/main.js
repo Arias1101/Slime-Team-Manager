@@ -2,7 +2,7 @@
  * Application Main Initializer
  */
 
-import { loadStateFromLocal, addScraps, gameState, SLIME_TYPES, getFortificationLevel, getFortificationUpgradeCost, buyFortificationUpgrade, getSlimeRegen, getRegenMax, markAfkStart, claimAfkScraps, previewAfkScraps, updateBestRoster, calculateSlimeDamage, saveStateToLocal, getScaledEquipmentEffects, getEquipmentQuality, getEquipmentDisplayName, getEquipmentSprite, refreshSlimeMaxHp, ALCHEMIST_UPGRADES, getAlchemistUpgradeLevel, getAlchemistUpgradeCost, buyAlchemistUpgrade, buyAlchemistUpgradeBulk, getSlimeDeathSprite, getSlimeJumpSprite, getSlimeSpecialization } from './state.js';
+import { loadStateFromLocal, addScraps, gameState, SLIME_TYPES, getFortificationLevel, getFortificationUpgradeCost, buyFortificationUpgrade, getSlimeRegen, getRegenMax, markAfkStart, claimAfkScraps, previewAfkScraps, updateBestRoster, restoreBestRoster, calculateSlimeDamage, saveStateToLocal, getScaledEquipmentEffects, getEquipmentQuality, getEquipmentDisplayName, getEquipmentSprite, refreshSlimeMaxHp, ALCHEMIST_UPGRADES, getAlchemistUpgradeLevel, getAlchemistUpgradeCost, buyAlchemistUpgrade, buyAlchemistUpgradeBulk, getSlimeDeathSprite, getSlimeJumpSprite, getSlimeSpecialization } from './state.js';
 import { initAuth, loginWithGoogle, logoutUser, saveCloudSave } from './auth.js';
 import { startEngine, setGamePaused, isGamePaused } from './engine.js';
 import { updateUI, setAuthScreenState, showFirebaseNotice, playSlimeRainRespawnAnimation, initSlimeModalListeners, initMainTabsListeners, openSlimeInspectorModal, renderSlimeRosterLanes } from './ui.js';
@@ -18,6 +18,22 @@ import { initAchievementToasts } from './achievements.js';
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Load Local State
     loadStateFromLocal();
+
+    // Soft-lock recovery: a reload can land on a fully dead roster. When the last
+    // Slime dies the army is saved as an empty array, so "all dead" means either no
+    // Slimes at all OR every remaining Slime at 0 HP. If we are not in the New
+    // Game+ village intermission, rewind to the start of the current tier and
+    // restore the best roster at full HP so the run can continue (and reset
+    // armySize so no phantom Slime is spawned by the sky-drop fallback).
+    const roster = gameState.slimes || [];
+    const allDead = roster.length === 0 || roster.every(s => (s.hp || 0) <= 0);
+    if (!gameState.isInNewGamePlus && allDead) {
+        restoreBestRoster();
+        gameState.currentWave = Math.max(1, (gameState.currentWave || 1) - 1);
+        gameState.armySize = (gameState.slimes || []).length;
+        saveStateToLocal();
+    }
+
     initAchievementToasts();
 
     // 2. Initialize Enemies, Upgrades, Shop, Ascended Auto-Attacks, Main Tabs & Modal Listeners

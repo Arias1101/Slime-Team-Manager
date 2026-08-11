@@ -1116,6 +1116,8 @@ const BONUS_WAVES = [
 export function decideNextWaveAfterBoss(clearedWaveNum) {
     const normalNext = (clearedWaveNum || 0) + 1;
     if (!(clearedWaveNum > 0 && clearedWaveNum % 10 === 0)) return normalNext;
+    // Bonus waves only appear once the player has entered New Game+ (any completed run).
+    if (!(gameState.newGamePlusCompletions > 0)) return normalNext;
 
     if (Math.random() >= BONUS_STAGE_CHANCE) return normalNext;
 

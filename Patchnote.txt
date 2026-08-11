@@ -1,4 +1,10 @@
 Patch Notes (do not edit this I handle it manually):
+v1.0.1
+- Hidden control buttons while not on NG+
+- Hidden debug buttons.
+- Implemented a safe check preventing softlock on page reload.
+- Prevented bonus waves before NG+.
+
 v1.0
 - Reworked Common House Toolbar buttons to work like additive filters.
 - Implemented nice tooltips.

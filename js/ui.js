@@ -41,6 +41,15 @@ function updateVillageFountain() {
     if (!fountainEl) return;
     const inVillage = gameState.isInNewGamePlus === true;
     fountainEl.classList.toggle('hidden', !inVillage);
+
+    // Speed (Fast Mode), No Merchant and Return-to-Village controls are available
+    // once the player has entered the New Game+ cycle (any completed run), both
+    // during a live run and the village intermission.
+    const hasNGPlus = (gameState.newGamePlusCompletions || 0) > 0;
+    ['btnForwardGame', 'btnMuteGame', 'btnHomeGame'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.classList.toggle('hidden', !hasNGPlus);
+    });
 }
 
 /**
@@ -52,14 +61,12 @@ export function updateUI() {
     if (scoreCountEl) scoreCountEl.textContent = gameState.score || 0;
     if (waveCountEl) waveCountEl.textContent = gameState.currentWave || 1;
     if (armySizeCountEl) armySizeCountEl.textContent = gameState.armySize || 0;
-    const villageCoinsStatEl = document.getElementById('villageCoinsStat');
     const villageCoinsCountEl = document.getElementById('villageCoinsCount');
-    const hasEndedGame = (gameState.newGamePlusCompletions || 0) > 0;
-    if (villageCoinsStatEl) villageCoinsStatEl.classList.toggle('hidden', !hasEndedGame);
     if (villageCoinsCountEl) villageCoinsCountEl.textContent = gameState.villageCoins || 0;
 
     const newGamePlusStatEl = document.getElementById('newGamePlusStat');
     const newGamePlusCountEl = document.getElementById('newGamePlusCount');
+    const hasEndedGame = (gameState.newGamePlusCompletions || 0) > 0;
     if (newGamePlusStatEl) newGamePlusStatEl.classList.toggle('hidden', !hasEndedGame);
     if (newGamePlusCountEl) newGamePlusCountEl.textContent = `+${gameState.newGamePlusCompletions || 0}`;
 
