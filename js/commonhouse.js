@@ -11,6 +11,7 @@
 
 import { gameState, SLIME_TYPES, getSlimeJumpSprite, getSlimeSpecialization, calculateSlimeDamage, getBaseCritChance, generateUniqueSlimeName, getNextAvailableSlotIndex, saveStateToLocal, updateBestRoster, getEquipmentQuality, sortRosterBySpecialization, TALENT_SUBTALENTS, SECOND_TALENT, SECOND_TALENT_ICON, getSecondTalentFlag, hasFirstTalent, getThirdTalentDef, ensureSlimeSubTalents, getSlimeSubTalent, getSlimeSubTalentColumn, recalculateSlimeStats } from './state.js';
 import { renderSlimeRosterLanes, updateUI } from './ui.js';
+import { triggerElementAchievement } from './achievements.js';
 
 const MAX_MAIN_ROSTER = 60;
 const MAX_VILLAGE_ROSTER = 180;
@@ -867,6 +868,7 @@ function wireTypeButtons(container) {
                 if (SLIME_TYPES[typeId]) {
                     slime.type = typeId;
                     slime.specialization = '';
+                    triggerElementAchievement(typeId);
                 }
             });
 

@@ -227,6 +227,8 @@ export const defaultState = {
     alchemistEnduranceLevel: 0,
     alchemistRegenLevel: 0,
     isInNewGamePlus: false,    // Village intermission after defeating/wiping to Death
+    achievements: {},          // Map of unlocked achievement id -> true
+    runWipedTiers: [],          // Tiers (10/20/30/40/50) wiped during the current run
     isFastMode: false,         // Fast Mode: +100% enemy move speed and 5s between-wave timer
     noMerchant: false,         // No Merchant Mode: skip the Merchant shop between waves
     lastSavedTimestamp: Date.now()
@@ -1913,6 +1915,29 @@ export function saveWaveSnapshot(waveNum, uncollectedLootValue = 0) {
         });
         saveStateToLocal();
     }
+}
+
+/** Total Slimes owned: main roster + village reserve. */
+export function getTotalSlimeCount() {
+    return (gameState.slimes ? gameState.slimes.length : 0)
+        + (gameState.villageRoster ? gameState.villageRoster.length : 0);
+}
+
+/** Record a wipe at the given tier (10/20/30/40/50) for the current run. */
+export function recordRunWipe(tier) {
+    if (!Array.isArray(gameState.runWipedTiers)) gameState.runWipedTiers = [];
+    if (!gameState.runWipedTiers.includes(tier)) gameState.runWipedTiers.push(tier);
+}
+
+/** Clear per-run wipe tracking when a new run begins. */
+export function resetRunWipeTracking() {
+    gameState.runWipedTiers = [];
+}
+
+/** Count slimes of a given specialization in the current roster. */
+export function countSlimesBySpecialization(spec) {
+    const needle = String(spec || '').toLowerCase();
+    return (gameState.slimes || []).filter(s => String(s.specialization || '').toLowerCase() === needle).length;
 }
 
 /**

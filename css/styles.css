@@ -4686,7 +4686,11 @@ body.new-game-plus .village-buildings {
 }
 
 .village-door-tavern::before {
-    content: "\1F37A";
+    content: "";
+    width: 20px;
+    height: 20px;
+    margin: auto;
+    background: url("../images/logos/trophy.png") no-repeat center / contain;
 }
 
 .village-door-alchemist {
@@ -7007,3 +7011,226 @@ body.new-game-plus .village-buildings {
 .talent-tooltip-glass {
     z-index: 9999;
 }
+
+/* Stat cards reuse the glass tooltip but must keep their grid-friendly
+   one-line layout (label left, value right) instead of the inline-flex default. */
+.slime-stat-card.talent-tooltip-glass {
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+/* ===================== ACHIEVEMENTS ===================== */
+.achievements-section {
+    margin-top: 20px;
+}
+
+.achievements-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.achievements-title {
+    font-family: var(--font-heading, inherit);
+    font-size: 0.8rem;
+    color: #e3c765;
+    margin: 0;
+}
+
+.achievements-count {
+    font-size: 0.7rem;
+    color: #a1a1aa;
+}
+
+.achievements-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+}
+
+.achievement-card {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas:
+        "icon body reward"
+        "icon desc reward";
+    align-items: center;
+    column-gap: 10px;
+    row-gap: 2px;
+    padding: 10px;
+    min-height: 64px;
+    border: 1px solid rgba(227, 199, 101, 0.7);
+    border-radius: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.42);
+    color: #f8fafc;
+}
+
+.achievement-card.locked {
+    opacity: 0.45;
+    filter: grayscale(0.6);
+    border-color: rgba(148, 163, 184, 0.4);
+}
+
+.achievement-card.unlocked {
+    border-color: rgba(227, 199, 101, 0.9);
+}
+
+.achievement-icon {
+    grid-area: icon;
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
+.achievement-body {
+    grid-area: body;
+    display: flex;
+    flex-direction: column;
+}
+
+.achievement-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #ADFF87;
+    line-height: 1.2;
+}
+
+.achievement-desc {
+    font-size: 0.62rem;
+    color: #cbd5e1;
+    line-height: 1.3;
+}
+
+.achievement-reward {
+    grid-area: reward;
+    align-self: end;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #e3c765;
+}
+
+.achievement-coin {
+    width: 14px;
+    height: 14px;
+    object-fit: contain;
+}
+
+/* Unlock toast */
+.achievement-toast {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    z-index: 100001;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    max-width: 320px;
+    border: 1px solid rgba(227, 199, 101, 0.9);
+    border-radius: 0;
+    background: rgba(15, 23, 42, 0.72);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.42);
+    color: #f8fafc;
+    opacity: 0;
+    transform: translateY(12px);
+    pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.achievement-toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.achievement-toast .achievement-icon {
+    width: 40px;
+    height: 40px;
+}
+
+.achievement-toast-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.achievement-toast-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #e3c765;
+}
+
+/* Tavern (Achievements) popup — pixel style matching the Forge popup. */
+.achievements-popup {
+    width: min(520px, 100%);
+    text-align: left;
+    border: 2px solid #E0C564;
+    border-radius: 0;
+    background: #1b1c21;
+    box-shadow: 6px 6px 0 #0a0b0d;
+    color: #e2e2e0;
+}
+
+.achievements-popup .common-house-title {
+    margin: 0 36px 4px 0;
+    color: #e3c765;
+    font-size: 0.95rem;
+}
+
+.achievements-popup-count {
+    margin: 0 0 12px 0;
+    font-size: 0.7rem;
+    color: #a1a1aa;
+}
+
+/* Two-column grid of achievement cards. */
+.achievements-popup-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+/* Squared yellow pixel scrollbar, matching the Forge/Shop popups. */
+.achievements-popup-list {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+}
+
+.achievements-popup-list::-webkit-scrollbar {
+    width: 9px;
+    border-radius: 0;
+}
+
+.achievements-popup-list::-webkit-scrollbar-track {
+    border-radius: 0;
+    background: #1b1c21;
+}
+
+.achievements-popup-list::-webkit-scrollbar-thumb {
+    border: 2px solid #1b1c21;
+    border-radius: 0;
+    background: #e3c765;
+}
+
+@media (max-width: 520px) {
+    .achievements-popup-list {
+        grid-template-columns: 1fr;
+    }
+}
+

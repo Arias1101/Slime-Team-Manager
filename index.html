@@ -172,8 +172,8 @@
                                     <button class="village-door village-door-forge pixel-btn"
                                         data-village-building="Forge" title="Forge" aria-label="Forge"></button>
                                     <button class="village-door village-door-tavern pixel-btn"
-                                        data-village-building="Tavern" title="Tavern (Coming soon)"
-                                        aria-label="Tavern (Coming soon)" disabled></button>
+                                        data-village-building="Tavern" title="Tavern - Achievements"
+                                        aria-label="Tavern - Achievements"></button>
 
                                 </div>
                             </section>
@@ -528,6 +528,16 @@
                             </div>-->
                         </div>
                     </section>
+
+                    <section class="achievements-section" id="achievementsSection">
+                        <div class="achievements-header">
+                            <h3 class="achievements-title">🏆 Achievements</h3>
+                            <span class="achievements-count" id="achievementsCount">0/0</span>
+                        </div>
+                        <div class="achievements-list" id="achievementsList">
+                            <!-- Dynamic achievement cards rendered here -->
+                        </div>
+                    </section>
                 </div>
 
             </div>
@@ -560,40 +570,42 @@
                     </nav>
                     <div id="slimeSheetStatsContent" class="slime-modal-body">
                         <div class="slime-stats-grid">
-                            <div class="slime-stat-card" title="Health Points (HP) - The slime dies if this hits 0.">
+                            <div class="slime-stat-card talent-tooltip-glass">
                                 <span class="stat-label">💗 HP:</span>
                                 <span id="slimeModalHp" class="stat-value">10 / 10 HP</span>
+                                <span class="talent-tooltip-glass-box"><strong>Health Points (HP)</strong><br>The slime dies if this reaches 0.</span>
                             </div>
-                            <div class="slime-stat-card"
-                                title="Damage - Base power dealt to enemies during collisions.">
+                            <div class="slime-stat-card talent-tooltip-glass">
                                 <span class="stat-label">⚔️ Damage:</span>
                                 <span id="slimeModalDamage" class="stat-value">1 ⚔️</span>
+                                <span class="talent-tooltip-glass-box"><strong>Damage</strong><br>Base power dealt to enemies during collisions.</span>
                             </div>
-                            <div class="slime-stat-card"
-                                title="Critical Chance - Probability to deal double damage on hits.">
+                            <div class="slime-stat-card talent-tooltip-glass">
                                 <span class="stat-label">⚡ Critical:</span>
                                 <span id="slimeModalCrit" class="stat-value">0% ⚡</span>
+                                <span class="talent-tooltip-glass-box"><strong>Critical Chance</strong><br>Probability to deal double damage on a hit.</span>
                             </div>
-                            <div class="slime-stat-card"
-                                title="HP Regen - Health restored automatically at the end of each wave.">
+                            <div class="slime-stat-card talent-tooltip-glass">
                                 <span class="stat-label">💚 Regen:</span>
                                 <span id="slimeModalRegen" class="stat-value">0 💚</span>
+                                <span class="talent-tooltip-glass-box"><strong>HP Regen</strong><br>Health restored automatically at the end of each wave.</span>
                             </div>
-                            <div class="slime-stat-card slime-hit-effect-stat"
-                                title="Burn stacks and deals 1 damage per stack every 0.5s."><span class="stat-label">🔥
-                                    Burn:</span><span id="slimeModalBurn" class="stat-value">0</span></div>
-                            <div class="slime-stat-card slime-hit-effect-stat"
-                                title="Freeze inflicts 5 bonus damage and slows enemies for 1 seconds per point on each hit.">
-                                <span class="stat-label">❄️ Freeze:</span><span id="slimeModalFreeze"
-                                    class="stat-value">0</span>
+                            <div class="slime-stat-card slime-hit-effect-stat talent-tooltip-glass">
+                                <span class="stat-label">🔥 Burn:</span><span id="slimeModalBurn" class="stat-value">0</span>
+                                <span class="talent-tooltip-glass-box"><strong>Burn</strong><br>Stacks and deals 1 damage per stack every 0.5s.</span>
                             </div>
-                            <div class="slime-stat-card slime-hit-effect-stat"
-                                title="Poison stacks and deals 2 damage per stack every 1s."><span class="stat-label">🧪
-                                    Poison:</span><span id="slimeModalPoison" class="stat-value">0</span></div>
-                            <div class="slime-stat-card slime-hit-effect-stat"
-                                title="Stun pauses an enemy for 0.3 seconds per point on each hit."><span
-                                    class="stat-label">💫 Stun:</span><span id="slimeModalStun"
-                                    class="stat-value">0</span></div>
+                            <div class="slime-stat-card slime-hit-effect-stat talent-tooltip-glass">
+                                <span class="stat-label">❄️ Freeze:</span><span id="slimeModalFreeze" class="stat-value">0</span>
+                                <span class="talent-tooltip-glass-box"><strong>Freeze</strong><br>Inflicts 5 bonus damage and slows enemies for 1s per point on each hit.</span>
+                            </div>
+                            <div class="slime-stat-card slime-hit-effect-stat talent-tooltip-glass">
+                                <span class="stat-label">🧪 Poison:</span><span id="slimeModalPoison" class="stat-value">0</span>
+                                <span class="talent-tooltip-glass-box"><strong>Poison</strong><br>Stacks and deals 2 damage per stack every 1s.</span>
+                            </div>
+                            <div class="slime-stat-card slime-hit-effect-stat talent-tooltip-glass">
+                                <span class="stat-label">💫 Stun:</span><span id="slimeModalStun" class="stat-value">0</span>
+                                <span class="talent-tooltip-glass-box"><strong>Stun</strong><br>Pauses an enemy for 0.3s per point on each hit.</span>
+                            </div>
                         </div>
                         <div class="slime-modal-meta">
                             <span id="slimeModalAscended">Standard Slime</span>

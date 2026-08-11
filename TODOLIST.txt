@@ -1,53 +1,18 @@
 ------------- NOW ----------------
-Fire Slime
-Poison Slime
-Ice Slime
-Stone Slime
-
-Support:
-Can heal and resurect other Slimes from the back-line.
-
-Fighter:
-Can attack multiple time and do a lot of damage.
-
-Tank:
-Take focus from ennemies and mitigate their attacks in the front-line.
 
 
 ------------- LATER ----------------
+Poor Guy: Wipe to the first Beggar. - 1 coin (first wave)
+Stun Locked: Kill the Golem before it passes half of the Battlefield. - 3 coins (passes targetX 250)
+Winter is Coming: Finish a Run with 60 Ice Slimes in your Roster. - 5 coins
+Blazing Hot: Finish a Run with 60 Fire Slimes in your Roster. - 5 coins
+Stonehead: Finish a Run with 60 Stone Slimes in your Roster. - 5 coins
+Toxicity: Finish a Run with 60 Poison Slimes in your Roster. - 5 coins
+Self Defense: Kill a Boss wave without attacking once. - 10 coins (integrated)
+
 
 ------------- LATER  ----------------
-- Trophies with Coin rewards:
-Ideas:
-Run, You Fools: Beat the Mage.
-Outnumbered: Beat the Alchemist & Berserker duo.
-Siege Engines Won't Cut It: Beat the Catapult.
-Slime is Harder Than Stone: Beat the Golem.
-Bone Eaters: Beat the Lich.
-I Am The Danger: Beat Death.
-It's Alive !: Ascend Your First Slime.
-FUEGO !!: Get a Fire Slime.
-Ice Cream: Get an Ice Slime.
-Muks & Grimers: Get a Poison Slime.
-Rocks & Rolls: Get a Stone Slime.
-Full House: Get 60 Slimes in your main Roster.
-Crowded: Get 240 Slimes in total.
-Legendary: Get a +4 Item.
-Opposable Thumbs: Merge equipments for the first time.
-Holy Trinity: Finish a Run with 20 Supports / 20 Fighters / 20 Tanks in your Roster.
-The Great Wall: Finish a Run with 60 Tanks in your Roster.
-The Best Defense: Finish a Run with 60 Fighters in your Roster.
-Why Not?: Finish a Run with 60 Supports in your Roster.
-Iron Man: Finish a Run without wiping once.
-Paper Thin: Finish a Run in wich you wipped at every Tier.
-You Have No Idea How Fast I Am: Kill the F40.
-Poor Guy: Wipe to the first Beggar.
-Stun Locked: Kill the Golem before it passes half of the Battlefield.
-Winter is Coming: Start a Run with 60 Ice Slimes in your Roster.
-Blazing Hot: Finish a Run with 60 Fire Slimes in your Roster.
-Stonehead: Finish a Run with 60 Stone Slimes in your Roster.
-Toxicity: Finish a Run with 60 Poison Slimes in your Roster.
-Self Defense: Kill a Boss wave without attacking once.
+
 
 OpenCode+BigPickle
 KiloCode+Hy3

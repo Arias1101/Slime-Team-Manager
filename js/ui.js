@@ -6,6 +6,7 @@ import { gameState, SLIME_TYPES, killSlime, syncSlimesArray, rerollSlimeType, ca
 import { updateUpgradesUI } from './upgrades.js';
 import { activeGroundLoots, formatLootEffects } from './enemies.js';
 import { setGamePaused, isGamePaused } from './engine.js';
+import { checkAchievements, renderAchievementsPanel, triggerElementAchievement } from './achievements.js';
 
 const scrapsCountEl = document.getElementById('scrapsCount');
 const scoreCountEl = document.getElementById('scoreCount');
@@ -61,6 +62,9 @@ export function updateUI() {
     const newGamePlusCountEl = document.getElementById('newGamePlusCount');
     if (newGamePlusStatEl) newGamePlusStatEl.classList.toggle('hidden', !hasEndedGame);
     if (newGamePlusCountEl) newGamePlusCountEl.textContent = `+${gameState.newGamePlusCompletions || 0}`;
+
+    checkAchievements();
+    renderAchievementsPanel();
 
     const enemyBadgeEl = document.getElementById('enemyBadge');
     if (enemyBadgeEl) {
@@ -1198,6 +1202,7 @@ function specializeInspectedSlime(specialization) {
     const typeId = elementalPrefix ? `${elementalPrefix}${specialization[0].toUpperCase()}${specialization.slice(1)}` : null;
     if (!typeId || !SLIME_TYPES[typeId]) return;
     target.type = elementalPrefix || target.type;
+    triggerElementAchievement(target.type);
     target.specialization = specialization;
     ensureSlimeSubTalents(target);
     sortRosterBySpecialization();

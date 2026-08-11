@@ -2,7 +2,7 @@
  * Slime Types & Dynamic Enemy-Targeting 60 FPS Jump Attack System
  */
 
-import { activeEnemies, triggerLootDrop, activeGroundLoots, formatLootEffects } from './enemies.js';
+import { activeEnemies, triggerLootDrop, activeGroundLoots, formatLootEffects, markSlimeAttacked } from './enemies.js';
 import { gameState, SLIME_TYPES, addScraps, updateBestRoster, saveStateToLocal, calculateSlimeDamage, getScaledEquipmentEffects, getSlimeHitEffects, refreshSlimeMaxHp, getSlimeJumpSprite, getSlimeSpecialization, getSlimeGraftMultipliers, getSlimeSubTalentDef, getMeltingMendHotParams, getIceBarrierParams, getLeechParams, getStoneSkinParams, getIceBurstParams, getImmolationParams, getCorrosivePoisonParams, getHeavyStrikeParams, getSlideParams, isMindlessSupport, hasMeltingMend, hasIceBarrier, hasLeech, hasStoneSkin, hasIceBurst, hasImmolation, hasCorrosivePoison, hasHeavyStrike, hasSlide } from './state.js';
 import { updateUI, requestUIRefresh, updateLootHUD, renderSlimeArmy } from './ui.js';
 import { isGamePaused } from './engine.js';
@@ -882,6 +882,8 @@ function dealTargetEnemyDamage(targetEnemy, damageAmount, slimeConfig, isCrit = 
     const damageToApply = Math.min(currentTarget.hp, Math.round(effectiveDamage));
 
     currentTarget.hp -= damageToApply;
+    // Any Slime damage to an enemy disarms the "Self Defense" Boss-wave flag.
+    markSlimeAttacked();
 
     // Heavy Strike (Stone Fighter second talent): knock the target back and force
     // it to re-approach its targetX before it can attack again. Sub-talents can

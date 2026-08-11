@@ -7,6 +7,8 @@ import { healAllSlimes, initAscendedAutoAttacks, clearAscendedAutoAttacks, showF
 import { updateUI, updateLootHUD, requestUIRefresh, playSlimeRainRespawnAnimation } from './ui.js';
 import { openShopModal } from './shop.js';
 import { isGamePaused, setGamePaused } from './engine.js';
+import { notifyAchievementEvent, checkAchievements, grantAchievement } from './achievements.js';
+import { recordRunWipe, resetRunWipeTracking } from './state.js';
 /**
  * Scrap value contributed by one point of each loot attribute.
  * Ice and stun are binary effects, so each occurrence always contributes one point.
@@ -900,6 +902,18 @@ let autoWaveTimeoutId = null;
 let countdownTimerId = null;
 let waveSpawnTimers = [];
 let nextWaveCountdownSec = 0;
+// Tracks whether the current Boss wave (every 10th wave) has been cleared without
+// any Slime dealing damage to an enemy (used by the "Self Defense" achievement).
+let bossWaveNoAttack = false;
+
+/**
+ * Disarm the "no attack" Boss-wave flag. Called from the Slime attack pipeline
+ * the instant a Slime deals damage to an enemy, so "Self Defense" only unlocks
+ * when an entire Boss wave is cleared without a single Slime attack.
+ */
+export function markSlimeAttacked() {
+    bossWaveNoAttack = false;
+}
 
 function applyNewGamePlusPresentation() {
     const isVillage = gameState.isInNewGamePlus === true;
@@ -1154,6 +1168,10 @@ export function startNextWave() {
     isWaveActive = true;
     showBattlefieldWaveBanner(`${String.fromCodePoint(0x26A1, 0xFE0F)} WAVE ${gameState.currentWave}`);
 
+    // A Boss wave (every 10th) starts with the "no attack" flag armed for the
+    // "Self Defense" achievement; it is disarmed the moment a Slime damages an enemy.
+    bossWaveNoAttack = (gameState.currentWave > 0 && gameState.currentWave % 10 === 0);
+
     // Apply wave-specific battlefield background (bonus waves use special art).
     const battlefield = document.querySelector('.battlefield-card');
     if (battlefield) battlefield.style.backgroundImage = getWaveBackground(gameState.currentWave);
@@ -1399,6 +1417,14 @@ export function enterNewGamePlus() {
     const armyContainer = document.getElementById('armyContainer');
     if (armyContainer) armyContainer.innerHTML = '';
     applyNewGamePlusPresentation();
+    // Evaluate run-finish achievements (roster composition, Iron Man, Paper Thin)
+    // against the roster that completed the run, then reset per-run wipe tracking
+    // for the next run.
+    notifyAchievementEvent('runFinished', {
+        roster: gameState.slimes,
+        wipedTiers: (gameState.runWipedTiers || []).slice()
+    });
+    resetRunWipeTracking();
     saveStateToLocal();
     updateUI();
     isNewGamePlusTransition = false;
@@ -1536,6 +1562,12 @@ function checkWaveCompletion() {
         const clearedWaveNum = gameState.currentWave;
         gameState.maxWaveCleared = Math.max(gameState.maxWaveCleared || 0, clearedWaveNum);
         saveWaveSnapshot(clearedWaveNum, uncollectedLootValue);
+
+        // "Self Defense": a Boss wave (every 10th) cleared while the "no attack" flag
+        // is still armed means no Slime ever damaged an enemy this wave.
+        if (clearedWaveNum > 0 && clearedWaveNum % 10 === 0 && bossWaveNoAttack) {
+            grantAchievement('selfDefense');
+        }
 
         // A cleared bonus wave returns to the normal progression wave that was
         // stashed when the bonus was entered (otherwise just advance by one).
@@ -1829,6 +1861,7 @@ export function updateEnemies(deltaSeconds) {
                 setTimeout(() => { if (elToRemove) elToRemove.remove(); }, 800);
             }
             activeEnemies.splice(i, 1);
+            notifyAchievementEvent('enemyDefeated', { enemyId: enemy.typeId, x: enemy.x });
             checkWaveCompletion();
             continue;
         }
@@ -3054,6 +3087,11 @@ export function forwardWaveState() {
  */
 export function wipeWaveState() {
     const currentWave = gameState.currentWave || 1;
+    // Wiping on the very first wave (the lone Beggar) unlocks "Poor Guy".
+    if (currentWave === 1) grantAchievement('poorGuy');
+    // Track the boss tier wiped (10/20/30/40/50) for Iron Man / Paper Thin.
+    const wipedTier = Math.min(50, Math.floor((currentWave - 1) / 10) * 10 + 10);
+    recordRunWipe(wipedTier);
     // Wiping on a bonus stage must return the player to the normal wave they
     // would have reached had they skipped the bonus (e.g. bonus after boss 10
     // -> back to wave 11), not the bogus bonus wave number.

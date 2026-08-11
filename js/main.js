@@ -11,10 +11,14 @@ import { triggerRandomSlimeAttack, triggerSlimeEatLoot, initAscendedAutoAttacks 
 import { initUpgradesModule, sortMaxedUpgradeCardsOnPageLoad } from './upgrades.js';
 import { initShopModule } from './shop.js';
 import { openCommonHousePopup } from './commonhouse.js';
+import { openAchievementsPopup } from './achievementsPopup.js';
+import { grantAchievement } from './achievements.js';
+import { initAchievementToasts } from './achievements.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Load Local State
     loadStateFromLocal();
+    initAchievementToasts();
 
     // 2. Initialize Enemies, Upgrades, Shop, Ascended Auto-Attacks, Main Tabs & Modal Listeners
     initEnemiesModule();
@@ -516,7 +520,9 @@ document.addEventListener('DOMContentLoaded', () => {
             equippedSlimeIds.forEach(flashEquipmentRecipient);
         });
         popup.querySelector('.btn-forge-merge-all').addEventListener('click', () => {
+            const before = getVillageInventory().length;
             gameState.villageInventory = mergeVillageInventory(getVillageInventory());
+            if (gameState.villageInventory.length < before) grantAchievement('opposableThumbs');
             saveStateToLocal();
             renderForgePopup(popup);
         });
@@ -545,6 +551,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (button.dataset.villageBuilding === 'Forge') openForgePopup();
             else if (button.dataset.villageBuilding === 'Alchemist Shop') openAlchemistPopup();
             else if (button.dataset.villageBuilding === 'Common House') openCommonHousePopup();
+            else if (button.dataset.villageBuilding === 'Tavern') openAchievementsPopup();
             else openVillageBuildingPopup(button.dataset.villageBuilding);
         });
     });

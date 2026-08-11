@@ -1,7 +1,8 @@
 Patch Notes (do not edit this I handle it manually):
 v0.29
 - Reworked Common House Toolbar buttons to work like additive filters.
-- Implemented nice tooltips for Talents and Subtalents.
+- Implemented nice tooltips.
+- Trophies !
 
 v0.28
 - Fixed AFK scrap rewards sometimes not registering.
