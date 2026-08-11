@@ -2,6 +2,7 @@ Patch Notes (do not edit this I handle it manually):
 v1.3
 - Implemented a speed ceiling for rush type ennemies speed in fastmode.
 - Added 1 coin reward per defeated boss.
+- Added subsorting in Roster display by Slime type.
 
 v1.2
 - Allowed Support Slimes to heal each other when all other Slimes are dead.

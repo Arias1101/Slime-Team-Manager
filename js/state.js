@@ -1330,9 +1330,18 @@ export function sortRosterBySpecialization() {
         const key = String(slime.id || slime.name);
         if (!entries.has(key)) entries.set(key, slime);
     });
+    // Element display order: Base > Fire > Ice > Poison > Stone.
+    const elementOrder = { '': 0, base: 0, fire: 1, ice: 2, poison: 3, stone: 4 };
+    const elementOf = (slime) => {
+        const m = String(slime?.type || 'base').match(/^(poison|fire|ice|stone)/);
+        return m ? m[1] : 'base';
+    };
     // Roster follows battlefield direction: back line on the left, then middle, then front line on the right.
     const priority = { support: 0, fighter: 1, tank: 2 };
     const ordered = [...entries.values()].sort((a, b) => {
+        const aElement = elementOrder[elementOf(a)] ?? 0;
+        const bElement = elementOrder[elementOf(b)] ?? 0;
+        if (aElement !== bElement) return aElement - bElement;
         const aPriority = priority[getSlimeSpecialization(a)] ?? 1;
         const bPriority = priority[getSlimeSpecialization(b)] ?? 1;
         return aPriority - bPriority || (a.slotIndex ?? 0) - (b.slotIndex ?? 0);

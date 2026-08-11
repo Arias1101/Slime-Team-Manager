@@ -236,6 +236,22 @@ export function renderSlimeRosterLanes(container, entries, {
         const key = ['support', 'fighter', 'tank'].includes(specialization) ? specialization : 'basic';
         groups[key].push(entry);
     });
+    // Within each group, order by element: Base > Fire > Ice > Poison > Stone,
+    // then by stored slot index (preserving within-element relative order).
+    const elementOrder = { '': 0, base: 0, fire: 1, ice: 2, poison: 3, stone: 4 };
+    const elementOf = (entry) => {
+        const slime = entry.slime || entry;
+        const m = String(slime?.type || 'base').match(/^(poison|fire|ice|stone)/);
+        return m ? m[1] : 'base';
+    };
+    Object.values(groups).forEach(list => list.sort((a, b) => {
+        const ea = elementOrder[elementOf(a)] ?? 0;
+        const eb = elementOrder[elementOf(b)] ?? 0;
+        if (ea !== eb) return ea - eb;
+        const sa = (a.slime || a).slotIndex ?? 0;
+        const sb = (b.slime || b).slotIndex ?? 0;
+        return sa - sb;
+    }));
     const groupOrder = ['support', 'fighter', 'tank', 'basic'];
 
     container.replaceChildren();
