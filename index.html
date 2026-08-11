@@ -265,6 +265,26 @@
                                 </div>
                             </div>
 
+                            <!-- Upgrade: Inflation -->
+                            <div class="upgrade-card level-zero hidden" id="upgradeInflationCard">
+                                <div class="upgrade-info">
+                                    <img src="images/upgrades/inflation.png" alt="Inflation"
+                                        class="upgrade-icon-img"
+                                        onerror="this.onerror=null; this.src='images/upgrades/inflation.png';">
+                                    <div class="upgrade-details">
+                                        <h4 class="upgrade-card-title">Inflation <span
+                                                class="upgrade-current">(Current: <strong id="upgradeInflationValue"
+                                                    class="upgrade-value">+0%</strong>)</span></h4>
+                                        <span class="upgrade-text">Increase scraps earned from loots.</span>
+                                    </div>
+                                </div>
+                                <div class="upgrade-action">
+                                    <button id="btnUpgradeInflation" class="btn-plus" disabled>+</button>
+                                    <span class="upgrade-cost" id="upgradeInflationCost">5 <img
+                                            class="upgrade-scrap-icon" src="images/logos/scrap.png" alt="Scraps"></span>
+                                </div>
+                            </div>
+
                             <!-- Upgrade: Precision -->
                             <div class="upgrade-card level-zero hidden" id="upgradePrecisionCard">
                                 <div class="upgrade-info">
@@ -722,7 +742,7 @@
             </div>
 
             <script type="module" src="js/main.js"></script>
-            <span class="game-version-label" aria-label="Game version 1.6">v1.6</span>
+            <span class="game-version-label" aria-label="Game version 1.7">v1.7</span>
 </body>
 
 </html>

@@ -12,6 +12,9 @@ import {
     getSlimeDamage,
     getAugmentationUpgradeCost,
     buyAugmentationUpgrade,
+    getInflationLevel,
+    getInflationUpgradeCost,
+    buyInflationUpgrade,
     getPrecisionLevel,
     getPrecisionUpgradeCost,
     buyPrecisionUpgrade,
@@ -54,6 +57,7 @@ import {
     buyArmySizeUpgradeBulk,
     buyAscensionUpgradeBulk,
     buyAugmentationUpgradeBulk,
+    buyInflationUpgradeBulk,
     buyPrecisionUpgradeBulk,
     buyRegenUpgradeBulk,
     buyDigestionUpgradeBulk,
@@ -135,6 +139,7 @@ export function updateUpgradesUI() {
     const upgradeArmySizeCardEl = document.getElementById('upgradeArmySizeCard');
     const upgradeAscensionCardEl = document.getElementById('upgradeAscensionCard');
     const upgradeAugmentationCardEl = document.getElementById('upgradeAugmentationCard');
+    const upgradeInflationCardEl = document.getElementById('upgradeInflationCard');
     const upgradePrecisionCardEl = document.getElementById('upgradePrecisionCard');
     const upgradeRegenCardEl = document.getElementById('upgradeRegenCard');
     const upgradeDigestionCardEl = document.getElementById('upgradeDigestionCard');
@@ -147,6 +152,7 @@ export function updateUpgradesUI() {
             ascension: false,
             augmentation: false,
             precision: false,
+            inflation: false,
             regen: false,
             digestion: false,
             ignition: false,
@@ -162,6 +168,7 @@ export function updateUpgradesUI() {
             ascension: true,
             augmentation: true,
             precision: true,
+            inflation: true,
             regen: true,
             digestion: true,
             incubation: true,
@@ -187,6 +194,7 @@ export function updateUpgradesUI() {
     if ((gameState.maxSlimesReached || 1) >= 5) gameState.unlockedUpgrades.ascension = true;
 
     if (totalScore >= 10) gameState.unlockedUpgrades.augmentation = true;
+    if (inNewGamePlus) gameState.unlockedUpgrades.inflation = true;
     if (gameState.hasSlimeDied === true) gameState.unlockedUpgrades.regen = true;
     if ((gameState.maxWaveCleared || 0) >= 7) {
         gameState.unlockedUpgrades.digestion = true;
@@ -228,6 +236,11 @@ export function updateUpgradesUI() {
     if (upgradeAugmentationCardEl) {
         if (gameState.unlockedUpgrades.augmentation) upgradeAugmentationCardEl.classList.remove('hidden');
         else upgradeAugmentationCardEl.classList.add('hidden');
+    }
+
+    if (upgradeInflationCardEl) {
+        if (gameState.unlockedUpgrades.inflation) upgradeInflationCardEl.classList.remove('hidden');
+        else upgradeInflationCardEl.classList.add('hidden');
     }
 
     if (upgradePrecisionCardEl) {
@@ -378,6 +391,31 @@ export function updateUpgradesUI() {
             btnUpgradeAugmentationEl.setAttribute('disabled', 'disabled');
             btnUpgradeAugmentationEl.classList.add('disabled');
             btnUpgradeAugmentationEl.classList.remove('affordable');
+        }
+    }
+
+    // Upgrade: Inflation
+    const upgradeInflationValueEl = document.getElementById('upgradeInflationValue');
+    const upgradeInflationCostEl = document.getElementById('upgradeInflationCost');
+    const btnUpgradeInflationEl = document.getElementById('btnUpgradeInflation');
+
+    if (upgradeInflationValueEl && upgradeInflationCostEl && btnUpgradeInflationEl) {
+        const currentInflation = getInflationLevel();
+        const costInflation = getInflationUpgradeCost();
+
+        upgradeInflationValueEl.textContent = `+${currentInflation}%`;
+        setUpgradeLevelZero(upgradeInflationCardEl, currentInflation <= 0);
+        upgradeInflationCostEl.innerHTML = `${costInflation} ${SCRAP_ICON}`;
+
+        const canAffordInflation = (gameState.scraps || 0) >= costInflation;
+        if (canAffordInflation) {
+            btnUpgradeInflationEl.removeAttribute('disabled');
+            btnUpgradeInflationEl.classList.remove('disabled');
+            btnUpgradeInflationEl.classList.add('affordable');
+        } else {
+            btnUpgradeInflationEl.setAttribute('disabled', 'disabled');
+            btnUpgradeInflationEl.classList.add('disabled');
+            btnUpgradeInflationEl.classList.remove('affordable');
         }
     }
 
@@ -792,6 +830,7 @@ export function initUpgradesModule() {
     bindUpgradeButton('btnUpgradeArmySize', buyArmySizeUpgrade, buyArmySizeUpgradeBulk);
     bindUpgradeButton('btnUpgradeAscension', buyAscensionUpgrade, buyAscensionUpgradeBulk);
     bindUpgradeButton('btnUpgradeAugmentation', buyAugmentationUpgrade, buyAugmentationUpgradeBulk);
+    bindUpgradeButton('btnUpgradeInflation', buyInflationUpgrade, buyInflationUpgradeBulk);
     bindUpgradeButton('btnUpgradePrecision', buyPrecisionUpgrade, buyPrecisionUpgradeBulk);
     bindUpgradeButton('btnUpgradeRegen', buyRegenUpgrade, buyRegenUpgradeBulk);
     bindUpgradeButton('btnUpgradeDigestion', buyDigestionUpgrade, buyDigestionUpgradeBulk);

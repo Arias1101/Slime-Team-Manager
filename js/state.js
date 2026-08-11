@@ -197,6 +197,7 @@ export const defaultState = {
         ascension: false,
         augmentation: false,
         precision: false,
+        inflation: false,
         regen: false,
         digestion: false,
         incubation: false,
@@ -227,6 +228,7 @@ export const defaultState = {
     alchemistRageLevel: 0,
     alchemistEnduranceLevel: 0,
     alchemistRegenLevel: 0,
+    inflationLevel: 0,     // Inflation upgrade: +1% scraps from loot per level
     isInNewGamePlus: false,    // Village intermission after defeating/wiping to Death
     achievements: {},          // Map of unlocked achievement id -> true
     runWipedTiers: [],          // Tiers (10/20/30/40/50) wiped during the current run
@@ -1588,6 +1590,48 @@ export function buyAugmentationUpgrade() {
 }
 
 /**
+ * Get current Inflation upgrade level (default 0).
+ * Each level grants +1% scraps earned from loots.
+ */
+export function getInflationLevel() {
+    return gameState.inflationLevel || 0;
+}
+
+/**
+ * Get current cost for Inflation Upgrade. Scales exactly like Augmentation
+ * (Exponential: 10 * 1.20^level), capped by the 500 scrap ceiling.
+ */
+export function getInflationUpgradeCost() {
+    const level = Math.max(0, getInflationLevel());
+    return clampUpgradeCost(Math.floor(10 * Math.pow(1.20, level)));
+}
+
+/**
+ * Purchase Inflation Upgrade: deducts exponential cost scraps & increases the
+ * scraps-from-loot bonus by +1% per level.
+ */
+export function buyInflationUpgrade() {
+    const cost = getInflationUpgradeCost();
+    if ((gameState.scraps || 0) < cost) return false;
+
+    gameState.scraps -= cost;
+    gameState.inflationLevel = (gameState.inflationLevel || 0) + 1;
+
+    saveStateToLocal();
+    return true;
+}
+
+/**
+ * Get the bonus scraps awarded when eating a loot, based on the Inflation level.
+ * Returns the rounded extra scraps (baseValue * level / 100).
+ */
+export function getInflationBonusScraps(baseValue) {
+    const level = getInflationLevel();
+    if (level <= 0) return 0;
+    return Math.floor((baseValue || 0) * (level / 100));
+}
+
+/**
  * Get current Precision upgrade level (default 0)
  */
 export function getPrecisionLevel() {
@@ -2224,6 +2268,7 @@ export function bulkBuyUpgrade(buy, maxCount = 10) {
 export function buyArmySizeUpgradeBulk(max = 10) { return bulkBuyUpgrade(buyArmySizeUpgrade, max); }
 export function buyAscensionUpgradeBulk(max = 10) { return bulkBuyUpgrade(buyAscensionUpgrade, max); }
 export function buyAugmentationUpgradeBulk(max = 10) { return bulkBuyUpgrade(buyAugmentationUpgrade, max); }
+export function buyInflationUpgradeBulk(max = 10) { return bulkBuyUpgrade(buyInflationUpgrade, max); }
 export function buyPrecisionUpgradeBulk(max = 10) { return bulkBuyUpgrade(buyPrecisionUpgrade, max); }
 export function buyRegenUpgradeBulk(max = 10) { return bulkBuyUpgrade(buyRegenUpgrade, max); }
 export function buyDigestionUpgradeBulk(max = 10) { return bulkBuyUpgrade(buyDigestionUpgrade, max); }

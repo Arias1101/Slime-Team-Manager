@@ -3,7 +3,7 @@
  */
 
 import { activeEnemies, triggerLootDrop, activeGroundLoots, formatLootEffects, markSlimeAttacked } from './enemies.js';
-import { gameState, SLIME_TYPES, addScraps, updateBestRoster, saveStateToLocal, calculateSlimeDamage, getScaledEquipmentEffects, getSlimeHitEffects, refreshSlimeMaxHp, getSlimeJumpSprite, getSlimeSpecialization, getSlimeGraftMultipliers, getSlimeSubTalentDef, getMeltingMendHotParams, getIceBarrierParams, getLeechParams, getStoneSkinParams, getIceBurstParams, getImmolationParams, getCorrosivePoisonParams, getHeavyStrikeParams, getSlideParams, isMindlessSupport, hasMeltingMend, hasIceBarrier, hasLeech, hasStoneSkin, hasIceBurst, hasImmolation, hasCorrosivePoison, hasHeavyStrike, hasSlide } from './state.js';
+import { gameState, SLIME_TYPES, addScraps, updateBestRoster, saveStateToLocal, calculateSlimeDamage, getScaledEquipmentEffects, getSlimeHitEffects, refreshSlimeMaxHp, getSlimeJumpSprite, getSlimeSpecialization, getSlimeGraftMultipliers, getSlimeSubTalentDef, getMeltingMendHotParams, getIceBarrierParams, getLeechParams, getStoneSkinParams, getIceBurstParams, getImmolationParams, getCorrosivePoisonParams, getHeavyStrikeParams, getSlideParams, isMindlessSupport, hasMeltingMend, hasIceBarrier, hasLeech, hasStoneSkin, hasIceBurst, hasImmolation, hasCorrosivePoison, hasHeavyStrike, hasSlide, getInflationBonusScraps } from './state.js';
 import { updateUI, requestUIRefresh, updateLootHUD, renderSlimeArmy } from './ui.js';
 import { isGamePaused } from './engine.js';
 import { playJumpSound, playLootSound } from './audio.js';
@@ -1267,12 +1267,15 @@ function dispatchSingleSlimeToEat() {
         const lootIdx = activeGroundLoots.indexOf(targetLoot);
         if (lootIdx !== -1) activeGroundLoots.splice(lootIdx, 1);
 
-        addScraps(targetLoot.value);
+        // Inflation upgrade adds a +X% scraps bonus on top of the base loot value.
+        const inflationBonus = getInflationBonusScraps(targetLoot.value);
+        const totalScraps = (targetLoot.value || 0) + inflationBonus;
+        addScraps(totalScraps);
         updateLootHUD();
         requestUIRefresh();
 
         // 1. Immediately pop +N food scrap floating text (floats straight up)
-        showFloatingStatusTextAt(targetLoot.x, targetLoot.y, `+${targetLoot.value} <img src="images/logos/scrap.png" alt="scrap" class="loot-text-icon">`, 'loot-text');
+        showFloatingStatusTextAt(targetLoot.x, targetLoot.y, `+${totalScraps} <img src="images/logos/scrap.png" alt="scrap" class="loot-text-icon">`, 'loot-text');
 
         // 2. Character Sheet & Equipment Unique Effect Logic
         if (slimeObj) {
