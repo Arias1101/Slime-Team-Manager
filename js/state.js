@@ -560,7 +560,7 @@ export const TALENT_SUBTALENTS = {
         [
             { id: 'endurance', name: 'Endurance', description: '-10% damage received by Intercepting attacks.' },
             { id: 'avenge', name: 'Avenge', description: 'Apply your status to intercepted attackers.' },
-            { id: 'defenseOrchestra', name: 'Defense Orchestra', description: '+10% Block chance (stacks).' }
+            { id: 'defenseOrchestra', name: 'Defense Orchestra', description: '+10% Block chance.' }
         ]
     ],
     fighter: [

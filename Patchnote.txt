@@ -1,4 +1,9 @@
 Patch Notes (do not edit this I handle it manually):
+v1.5
+- Increased coin rewards for finishing a run.
+- Added LOTS of slimes songs.
+- Adjusted zindex for resurection sprite animations.
+
 v1.4
 - Added 5 coin reward for passing bonus waves.
 - Changed Equipments stats scaling to increase multiplicatively with quality instead of additively.

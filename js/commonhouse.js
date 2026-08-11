@@ -646,6 +646,17 @@ function getActionButtonsHtml(selectedSlimes) {
         const spec = combo.spec;
         const specDef = SPEC_BUTTONS.find(s => s.id === spec) || SPEC_BUTTONS[0];
         const specLabel = specDef.label;
+        // Whether a Slime owns the second talent of its element+specialization
+        // combo (the prerequisite for the third Talent / its sub-talents). Works
+        // for any combo, including mixed-element selections where the per-type
+        // second-talent flag differs per Slime.
+        const hasSecondTalent = (slime) => {
+            const sSpec = getSlimeSpecialization(slime);
+            if (!sSpec) return false;
+            const typeId = `${elementOf(slime)}${sSpec.charAt(0).toUpperCase()}${sSpec.slice(1)}`;
+            const sFlag = getSecondTalentFlag(typeId);
+            return sFlag ? !!slime.talents?.[sFlag] : false;
+        };
         const talentName = TALENT_NAMES[spec] || 'Talent';
         const talentDesc = TALENT_DESCRIPTIONS[spec] || '';
         // Third Talent shared by every element of this specialization (null when
@@ -726,13 +737,6 @@ function getActionButtonsHtml(selectedSlimes) {
                 // the first Talent AND the second Talent as prerequisites. If any
                 // selected Slime hasn't bought its second Talent yet, the third is
                 // locked. Mass-buy applies per eligible Slime.
-                const hasSecondTalent = (s) => {
-                    const spec = getSlimeSpecialization(s);
-                    if (!spec) return false;
-                    const typeId = `${elementOf(s)}${spec.charAt(0).toUpperCase()}${spec.slice(1)}`;
-                    const flag = getSecondTalentFlag(typeId);
-                    return flag ? !!s.talents?.[flag] : false;
-                };
                 const ownedCount = selectedSlimes.filter(s => s.talents?.[thirdDef.flag]).length;
                 const secondOwnedSome = selectedSlimes.some(s => hasSecondTalent(s));
                 const secondOwnedAll = selectedSlimes.length > 0 && selectedSlimes.every(s => hasSecondTalent(s));
@@ -779,7 +783,7 @@ function getActionButtonsHtml(selectedSlimes) {
             const firstOwnedAll = selectedSlimes.length > 0
                 && selectedSlimes.every(s => hasFirstTalent(s));
             const secondOwnedAll = selectedSlimes.length > 0
-                && selectedSlimes.every(s => secondFlag && s.talents?.[secondFlag]);
+                && selectedSlimes.every(s => hasSecondTalent(s));
             const subEnabled = (t === 0 && firstOwnedAll) || (t === 1 || t === 2 ? secondOwnedAll : false);
             const subDisabled = subEnabled ? '' : ' disabled';
             // A sub-talent is "selected" only when every selected Slime already
@@ -936,7 +940,9 @@ function wireTypeButtons(container) {
             };
             // Prerequisites:
             //  - Talent 2 requires the first Talent.
-            //  - Talent 3 requires BOTH the first Talent AND the second Talent.
+            //  - Talent 3 requires BOTH the first Talent AND the second Talent on
+            //    EVERY selected Slime (so a mixed selection can never end up with
+            //    Talent 3 unlocked while some members still lack Talent 2).
             const isEligible = (slime) => {
                 if (!slime.talents?.[flag]) {
                     if (talentIndex === 1) return hasFirstTalent(slime);
@@ -945,6 +951,13 @@ function wireTypeButtons(container) {
                 }
                 return false;
             };
+            if (talentIndex === 2) {
+                // Gate the whole purchase behind every selected Slime owning
+                // Talent 2 (not just the per-slime eligibility above).
+                const secondOwnedAll = selectedSlimes.length > 0
+                    && selectedSlimes.every(s => hasSecondTalent(s));
+                if (!secondOwnedAll) return;
+            }
             const eligible = selectedSlimes.filter(isEligible);
             if (!eligible.length) return;
             const totalCost = eligible.length * TALENT_PRICE[talentIndex];

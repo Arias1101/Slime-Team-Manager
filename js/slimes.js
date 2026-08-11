@@ -374,6 +374,8 @@ function playResurrectionLightRay(unitEl) {
     // near the Slime's feet so the 250px column rises out of the top of the frame.
     rayEl.style.left = `${position.x + position.width / 2 - 11 + 3 - 1}px`;
     rayEl.style.top = `${position.y + position.height - 2 - 250 + 2}px`;
+    // Match the ray's stacking to the resurrecting Support's own z-index.
+    rayEl.style.zIndex = unitEl.style.zIndex || '1';
     position.overlay.appendChild(rayEl);
     setTimeout(() => rayEl.remove(), 3000);
 }
@@ -387,6 +389,8 @@ function playResurrectionLightRayTarget(unitEl) {
     // 40px-wide canvas: offset by 20px (half width) to keep it centered on the same point.
     rayEl.style.left = `${position.x + position.width / 2 - 20 + 3 - 1}px`;
     rayEl.style.top = `${position.y + position.height - 2 - 250 + 2}px`;
+    // Match the ray's stacking to the revived target's own z-index.
+    rayEl.style.zIndex = unitEl.style.zIndex || '1';
     position.overlay.appendChild(rayEl);
     setTimeout(() => rayEl.remove(), 3000);
 }

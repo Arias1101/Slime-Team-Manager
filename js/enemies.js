@@ -199,8 +199,8 @@ export const ENEMY_TYPES = {
         projectile: 'boulder',
         controlImmune: true,
         tier: 0,
-        hp: 15000,
-        maxHp: 15000,
+        hp: 12000,
+        maxHp: 12000,
         damage: 15,
         attackSpeed: 0.5,
         moveSpeed: 0.6,
@@ -377,7 +377,7 @@ export const ENEMY_TYPES = {
         tier: 2,
         hp: 30,                // 4 HP
         maxHp: 30,
-        damage: 2,            // 3 Damage per attack
+        damage: 1,            // 3 Damage per attack
         attackSpeed: 1.5,     // 1 attack per second
         moveSpeed: 12,       // Move speed
         targetX: 190,         // Close melee range near the slimes
@@ -1405,7 +1405,7 @@ export function enterNewGamePlus() {
         slotIndex: slime.slotIndex !== undefined ? slime.slotIndex : index
     }));
     const completedRuns = (gameState.newGamePlusCompletions || 0) + 1;
-    const villageCoinReward = completedRuns * 2;
+    const villageCoinReward = completedRuns * 4;
 
     resetGameFull({ startWave: false, preserveUpgrades: true });
     gameState.newGamePlusCompletions = completedRuns;

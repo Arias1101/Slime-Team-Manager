@@ -187,9 +187,9 @@ const EFFECTS_BASE_PATH = 'images/sounds/effects/';
 
 const EFFECT_FILES = {
     kill: ['kill1.mp3', 'kill2.mp3'],
-    jump: ['jump1.mp3', 'jump2.mp3', 'jump3.mp3', 'jump4.mp3', 'jump5.mp3', 'jump6.mp3'],
-    loot: ['loot1.mp3', 'loot2.mp3', 'loot3.mp3'],
-    die: ['die1.mp3', 'die2.mp3', 'die3.mp3']
+    jump: ['jump1.mp3', 'jump2.mp3', 'jump3.mp3', 'jump4.mp3', 'jump5.mp3', 'jump6.mp3', 'jump7.mp3', 'jump8.mp3', 'jump9.mp3'],
+    loot: ['loot1.mp3', 'loot2.mp3', 'loot3.mp3', 'loot4.mp3', 'loot5.mp3', 'loot6.mp3', 'loot7.mp3', 'loot8.mp3', 'loot9.mp3', 'loot10.mp3', 'loot11.mp3'],
+    die: ['die1.mp3', 'die2.mp3', 'die3.mp3', 'die4.mp3', 'die5.mp3', 'die6.mp3', 'die7.mp3', 'die8.mp3', 'die9.mp3', 'die10.mp3', 'die11.mp3']
 };
 
 let effectsMuted = false; // Master mute for sound effects.
@@ -219,14 +219,14 @@ export function playJumpSound() {
     playSoundEffect('jump', 0.1);
 }
 
-/** Convenience wrapper: play a random "loot" sound effect (loot1..loot3) at 15% volume. */
+/** Convenience wrapper: play a random "loot" sound effect (loot1..loot11) at 10% volume. */
 export function playLootSound() {
-    playSoundEffect('loot', 0.15);
+    playSoundEffect('loot', 0.1);
 }
 
-/** Convenience wrapper: play a random "die" sound effect (die1..die3) at full volume. */
+/** Convenience wrapper: play a random "die" sound effect (die1..die11) at 10% volume. */
 export function playDieSound() {
-    playSoundEffect('die', 1.0);
+    playSoundEffect('die', 0.1);
 }
 
 /** Toggle the sound effects mute. Returns the new muted state. */
