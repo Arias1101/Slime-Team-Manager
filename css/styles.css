@@ -4954,7 +4954,7 @@ body.new-game-plus .village-buildings {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .common-house-selected-card {
@@ -4968,8 +4968,7 @@ body.new-game-plus .village-buildings {
     display: flex;
     align-items: center;
     gap: 14px;
-    overflow-x: hidden;
-    overflow-y: auto;
+    overflow: visible;
     scrollbar-width: none;
 }
 
@@ -5208,10 +5207,17 @@ body.new-game-plus .village-buildings {
 
 /* Each Talent column = one Talent button on top of its 3 small Sub-talent buttons. */
 .common-house-talent-col {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 4px;
+}
+
+/* Lift the hovered column (and its glass tooltip) above every other column so
+   the tooltip is never occluded by later talent/subtalent buttons. */
+.common-house-talent-col:hover {
+    z-index: 9999;
 }
 
 .common-house-talent-col.common-house-talent-col-placeholder {
@@ -5497,7 +5503,13 @@ body.new-game-plus .village-buildings {
     outline: none;
 }
 
-.common-house-popup .common-house-toolbar-btn:active {
+.common-house-popup .common-house-toolbar-btn:not(:disabled):active {
+    background: #23262c;
+    transform: translateY(2px);
+    box-shadow: 0px 2px #000, 0px -2px #000, 2px 0px #000, -2px 0px #000, inset 0px 2px rgba(0, 0, 0, 0.2);
+}
+
+.common-house-popup .common-house-toolbar-btn.active {
     background: #e3c765;
     transform: translateY(2px);
     box-shadow: 0px 2px #000, 0px -2px #000, 2px 0px #000, -2px 0px #000, inset 0px 2px rgba(0, 0, 0, 0.2);
@@ -6582,6 +6594,12 @@ body.new-game-plus .village-buildings {
     gap: 6px;
 }
 
+/* Lift the hovered column (and its glass tooltip) above every other column so
+   the tooltip is never occluded by later talent/subtalent buttons. */
+.slime-specialization-talent-column:hover {
+    z-index: 9999;
+}
+
 .slime-specialization-subtalents {
     display: flex;
     flex-direction: column;
@@ -6943,15 +6961,15 @@ body.new-game-plus .village-buildings {
 }
 
 .talent-tooltip-glass-box {
-    position: absolute;
-    z-index: 1100;
-    top: calc(100% + 10px);
-    left: 50%;
+    position: fixed;
+    z-index: 100000;
+    bottom: auto;
+    left: auto;
     width: 210px;
     padding: 10px 12px;
     border: 1px solid rgba(255, 255, 255, 0.32);
     border-radius: 10px;
-    background: rgba(15, 23, 42, 0.72);
+    background: rgba(15, 23, 42, 0.92);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     color: #f8fafc;
@@ -6961,17 +6979,31 @@ body.new-game-plus .village-buildings {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.42);
     opacity: 0;
     pointer-events: none;
-    transform: translateX(-50%) translateY(5px) scale(0.92);
-    transform-origin: bottom center;
+    transform: translateY(-5px) scale(0.92);
+    transform-origin: top center;
     transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* Centered above the hovered element; JS sets left/top via getBoundingClientRect. */
+.talent-tooltip-glass-box.tip-positioned {
+    transform: translate(-50%, calc(-100% - 10px)) scale(1);
+    opacity: 1;
 }
 
 .talent-tooltip-glass-box strong {
     color: #ADFF87;
 }
 
-.talent-tooltip-glass:hover .talent-tooltip-glass-box,
-.talent-tooltip-glass:focus-within .talent-tooltip-glass-box {
+/* Positioning + visibility of the box is driven by JS (.tip-positioned) so the
+   tooltip escapes all stacking contexts via position: fixed. */
+.talent-tooltip-glass:hover .talent-tooltip-glass-box.tip-positioned,
+.talent-tooltip-glass:focus-within .talent-tooltip-glass-box.tip-positioned {
     opacity: 1;
-    transform: translateX(-50%) translateY(0) scale(1);
+}
+
+/* Let glass tooltips escape their container edges (e.g. the Common House card)
+   instead of being clipped by overflow:hidden ancestors. The very high z-index
+   keeps the tooltip above every talent/subtalent button regardless of row order. */
+.talent-tooltip-glass {
+    z-index: 9999;
 }

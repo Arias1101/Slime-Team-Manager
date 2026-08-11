@@ -3,7 +3,7 @@
  */
 
 import { gameState, saveStateToLocal, updateBestRoster, addScraps, calculateSlimeDamage, getScaledEquipmentEffects, getEquipmentDisplayName, getEquipmentSprite, getEquipmentSellMultiplier, getEquipmentQuality, refreshSlimeMaxHp, getSlimeJumpSprite } from './state.js';
-import { ENEMY_TYPES, calculateLootValue, formatLootEffects } from './enemies.js';
+import { ENEMY_TYPES, calculateLootValue, formatLootEffects, decideNextWaveAfterBoss, triggerInvertedTransition } from './enemies.js';
 import { SLIME_TYPES } from './state.js';
 import { updateUI, renderSlimeRosterLanes } from './ui.js';
 import { startNextWave } from './enemies.js';
@@ -129,7 +129,20 @@ export function closeShopModal() {
     document.body.classList.remove('modal-open');
     setGamePaused(false);
 
-    startNextWave();
+    // After a boss wave, there is a chance to divert into a bonus wave. The
+    // normal next wave is restored once the bonus wave is cleared.
+    const clearedBoss = nextWaveNumber - 1;
+    const chosenWave = decideNextWaveAfterBoss(clearedBoss);
+    if (chosenWave >= 900) {
+        gameState.currentWave = chosenWave;
+        gameState.bonusReturnWave = nextWaveNumber;
+        saveStateToLocal();
+        triggerInvertedTransition(() => startNextWave());
+    } else {
+        gameState.currentWave = nextWaveNumber;
+        saveStateToLocal();
+        startNextWave();
+    }
 }
 
 /**

@@ -69,6 +69,77 @@ export function formatLootEffects(lootEffect) {
     return effects.map(formatLootEffect).join(', ') || '+1 Max HP';
 }
 export const ENEMY_TYPES = {
+    // Tier 0 - Bonus
+    car: {
+        id: 'car',
+        type: 'rush',
+        projectile: 'none',
+        tier: 0,
+        controlImmune: true,
+        hp: 1000,
+        maxHp: 2000,
+        damage: 50,
+        attackSpeed: 0.1,
+        moveSpeed: 12,
+        targetX: 100,
+        loot_name: 'Shiny Horse Badge',
+        loot_effect: [{ stat: 'damage', value: 10 },
+        { stat: 'stun', value: 1 }],
+        loot_priority: 'fighter'
+    },
+    missingno: {
+        id: 'missingno',
+        type: 'melee',
+        projectile: 'none',
+        tier: 0,
+        controlImmune: true,
+        hp: 50000,
+        maxHp: 50000,
+        damage: 1000,
+        attackSpeed: 2,
+        moveSpeed: 1,
+        targetX: 200,
+        loot_name: 'Broken Pixels',
+        loot_effect: { stat: 'hp', value: 404 },
+        loot_priority: 'tank'
+    },
+    military: {
+        id: 'military',
+        type: 'range',
+        projectile: 'bullet',
+        tier: 0,
+        controlImmune: false,
+        hp: 1000,
+        maxHp: 1000,
+        damage: 1,
+        attackSpeed: 4,
+        moveSpeed: 3,
+        targetX: 300,
+        loot_name: 'AR-15 223R',
+        loot_effect: [{ stat: 'damage', value: 10 },
+        { stat: 'crit', value: 5 }],
+        loot_priority: 'fighter'
+    },
+    char: {
+        id: 'char',
+        type: 'range',
+        projectile: 'obus',
+        tier: 0,
+        controlImmune: true,
+        hp: 10000,
+        maxHp: 10000,
+        damage: 1000,
+        attackSpeed: 0.3,
+        moveSpeed: 1,
+        targetX: 300,
+        loot_name: 'Obus',
+        loot_effect: [{ stat: 'hp', value: 20 },
+        { stat: 'damage', value: 5 }],
+        loot_priority: 'tank'
+    },
+
+
+
     // Tier 0 - Bosses ------------------------
     mage: {
         id: 'mage',
@@ -132,22 +203,6 @@ export const ENEMY_TYPES = {
         loot_effect: [{ stat: 'stun', value: 2 },
         { stat: 'hp', value: 5 }],
         loot_priority: 'tank'
-    },
-    car: {
-        id: 'car',
-        type: 'melee',
-        projectile: 'none',
-        tier: 0,
-        hp: 10000,
-        maxHp: 10000,
-        damage: 50,
-        attackSpeed: 0.1,
-        moveSpeed: 20,
-        targetX: 100,
-        loot_name: 'Shiny Horse Badge',
-        loot_effect: [{ stat: 'damage', value: 10 },
-        { stat: 'stun', value: 1 }],
-        loot_priority: 'fighter'
     },
     stonegolem: {
         id: 'stonegolem',
@@ -629,6 +684,7 @@ export const ENEMY_TYPES = {
         type: 'melee',
         projectile: '',
         tier: -1,
+        controlImmune: true,
         hp: 9999999999,
         maxHp: 9999999999,
         damage: 999,            // Damage per projectile
@@ -693,6 +749,7 @@ export const PROJECTILE_TYPES = {
         id: 'arrow',
         sprite: 'images/projectiles/arrow.png',
         fallbackIcon: '??',
+        size: 5, // Real sprite height (16x5)
         arcHeight: 25, // Curved arc height in px
         duration: 0.5, // Parabolic flight time in seconds
         rotationMode: 'tangent' // Follows smooth flight curve angle
@@ -701,6 +758,7 @@ export const PROJECTILE_TYPES = {
         id: 'fireball',
         sprite: 'images/projectiles/fireball.png',
         fallbackIcon: '??',
+        size: 12, // Real sprite height (27x12)
         arcHeight: 30, // Smooth arc height in px
         duration: 0.5, // Fast & snappy flight time matching arrows
         rotationMode: 'tangent' // Follows smooth flight curve angle
@@ -709,6 +767,7 @@ export const PROJECTILE_TYPES = {
         id: 'flask',
         sprite: 'images/projectiles/flask.png',
         fallbackIcon: '??',
+        size: 17, // Real sprite height (12x17)
         arcHeight: 35, // Curved high arc height in px
         duration: 1.0, // 50% slower flight speed (1.0s vs 0.5s)
         rotationMode: 'spin' // Rotates on itself continuously during flight
@@ -717,6 +776,7 @@ export const PROJECTILE_TYPES = {
         id: 'heal1',
         sprite: 'images/projectiles/heal1.png',
         fallbackIcon: '*',
+        size: 50, // Real sprite height (600x50)
         arcHeight: 20,
         duration: 0.55,
         rotationMode: 'tangent'
@@ -724,9 +784,30 @@ export const PROJECTILE_TYPES = {
         id: 'boulder',
         sprite: 'images/projectiles/boulder.png',
         fallbackIcon: '??',
+        size: 13, // Real sprite height (17x13)
         arcHeight: 35, // Curved high arc height in px
         duration: 1.0, // 50% slower flight speed like flask
         rotationMode: 'spin' // Rotates on itself continuously during flight
+    },
+    obus: {
+        id: 'obus',
+        sprite: 'images/projectiles/obus.png',
+        fallbackIcon: '??',
+        size: 5, // Real sprite height (12x5)
+        arcHeight: 0, // Straight line, no arc
+        straight: true, // Travel in a perfect straight line (no parabola)
+        duration: 0.15, // Very fast travel
+        rotationMode: 'straight' // Points along the straight flight vector
+    },
+    bullet: {
+        id: 'bullet',
+        sprite: 'images/projectiles/bullet.png',
+        fallbackIcon: '??',
+        size: 2, // Real sprite height (3x2)
+        arcHeight: 0, // Straight line, no arc
+        straight: true, // Travel in a perfect straight line (no parabola)
+        duration: 0.15, // Very fast travel
+        rotationMode: 'straight' // Points along the straight flight vector
     }
 };
 
@@ -761,6 +842,19 @@ function resetBattlefieldBackground() {
 
     const battlefield = document.querySelector('.battlefield-card');
     if (battlefield) battlefield.style.backgroundImage = '';
+}
+
+/**
+ * Briefly flash the inverted background while transitioning into a special
+ * wave (bonus/death style), then run the provided callback.
+ */
+export function triggerInvertedTransition(callback) {
+    const battlefield = document.querySelector('.battlefield-card');
+    if (battlefield) battlefield.style.backgroundImage = "url('images/backgrounds/inverted.jpg')";
+    setTimeout(() => {
+        if (battlefield) battlefield.style.backgroundImage = '';
+        if (typeof callback === 'function') callback();
+    }, 250);
 }
 
 export function updateWaveCountdownUI() {
@@ -966,11 +1060,68 @@ function generateWaveComposition(waveNum) {
     if (waveNum === 49) return [0.12, 'halfzombi:4', 'skeleton:8', 'skeletonarcher:4'];
     if (waveNum === 50) return [0.4, 'lich:1', 'skeleton:25', 'skeletonarcher:5'];
 
+    // Wave 900+ = Bonus Waves
+    if (waveNum === 901) return [0, 'car:1'];
+    if (waveNum === 902) return [0, 'missingno:1'];
+    if (waveNum === 903) return [1, 'char:1', 'military:20'];
+
     // Death
     else {
         triggerPostWave50BackgroundTransition();
         return [0, 'death:1'];
     }
+}
+
+/**
+ * Bonus waves are special waves (wave numbers >= 900) that can be entered
+ * after clearing a boss wave (10/20/30/40/50) instead of going straight to
+ * the next normal wave. More bonus waves can be appended here later.
+ */
+/**
+ * Overall flat chance (0-1) that a cleared boss wave diverts into a bonus
+ * stage. Independent of which bonus stage is then chosen.
+ */
+const BONUS_STAGE_CHANCE = 0.10; // 10% flat chance for any bonus stage
+
+/**
+ * Bonus stages and their relative apparition weight when a bonus stage is
+ * triggered. Weights are normalized against each other, not against 1.0.
+ */
+const BONUS_WAVES = [
+    { wave: 901, chance: 0.40 }, // Car wave: 40%
+    { wave: 902, chance: 0.20 }, // Missingno wave: 20%
+    { wave: 903, chance: 0.40 }   // Battleground wave: 40%
+];
+
+/**
+ * Decide which wave follows a cleared boss wave, in two steps:
+ *   1. Flat roll for whether ANY bonus stage occurs (BONUS_STAGE_CHANCE).
+ *   2. If so, pick which bonus stage using each wave's relative weight.
+ * Otherwise returns the normal next wave number.
+ */
+export function decideNextWaveAfterBoss(clearedWaveNum) {
+    const normalNext = (clearedWaveNum || 0) + 1;
+    if (!(clearedWaveNum > 0 && clearedWaveNum % 10 === 0)) return normalNext;
+
+    if (Math.random() >= BONUS_STAGE_CHANCE) return normalNext;
+
+    const totalWeight = BONUS_WAVES.reduce((sum, b) => sum + Math.max(0, b.chance), 0);
+    if (totalWeight <= 0) return normalNext;
+
+    let roll = Math.random() * totalWeight;
+    for (const bonus of BONUS_WAVES) {
+        roll -= Math.max(0, bonus.chance);
+        if (roll < 0) return bonus.wave;
+    }
+    return normalNext;
+}
+
+/** Backgrounds used by special wave types. */
+function getWaveBackground(waveNum) {
+    if (waveNum === 901) return "url('images/backgrounds/road.jpg')";
+    if (waveNum === 902) return "url('images/backgrounds/missingno.jpg')";
+    if (waveNum === 903) return "url('images/backgrounds/battleground.png')";
+    return '';
 }
 
 /**
@@ -1002,6 +1153,11 @@ export function startNextWave() {
 
     isWaveActive = true;
     showBattlefieldWaveBanner(`${String.fromCodePoint(0x26A1, 0xFE0F)} WAVE ${gameState.currentWave}`);
+
+    // Apply wave-specific battlefield background (bonus waves use special art).
+    const battlefield = document.querySelector('.battlefield-card');
+    if (battlefield) battlefield.style.backgroundImage = getWaveBackground(gameState.currentWave);
+
     const waveData = generateWaveComposition(gameState.currentWave);
 
     let spawnIntervalSec = 1.2;
@@ -1381,7 +1537,14 @@ function checkWaveCompletion() {
         gameState.maxWaveCleared = Math.max(gameState.maxWaveCleared || 0, clearedWaveNum);
         saveWaveSnapshot(clearedWaveNum, uncollectedLootValue);
 
-        gameState.currentWave += 1;
+        // A cleared bonus wave returns to the normal progression wave that was
+        // stashed when the bonus was entered (otherwise just advance by one).
+        if (clearedWaveNum >= 900) {
+            gameState.currentWave = gameState.bonusReturnWave || (clearedWaveNum + 1);
+            gameState.bonusReturnWave = null;
+        } else {
+            gameState.currentWave += 1;
+        }
         saveStateToLocal();
         updateUI();
 
@@ -1676,7 +1839,7 @@ export function updateEnemies(deltaSeconds) {
         }
 
         // --- 1. Process Frost (Freeze) & Stone (Stun) Effects ---
-        const isControlImmune = enemy.typeId === 'death';
+        const isControlImmune = ENEMY_TYPES[enemy.typeId]?.controlImmune === true;
         if (isControlImmune) {
             enemy.effects.freezeTimer = 0;
             enemy.effects.stunTimer = 0;
@@ -2116,6 +2279,7 @@ function fireProjectiles(enemy) {
         id: projKey,
         sprite: `images/projectiles/${projKey}.png`,
         fallbackIcon: '??',
+        size: 18,
         arcHeight: 25,
         duration: 0.5,
         rotationMode: 'tangent'
@@ -2128,13 +2292,15 @@ function fireProjectiles(enemy) {
 
     const spritePath = projType.sprite || `images/projectiles/${projKey}.png`;
     const fallback = projType.fallbackIcon || '??';
+    const projSize = projType.size || 18;
 
     projEl.innerHTML = `
         <img src="${spritePath}" 
              alt="${projKey}" 
              class="projectile-sprite-img"
+             style="height:${projSize}px; width:auto; max-width:none;"
              onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
-        <span class="projectile-sprite-fallback" style="display:none;">${fallback}</span>
+        <span class="projectile-sprite-fallback" style="display:none; font-size:${Math.round(projSize * 0.78)}px;">${fallback}</span>
     `;
 
     overlay.appendChild(projEl);
@@ -2142,6 +2308,7 @@ function fireProjectiles(enemy) {
     activeProjectiles.push({
         type: projType,
         key: projKey,
+        size: projSize,
         startX: enemy.x,
         startY: enemy.y + 10,
         targetX: 105,
@@ -2149,6 +2316,7 @@ function fireProjectiles(enemy) {
         progress: 0,
         duration: projType.duration || 0.5,
         arcHeight: projType.arcHeight || 25,
+        straight: projType.straight === true,
         rotationMode: projType.rotationMode || 'tangent',
         damage: enemy.damage,
         sourceEnemy: enemy,
@@ -2243,6 +2411,10 @@ function updateProjectiles(deltaSeconds) {
                 hitSlimes.forEach(slime => {
                     applyBurnEffectToSlime(slime, 3.0, ngBurnStacks);
                 });
+            } else if (p.key === 'obus' || (p.type && p.type.id === 'obus')) {
+                // Obus: very fast straight shot that detonates on the slime line,
+                // striking up to 3 random targets for plain impact damage.
+                damageMultipleRandomSlimes(3, p.damage, p.sourceEnemy);
             } else {
                 damageRandomSlime(p.damage, p.sourceEnemy);
             }
@@ -2252,12 +2424,18 @@ function updateProjectiles(deltaSeconds) {
         } else {
             const t = p.progress;
             const curX = p.startX + (p.targetX - p.startX) * t;
-            const curY = p.startY + (p.targetY - p.startY) * t - 4 * p.arcHeight * t * (1 - t);
+            const arcOffset = p.straight ? 0 : (4 * p.arcHeight * t * (1 - t));
+            const curY = p.startY + (p.targetY - p.startY) * t - arcOffset;
 
             let angleDeg = 0;
             if (p.rotationMode === 'spin') {
                 // Continuous 360-degree rotation spinning fast as it travels
                 angleDeg = (t * 1080) % 360;
+            } else if (p.straight) {
+                // Fixed angle along the straight flight vector (no curve tangent).
+                const vx = p.targetX - p.startX;
+                const vy = p.targetY - p.startY;
+                angleDeg = Math.atan2(vy, vx) * (180 / Math.PI);
             } else {
                 // Calculate instantaneous tangent flight vector for rotation angle
                 const vx = p.targetX - p.startX;
@@ -2463,7 +2641,7 @@ function resolveTankBlock(slime, damageAmount, dmgType, sourceEnemy) {
     // Stacks); sub-talents can raise the count or also apply poison.
     if (hasSpicyBlock(slime) && sourceEnemy && sourceEnemy.effects !== undefined) {
         const hitEffects = getSlimeHitEffects(slime);
-        const isControlImmune = sourceEnemy.typeId === 'death';
+        const isControlImmune = ENEMY_TYPES[sourceEnemy.typeId]?.controlImmune === true;
         const spicyParams = getSpicyBlockParams(slime);
         const burnOnly = { burn: hitEffects.burn };
         for (let i = 0; i < spicyParams.burnApplications; i++) {
@@ -2493,7 +2671,7 @@ function resolveTankBlock(slime, damageAmount, dmgType, sourceEnemy) {
     // "Dazing Block" doubles it, "Pushback" also knocks the enemy back.
     if (hasPolishedSlime(slime) && sourceEnemy && sourceEnemy.effects !== undefined) {
         const hitEffects = getSlimeHitEffects(slime);
-        const isControlImmune = sourceEnemy.typeId === 'death';
+        const isControlImmune = ENEMY_TYPES[sourceEnemy.typeId]?.controlImmune === true;
         const polishedParams = getPolishedSlimeParams(slime);
         const stunOnly = { stun: hitEffects.stun * polishedParams.stunMultiplier };
         applyHitEffectsToEnemy(sourceEnemy, stunOnly, slime, isControlImmune);
@@ -2529,7 +2707,7 @@ function resolveTankBlock(slime, damageAmount, dmgType, sourceEnemy) {
         const counterDamage = gameState.slimeDamage * counterParams.damageMultiplier;
         const damageToApply = Math.min(sourceEnemy.hp, counterDamage);
         sourceEnemy.hp -= damageToApply;
-        const isControlImmune = sourceEnemy.typeId === 'death';
+        const isControlImmune = ENEMY_TYPES[sourceEnemy.typeId]?.controlImmune === true;
         const counterEffects = getSlimeHitEffects(slime);
         for (let i = 0; i < counterParams.statusApplications; i++) {
             applyHitEffectsToEnemy(sourceEnemy, counterEffects, slime, isControlImmune);
@@ -2602,7 +2780,7 @@ export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg', 
             }
             // Avenge: the intercepting Tank reflects its own status onto the attacker.
             if (interceptParams.applyStatus && sourceEnemy && sourceEnemy.effects !== undefined) {
-                const isControlImmune = sourceEnemy.typeId === 'death';
+                const isControlImmune = ENEMY_TYPES[sourceEnemy.typeId]?.controlImmune === true;
                 applyHitEffectsToEnemy(sourceEnemy, getSlimeHitEffects(interceptor), interceptor, isControlImmune);
             }
             spawnInterceptEffect(interceptor);
@@ -2876,8 +3054,16 @@ export function forwardWaveState() {
  */
 export function wipeWaveState() {
     const currentWave = gameState.currentWave || 1;
-    const tierFirstWave = Math.floor((currentWave - 1) / 10) * 10 + 1;
-    performWaveReset(tierFirstWave);
+    // Wiping on a bonus stage must return the player to the normal wave they
+    // would have reached had they skipped the bonus (e.g. bonus after boss 10
+    // -> back to wave 11), not the bogus bonus wave number.
+    const targetWave = (currentWave >= 900 && gameState.bonusReturnWave)
+        ? gameState.bonusReturnWave
+        : (Math.floor((currentWave - 1) / 10) * 10 + 1);
+    // A wipe consumes the bonus detour; clear the stashed return wave so it
+    // cannot leak into a later normal-wave reset.
+    gameState.bonusReturnWave = null;
+    performWaveReset(targetWave);
 }
 
 /**

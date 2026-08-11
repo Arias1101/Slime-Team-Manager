@@ -157,14 +157,14 @@ export function triggerRandomSlimeAttack(overrideTypeId = null) {
 
     const slimeUnits = Array.from(armyContainer.querySelectorAll('.slime-unit'));
     if (slimeUnits.length === 0) {
-        console.log('[ATTACK] no .slime-unit elements in armyContainer');
+        //console.log('[ATTACK] no .slime-unit elements in armyContainer');
         return;
     }
 
     const availableSlimes = slimeUnits.filter(unit => !isUnitBusy(unit) && unit.dataset.isEating !== 'true' && !unit.classList.contains('is-stunned'));
-    console.log(`[ATTACK] units=${slimeUnits.length} available=${availableSlimes.length} paused=${isGamePaused}`);
+    //console.log(`[ATTACK] units=${slimeUnits.length} available=${availableSlimes.length} paused=${isGamePaused}`);
     if (availableSlimes.length === 0) {
-        console.log('[ATTACK] NO available slimes (all attacking/eating/stunned) -> click ignored');
+        //console.log('[ATTACK] NO available slimes (all attacking/eating/stunned) -> click ignored');
         return;
     }
 
@@ -174,7 +174,7 @@ export function triggerRandomSlimeAttack(overrideTypeId = null) {
         return slime?.talents?.graft && !isMindlessSupport(slime) && getSlimeSpecialization(slime) === 'support' && slime.hp >= slime.maxHp * 0.5;
     }) : null;
     const randomSlimeEl = graftSupportEl || availableSlimes[Math.floor(Math.random() * availableSlimes.length)];
-    console.log(`[ATTACK] chosen slimeId=${randomSlimeEl.dataset.slimeId} graft=${Boolean(graftSupportEl)}`);
+    //console.log(`[ATTACK] chosen slimeId=${randomSlimeEl.dataset.slimeId} graft=${Boolean(graftSupportEl)}`);
 
     // Read exact slime object from gameState.slimes array using slimeId dataset
     const rawSlimeId = randomSlimeEl.dataset.slimeId;

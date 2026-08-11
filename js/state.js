@@ -168,6 +168,7 @@ export const defaultState = {
     scraps: 0,            // Scraps available to spend on upgrades
     score: 0,             // Total cumulative Scraps collected this run
     currentWave: 1,       // Current wave of adventurer enemies
+    bonusReturnWave: null, // Normal wave to return to after a cleared bonus wave
     maxWaveCleared: 0,    // Highest wave cleared in current run (for unlocking upgrades)
     armySize: 1,          // 1 Base Slime
     maxSlimesReached: 1,  // Highest slime count achieved in army
@@ -2214,7 +2215,7 @@ export function previewAfkScraps(timestamp = Date.now()) {
     const minutes = Math.floor((timestamp - awaySince) / 60000);
     return { minutes, scraps: minutes > 0 ? Math.min(getAfkScrapCeiling(), minutes * getAfkScrapsPerMinute()) : 0 };
 }
-export function claimAfkScraps(timestamp = Date.now()) {
+export function claimAfkScraps(timestamp = Date.now(), expected = null) {
     if (gameState.afkScrapCeilingPurchased !== true || gameState.afkScrapPurchased !== true) return { minutes: 0, scraps: 0 };
     const awaySince = Number(gameState.afkLastAwayAt);
     if (!Number.isFinite(awaySince) || timestamp <= awaySince) return { minutes: 0, scraps: 0 };
@@ -2226,7 +2227,12 @@ export function claimAfkScraps(timestamp = Date.now()) {
         return { minutes: 0, scraps: 0 };
     }
 
-    const scraps = Math.min(getAfkScrapCeiling(), minutes * getAfkScrapsPerMinute());
+    // Use the amount already shown to the player when provided, so a stale
+    // afkLastAwayAt (e.g. a deferred cloud save landing after the popup is shown)
+    // cannot silently shrink or void the reward they were promised.
+    const scraps = expected && expected.scraps > 0
+        ? expected.scraps
+        : Math.min(getAfkScrapCeiling(), minutes * getAfkScrapsPerMinute());
     gameState.scraps = (gameState.scraps || 0) + scraps;
     saveStateToLocal();
     return { minutes, scraps };

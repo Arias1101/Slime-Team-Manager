@@ -1,12 +1,20 @@
 ------------- NOW ----------------
+Fire Slime
+Poison Slime
+Ice Slime
+Stone Slime
+
+Support:
+Can heal and resurect other Slimes from the back-line.
+
+Fighter:
+Can attack multiple time and do a lot of damage.
+
+Tank:
+Take focus from ennemies and mitigate their attacks in the front-line.
 
 
 ------------- LATER ----------------
-can't manually attack with slimes in quick succession. When clicking, the game should check how many slimes are available, and send a random one attack.
-
-
-
-- Bonus levels
 
 ------------- LATER  ----------------
 - Trophies with Coin rewards:

@@ -143,7 +143,14 @@ async function loadCloudSave(uid) {
         if (docSnap.exists()) {
             const data = docSnap.data();
             if (data.saveData) {
-                Object.assign(gameState, data.saveData);
+                // Prefer the most recently saved copy. A local claim/action can
+                // happen before the async cloud load resolves, so never clobber a
+                // newer local save with an older cloud snapshot.
+                const cloudTime = Number(data.saveData.lastSavedTimestamp) || 0;
+                const localTime = Number(gameState.lastSavedTimestamp) || 0;
+                if (cloudTime > localTime) {
+                    Object.assign(gameState, data.saveData);
+                }
                 console.log('Loaded cloud save data for user', uid, gameState);
             }
         } else {

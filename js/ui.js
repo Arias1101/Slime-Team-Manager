@@ -1103,7 +1103,10 @@ function renderSlimeTalentTree(slime) {
                     const subDef = getSlimeSubTalentColumn(slime, index)?.[subIndex];
                     const selected = columnUnlocked && getSlimeSubTalent(slime, index) === subIndex;
                     const selectedClass = selected ? ' selected' : '';
-                    return `<button type="button" class="slime-specialization-subtalent${selectedClass}" title="${subDef ? `${subDef.name}: ${subDef.description}` : subLabel}" aria-label="${subLabel}" data-talent-index="${index}" data-subtalent-index="${subIndex}" ${columnUnlocked ? '' : 'disabled'}><img src="${subtalentIcon}" alt="${talentName}"></button>`;
+                    const subButton = `<button type="button" class="slime-specialization-subtalent${selectedClass}" aria-label="${subLabel}" data-talent-index="${index}" data-subtalent-index="${subIndex}" ${columnUnlocked ? '' : 'disabled'}><img src="${subtalentIcon}" alt="${talentName}"></button>`;
+                    return subDef
+                        ? `<span class="talent-tooltip-glass">${subButton}<span class="talent-tooltip-glass-box"><strong>${subDef.name}</strong><br>${subDef.description}</span></span>`
+                        : subButton;
                 }).join('')
                 : '';
             return `<div class="slime-specialization-talent-column">${mainButton}<div class="slime-specialization-subtalents">${subButtons}</div></div>`;

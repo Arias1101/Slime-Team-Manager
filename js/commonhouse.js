@@ -19,6 +19,21 @@ let selectedSide = null;       // 'main' | 'village' | null
 let selectedIds = new Set();   // ids of selected slimes on the active side (Ctrl+Click multiselect)
 let primarySlimeId = null;     // representative shown in the bottom card
 
+// Toolbar filter state per roster side. Each side keeps a set of active
+// element filters and spec filters; the selection is the intersection
+// (AND) of every active filter. `filterSelectAll` is true only when the
+// explicit "Select all" button was pressed (no filters => select whole
+// roster); otherwise no filters => select nothing.
+const toolbarFilters = {
+    main: { elements: new Set(), specs: new Set(), selectAll: false },
+    village: { elements: new Set(), specs: new Set(), selectAll: false }
+};
+const clearToolbarFilters = (side) => {
+    toolbarFilters[side].elements.clear();
+    toolbarFilters[side].specs.clear();
+    toolbarFilters[side].selectAll = false;
+};
+
 /**
  * Open the Common House popup (village intermission building).
  */
@@ -27,6 +42,8 @@ export function openCommonHousePopup() {
     if (!Array.isArray(gameState.villageRoster)) gameState.villageRoster = [];
 
     selectedSide = gameState.slimes?.length ? 'main' : (gameState.villageRoster?.length ? 'village' : null);
+    clearToolbarFilters('main');
+    clearToolbarFilters('village');
     const initialId = selectedSide === 'main'
         ? gameState.slimes[0].id
         : (selectedSide === 'village' ? gameState.villageRoster[0].id : null);
@@ -102,7 +119,7 @@ export function openCommonHousePopup() {
         const btn = e.target.closest('[data-action]');
         const action = btn?.dataset?.action;
         if (typeof action !== 'string') return;
-        if (/^(Main|Village)RosterSelectAll/.test(action)) selectAllBy(action);
+        if (/^(Main|Village)RosterSelectAll/.test(action)) toggleToolbarFilter(action);
         else if (/^(Main|Village)RosterCreate$/.test(action)) createBasicSlime(action.startsWith('Main') ? 'main' : 'village');
     });
     backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeCommonHousePopup(); });
@@ -163,6 +180,8 @@ function moveSelectedSlimesToVillage() {
     selectedSide = null;
     selectedIds = new Set();
     primarySlimeId = null;
+    clearToolbarFilters('main');
+    clearToolbarFilters('village');
     renderCommonHouse();
 }
 
@@ -245,6 +264,7 @@ function renderCommonHouse() {
     renderVillageRoster();
     renderSelectedSlimeCard();
     updateCreateButtons();
+    updateToolbarActiveStates();
     const coinsEl = document.getElementById('chCoinsDisplay');
     if (coinsEl) coinsEl.querySelector('strong').textContent = gameState.villageCoins || 0;
 
@@ -271,6 +291,23 @@ function updateCreateButtons() {
     const villageBtn = document.querySelector('[data-action="VillageRosterCreate"]');
     if (mainBtn) mainBtn.disabled = mainFull;
     if (villageBtn) villageBtn.disabled = villageFull;
+}
+
+/** Mark toolbar filter buttons as pressed (`.active`) according to the active
+ *  filter sets for each roster side. */
+function updateToolbarActiveStates() {
+    const apply = (side, prefix) => {
+        const filters = toolbarFilters[side];
+        TOOLBAR_ACTIONS && Object.entries(TOOLBAR_ACTIONS).forEach(([suffix, kind]) => {
+            const btn = document.querySelector(`[data-action="${prefix}RosterSelectAll${suffix}"]`);
+            if (!btn) return;
+            const [filterType, value] = kind.split(':');
+            const set = filterType === 'spec' ? filters.specs : filters.elements;
+            btn.classList.toggle('active', set.has(value));
+        });
+    };
+    apply('main', 'Main');
+    apply('village', 'Village');
 }
 
 /**
@@ -349,31 +386,75 @@ const TOOLBAR_ACTIONS = {
  * target roster by the requested element (Basic/Fire/Poison/Ice/Stone) or
  * specialization (Support/Fighter/Tank) and selects every matching slime.
  */
-function selectAllBy(action) {
-    const match = action.match(/^(Main|Village)RosterSelectAll(.+)?$/);
-    if (!match) return;
-
-    const side = match[1] === 'Main' ? 'main' : 'village';
+/**
+ * Compute the set of Slime ids selected by the active toolbar filters on a
+ * given side. Element filters are combined with OR (any matching element), and
+ * specialization filters are combined with OR (any matching spec). The two
+ * groups are then intersected (AND). With no active filters it
+ * returns the entire roster (i.e. "select all").
+ */
+function computeFilteredSelection(side) {
     const list = side === 'main'
         ? (Array.isArray(gameState.slimes) ? gameState.slimes : [])
         : (Array.isArray(gameState.villageRoster) ? gameState.villageRoster : []);
 
+    const { elements, specs, selectAll } = toolbarFilters[side];
+    if (elements.size === 0 && specs.size === 0) {
+        // No active filters: select the whole roster only after an explicit
+        // "Select all" press; clearing the last filter button selects nothing.
+        return selectAll ? new Set(list.map(s => s.id)) : new Set();
+    }
+
+    const matches = list.filter(s => {
+        if (elements.size > 0) {
+            const el = elementOf(s);
+            // The "Basic" element filter targets slimes with no element at all.
+            const ok = [...elements].some(e => (e === 'base' ? el === '' : el === e));
+            if (!ok) return false;
+        }
+        if (specs.size > 0) {
+            const spec = String(s.specialization || SLIME_TYPES[s.type]?.specialization || '').toLowerCase();
+            if (![...specs].some(sp => spec === sp)) return false;
+        }
+        return true;
+    });
+
+    return new Set(matches.map(s => s.id));
+}
+
+/**
+ * Toggle a roster toolbar filter (Main or Village). Each button acts as a
+ * persistent filter: pressing it adds its filter (staying pressed), pressing it
+ * again removes it. The resulting selection is the union of all active
+ * element filters intersected with the union of all active specialization
+ * filters. The "Select all" button (no suffix)
+ * clears every filter for that side.
+ */
+function toggleToolbarFilter(action) {
+    const match = action.match(/^(Main|Village)RosterSelectAll(.+)?$/);
+    if (!match) return;
+
+    const side = match[1] === 'Main' ? 'main' : 'village';
     const suffix = match[2];
-    const matches = !suffix
-        ? list
-        : (() => {
-            const kind = TOOLBAR_ACTIONS[suffix];
-            if (!kind) return [];
-            const [filterType, value] = kind.split(':');
-            return filterType === 'spec'
-                ? list.filter(s => String(s.specialization || SLIME_TYPES[s.type]?.specialization || '').toLowerCase() === value)
-                : (value === 'base'
-                    ? list.filter(s => elementOf(s) === '')
-                    : list.filter(s => elementOf(s) === value));
-        })();
+
+    if (!suffix) {
+        // "Select all" clears the filter mode and selects the whole roster.
+        clearToolbarFilters(side);
+        toolbarFilters[side].selectAll = true;
+    } else {
+        const kind = TOOLBAR_ACTIONS[suffix];
+        if (!kind) return;
+        const [filterType, value] = kind.split(':');
+        const set = filterType === 'spec' ? toolbarFilters[side].specs : toolbarFilters[side].elements;
+        // Toggling any filter leaves "Select all" mode (so clearing the last
+        // active filter selects nothing rather than the whole roster).
+        toolbarFilters[side].selectAll = false;
+        if (set.has(value)) set.delete(value);
+        else set.add(value);
+    }
 
     selectedSide = side;
-    selectedIds = new Set(matches.map(s => s.id));
+    selectedIds = computeFilteredSelection(side);
     primarySlimeId = selectedIds.size ? selectedIds.values().next().value : null;
 
     renderCommonHouse();
@@ -384,6 +465,8 @@ function selectAllBy(action) {
  * multiple selection. Only one side can be active at a time.
  */
 function selectSlime(side, slime, isMulti) {
+    // A manual roster click leaves the toolbar filter mode behind.
+    clearToolbarFilters(side);
     if (selectedSide !== side) {
         selectedSide = side;
         selectedIds = new Set();
@@ -711,9 +794,10 @@ function getActionButtonsHtml(selectedSlimes) {
                 const subDef = getSlimeSubTalentColumn(selectedSlimes[0], t)?.[s];
                 const subTitle = subDef ? `${subDef.name}: ${subDef.description}` : `${talentName} Sub-talent ${t + 1}.${s + 1}`;
                 const subSelected = sharedSub === s ? ' selected' : '';
-                return `
-                    <button type="button" class="common-house-subtalent-btn${subSelected}" data-talent="${t}" data-subtalent="${s}" data-combo="${combo.typeId || ''}" title="${subTitle}" aria-label="${subTitle}" tabindex="-1"${subDisabled}><img src="${subtalentIcon}" alt="${specLabel}"></button>
-                `;
+                const subButtonHtml = `<button type="button" class="common-house-subtalent-btn${subSelected}" data-talent="${t}" data-subtalent="${s}" data-combo="${combo.typeId || ''}" aria-label="${subTitle}" tabindex="-1"${subDisabled}><img src="${subtalentIcon}" alt="${specLabel}"></button>`;
+                return subDef
+                    ? `<span class="talent-tooltip-glass">${subButtonHtml}<span class="talent-tooltip-glass-box"><strong>${subDef.name}</strong><br>${subDef.description}</span></span>`
+                    : subButtonHtml;
             }).join('');
             const glassTooltip = (t === 1 && secondTalent)
                 ? { name: secondTalent.name, description: secondTalent.description }
@@ -937,9 +1021,7 @@ function renderSelectedSlimeCard() {
                 <div class="common-house-slime-stat"><span class="ch-stat-label">Specialization:</span> ${specLabel}</div>
                 <div class="common-house-slime-stat"><span class="ch-stat-label">Type:</span> ${typeName}</div>
             </div>
-            <div class="common-house-action-buttons">
-                ${actionButtonsHtml}
-            </div>
+            ${actionButtonsHtml}
         `;
 
         const killBtn = container.querySelector('.common-house-kill-btn');
@@ -976,9 +1058,7 @@ function renderSelectedSlimeCard() {
             <div class="common-house-slime-name">Selected (${selectedSlimes.length})</div>
             ${lines.map(line => `<div class="common-house-slime-stat">${line}</div>`).join('')}
         </div>
-        <div class="common-house-action-buttons">
-            ${actionButtonsHtml}
-        </div>
+        ${actionButtonsHtml}
     `;
 
     const killBtn = container.querySelector('.common-house-kill-btn');

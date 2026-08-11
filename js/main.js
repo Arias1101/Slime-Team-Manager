@@ -3,7 +3,7 @@
  */
 
 import { loadStateFromLocal, addScraps, gameState, SLIME_TYPES, getFortificationLevel, getFortificationUpgradeCost, buyFortificationUpgrade, getSlimeRegen, getRegenMax, markAfkStart, claimAfkScraps, previewAfkScraps, updateBestRoster, calculateSlimeDamage, saveStateToLocal, getScaledEquipmentEffects, getEquipmentQuality, getEquipmentDisplayName, getEquipmentSprite, refreshSlimeMaxHp, ALCHEMIST_UPGRADES, getAlchemistUpgradeLevel, getAlchemistUpgradeCost, buyAlchemistUpgrade, buyAlchemistUpgradeBulk, getSlimeDeathSprite, getSlimeJumpSprite, getSlimeSpecialization } from './state.js';
-import { initAuth, loginWithGoogle, logoutUser } from './auth.js';
+import { initAuth, loginWithGoogle, logoutUser, saveCloudSave } from './auth.js';
 import { startEngine, setGamePaused, isGamePaused } from './engine.js';
 import { updateUI, setAuthScreenState, showFirebaseNotice, playSlimeRainRespawnAnimation, initSlimeModalListeners, initMainTabsListeners, openSlimeInspectorModal, renderSlimeRosterLanes } from './ui.js';
 import { initEnemiesModule, startNextWave, setAutoPlay, resetGameFull, rewindWaveState, forwardWaveState, startNewGamePlusRun, returnToVillage, formatLootEffects, ENEMY_TYPES } from './enemies.js';
@@ -38,8 +38,11 @@ document.addEventListener('DOMContentLoaded', () => {
         claim.className = 'afk-reward-claim';
         claim.innerHTML = `<img src="images/logos/scrap.png" alt="" class="afk-reward-scrap-icon" aria-hidden="true"> Claim ${reward.scraps} scraps`;
         claim.addEventListener('click', () => {
-            const claimed = claimAfkScraps();
-            if (claimed.scraps > 0) updateUI();
+            const claimed = claimAfkScraps(Date.now(), reward);
+            if (claimed.scraps > 0) {
+                updateUI();
+                saveCloudSave();
+            }
             backdrop.remove();
         });
         popup.append(title, text, claim);
@@ -49,10 +52,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const checkAfkReward = () => showAfkRewardPopup(previewAfkScraps());
 
-    checkAfkReward();
+    // Defer the initial reward check until the cloud save has finished loading
+    // (see initAuth below). Otherwise an async loadCloudSave() would clobber the
+    // in-memory state right after the popup is shown/claimed, silently losing the
+    // scraps the player just received.
+    let afkRewardReady = false;
+    const queueAfkRewardCheck = () => {
+        if (afkRewardReady) checkAfkReward();
+        else afkRewardReady = 'pending';
+    };
     document.addEventListener('visibilitychange', () => {
         if (document.hidden) markAfkStart();
-        else checkAfkReward();
+        else queueAfkRewardCheck();
     });
     window.addEventListener('pagehide', () => markAfkStart());
     const updateSelectionStateUI = () => {
@@ -579,14 +590,14 @@ document.addEventListener('DOMContentLoaded', () => {
         battlefieldCard.addEventListener('click', (e) => {
             // Ignore click if clicking directly on a button inside the card
             if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
-                console.log('[CLICK] ignored: click landed on a button');
+                //console.log('[CLICK] ignored: click landed on a button');
                 return;
             }
             if (isGamePaused) {
-                console.log('[CLICK] ignored: game is paused');
+                //console.log('[CLICK] ignored: game is paused');
                 return;
             }
-            console.log('[CLICK] battlefield click received -> triggerRandomSlimeAttack()');
+            //console.log('[CLICK] battlefield click received -> triggerRandomSlimeAttack()');
             triggerRandomSlimeAttack();
         });
     }
@@ -668,11 +679,71 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isAuthenticated) {
                 startGameWithSkyDrop();
             }
+            // Cloud save (if any) has now finished loading, so it is safe to
+            // surface the AFK reward popup without it being overwritten.
+            if (afkRewardReady === 'pending') {
+                afkRewardReady = true;
+                checkAfkReward();
+            } else {
+                afkRewardReady = true;
+            }
         },
         () => {
             showFirebaseNotice();
+            if (afkRewardReady === 'pending') {
+                afkRewardReady = true;
+                checkAfkReward();
+            } else {
+                afkRewardReady = true;
+            }
         }
     );
+
+    // Glass tooltips: teleport the tooltip box to document.body so it truly
+    // escapes every `transform` / `backdrop-filter` ancestor that would
+    // otherwise create a new containing block and break `position: fixed`.
+    const positionGlassTooltip = (glass) => {
+        const box = glass.querySelector('.talent-tooltip-glass-box');
+        if (!box) return;
+        // Remember where the box came from so we can return it on mouseout.
+        box._glassParent = glass;
+        const rect = glass.getBoundingClientRect();
+        const boxW = box.offsetWidth || 210;
+        let left = rect.left + rect.width / 2;
+        left = Math.max(boxW / 2 + 6, Math.min(window.innerWidth - boxW / 2 - 6, left));
+        const top = rect.top;
+        // Move to body so `position: fixed` is relative to the viewport.
+        document.body.appendChild(box);
+        box.style.left = `${left}px`;
+        box.style.top = `${top}px`;
+        box.classList.add('tip-positioned');
+    };
+    const hideGlassTooltip = (glass) => {
+        // The box may have been teleported to body; find it there.
+        const box = glass.querySelector('.talent-tooltip-glass-box')
+            || document.body.querySelector('.talent-tooltip-glass-box.tip-positioned');
+        if (!box) return;
+        box.classList.remove('tip-positioned');
+        // Return the box to its original parent so DOM stays clean.
+        const parent = box._glassParent || glass;
+        if (box.parentNode !== parent) parent.appendChild(box);
+    };
+    document.addEventListener('mouseover', (e) => {
+        const glass = e.target.closest?.('.talent-tooltip-glass');
+        if (glass) positionGlassTooltip(glass);
+    });
+    document.addEventListener('mouseout', (e) => {
+        const glass = e.target.closest?.('.talent-tooltip-glass');
+        if (glass) hideGlassTooltip(glass);
+    });
+    document.addEventListener('focusin', (e) => {
+        const glass = e.target.closest?.('.talent-tooltip-glass');
+        if (glass) positionGlassTooltip(glass);
+    });
+    document.addEventListener('focusout', (e) => {
+        const glass = e.target.closest?.('.talent-tooltip-glass');
+        if (glass) hideGlassTooltip(glass);
+    });
 
     // 5. Start Engine Loop
     startEngine();
