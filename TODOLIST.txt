@@ -1,15 +1,7 @@
 ------------- NOW ----------------
-
+redo delete confirmation popup with pixel art style.
 
 ------------- LATER ----------------
-Poor Guy: Wipe to the first Beggar. - 1 coin (first wave)
-Stun Locked: Kill the Golem before it passes half of the Battlefield. - 3 coins (passes targetX 250)
-Winter is Coming: Finish a Run with 60 Ice Slimes in your Roster. - 5 coins
-Blazing Hot: Finish a Run with 60 Fire Slimes in your Roster. - 5 coins
-Stonehead: Finish a Run with 60 Stone Slimes in your Roster. - 5 coins
-Toxicity: Finish a Run with 60 Poison Slimes in your Roster. - 5 coins
-Self Defense: Kill a Boss wave without attacking once. - 10 coins (integrated)
-
 
 ------------- LATER  ----------------
 

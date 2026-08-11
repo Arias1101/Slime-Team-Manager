@@ -773,12 +773,14 @@ function getActionButtonsHtml(selectedSlimes) {
             }
 
             // Sub-talents are selectable for the first Talent (t === 0) once it is
-            // owned, and for the second (t === 1) and third (t === 2) Talents once
-            // their prerequisite second Talent is owned by all selected Slimes.
-            // Otherwise they stay disabled.
+            // owned by all selected Slimes, and for the second (t === 1) and third
+            // (t === 2) Talents once their prerequisite second Talent is owned by
+            // all selected Slimes. Otherwise they stay disabled.
+            const firstOwnedAll = selectedSlimes.length > 0
+                && selectedSlimes.every(s => hasFirstTalent(s));
             const secondOwnedAll = selectedSlimes.length > 0
                 && selectedSlimes.every(s => secondFlag && s.talents?.[secondFlag]);
-            const subEnabled = t === 0 ? true : (t === 1 || t === 2 ? secondOwnedAll : false);
+            const subEnabled = (t === 0 && firstOwnedAll) || (t === 1 || t === 2 ? secondOwnedAll : false);
             const subDisabled = subEnabled ? '' : ' disabled';
             // A sub-talent is "selected" only when every selected Slime already
             // has the same one enabled (otherwise none are highlighted).

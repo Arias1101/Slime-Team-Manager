@@ -10,6 +10,7 @@ import { initEnemiesModule, startNextWave, setAutoPlay, resetGameFull, rewindWav
 import { triggerRandomSlimeAttack, triggerSlimeEatLoot, initAscendedAutoAttacks } from './slimes.js';
 import { initUpgradesModule, sortMaxedUpgradeCardsOnPageLoad } from './upgrades.js';
 import { initShopModule } from './shop.js';
+import { playMainMusic, playVillageMusic, toggleMusicMute, isMusicMuted, setMusicPaused, toggleEffectsMute, isEffectsMuted } from './audio.js';
 import { openCommonHousePopup } from './commonhouse.js';
 import { openAchievementsPopup } from './achievementsPopup.js';
 import { grantAchievement } from './achievements.js';
@@ -219,7 +220,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         updateUI();
         syncToolbarButtons();
-        if (gameState.isInNewGamePlus) return;
+        if (gameState.isInNewGamePlus) {
+            // Loading directly into the New Game+ village: no run to drop, just the
+            // village theme.
+            playVillageMusic();
+            return;
+        }
+        playMainMusic();
         playSlimeRainRespawnAnimation(() => {
             startNextWave();
         });
@@ -635,7 +642,35 @@ document.addEventListener('DOMContentLoaded', () => {
             btnPauseGame.textContent = isPausedNow ? '▶️' : '⏸️';
             btnPauseGame.title = isPausedNow ? 'Resume' : 'Pause';
             btnPauseGame.classList.toggle('paused', isPausedNow);
+            setMusicPaused(isPausedNow); // Pause/resume background music with the game.
             updateUI(); // Force Eat button state check!
+        });
+    }
+
+    // Mute Music button: toggles background music. Visual state reflects the mute.
+    const btnMuteMusic = document.getElementById('btnMuteMusic');
+    if (btnMuteMusic) {
+        btnMuteMusic.classList.toggle('active', isMusicMuted());
+        btnMuteMusic.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const muted = toggleMusicMute();
+            btnMuteMusic.classList.toggle('active', muted);
+            btnMuteMusic.textContent = muted ? '\u{1F507}' : '\u{1F3B5}';
+            btnMuteMusic.title = muted ? 'Unmute Music' : 'Mute Music';
+        });
+    }
+
+    // Mute Effects button: toggles sound effects (e.g. kill sounds).
+    // Visual state reflects the mute.
+    const btnMuteEffects = document.getElementById('btnMuteEffects');
+    if (btnMuteEffects) {
+        btnMuteEffects.classList.toggle('active', isEffectsMuted());
+        btnMuteEffects.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const muted = toggleEffectsMute();
+            btnMuteEffects.classList.toggle('active', muted);
+            btnMuteEffects.textContent = muted ? '\u{1F507}' : '\u{1F50A}';
+            btnMuteEffects.title = muted ? 'Unmute Effects' : 'Mute Effects';
         });
     }
 

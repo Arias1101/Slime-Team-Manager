@@ -8,6 +8,7 @@ import { updateUI, updateLootHUD, requestUIRefresh, playSlimeRainRespawnAnimatio
 import { openShopModal } from './shop.js';
 import { isGamePaused, setGamePaused } from './engine.js';
 import { notifyAchievementEvent, checkAchievements, grantAchievement } from './achievements.js';
+import { playMainMusic, playVillageMusic, playKillSound } from './audio.js';
 import { recordRunWipe, resetRunWipeTracking } from './state.js';
 /**
  * Scrap value contributed by one point of each loot attribute.
@@ -148,8 +149,8 @@ export const ENEMY_TYPES = {
         type: 'range',
         projectile: 'fireball',
         tier: 0,
-        hp: 200,
-        maxHp: 200,
+        hp: 250,
+        maxHp: 250,
         damage: 5,            // Damage per projectile
         attackSpeed: 1,     // attacks per second
         moveSpeed: 2,
@@ -180,8 +181,8 @@ export const ENEMY_TYPES = {
         type: 'range',
         projectile: 'flask',
         tier: 0,
-        hp: 2000,
-        maxHp: 2000,
+        hp: 3000,
+        maxHp: 3000,
         damage: 1,
         attackSpeed: 0.6,
         moveSpeed: 1.5,
@@ -194,9 +195,10 @@ export const ENEMY_TYPES = {
         id: 'catapult',
         type: 'range',
         projectile: 'boulder',
+        controlImmune: true,
         tier: 0,
-        hp: 10000,
-        maxHp: 10000,
+        hp: 15000,
+        maxHp: 15000,
         damage: 15,
         attackSpeed: 0.5,
         moveSpeed: 0.6,
@@ -211,8 +213,8 @@ export const ENEMY_TYPES = {
         type: 'melee',
         projectile: 'slash1',
         tier: 0,
-        hp: 20000,
-        maxHp: 20000,
+        hp: 25000,
+        maxHp: 25000,
         damage: 15,            // Damages
         attackSpeed: 1,        // attacks per second
         moveSpeed: 1,
@@ -227,8 +229,8 @@ export const ENEMY_TYPES = {
         type: 'support',
         projectile: 'heal1',
         tier: 0,
-        hp: 5000,
-        maxHp: 5000,
+        hp: 10000,
+        maxHp: 10000,
         damage: 100,
         attackSpeed: 2,
         moveSpeed: 1,
@@ -246,8 +248,8 @@ export const ENEMY_TYPES = {
         type: 'melee',        // Melee attacker
         projectile: 'slash1',
         tier: 1,
-        hp: 2,                // 2 HP (requires 2 hits from base slime)
-        maxHp: 2,
+        hp: 3,                // 2 HP (requires 2 hits from base slime)
+        maxHp: 3,
         damage: 1,            // 1 Damage per attack
         attackSpeed: 1.0,     // 1 attack per second
         moveSpeed: 1,         // Move speed (1 to 100) -> 25 px/sec
@@ -261,8 +263,8 @@ export const ENEMY_TYPES = {
         type: 'melee',        // Melee attacker
         projectile: 'slash1',
         tier: 1,
-        hp: 3,                // 2 HP (requires 2 hits from base slime)
-        maxHp: 3,
+        hp: 4,                // 2 HP (requires 2 hits from base slime)
+        maxHp: 4,
         damage: 2,            // 1 Damage per attack
         attackSpeed: 1.0,     // 1 attack per second
         moveSpeed: 1.2,       // Move speed (1 to 100) -> 25 px/sec
@@ -276,8 +278,8 @@ export const ENEMY_TYPES = {
         type: 'melee',        // Melee attacker
         projectile: 'slash1',
         tier: 1,
-        hp: 4,                // 2 HP (requires 2 hits from base slime)
-        maxHp: 4,
+        hp: 5,                // 2 HP (requires 2 hits from base slime)
+        maxHp: 5,
         damage: 3,            // 1 Damage per attack
         attackSpeed: 1.0,     // 1 attack per second
         moveSpeed: 1.2,       // Move speed (1 to 100) -> 25 px/sec
@@ -294,8 +296,8 @@ export const ENEMY_TYPES = {
         type: 'melee',        // Melee attacker
         projectile: 'slash1',
         tier: 1,
-        hp: 5,                // 2 HP (requires 2 hits from base slime)
-        maxHp: 5,
+        hp: 6,                // 2 HP (requires 2 hits from base slime)
+        maxHp: 6,
         damage: 2,            // 1 Damage per attack
         attackSpeed: 1.0,     // 1 attack per second
         moveSpeed: 1.3,       // Move speed (1 to 100) -> 25 px/sec
@@ -341,8 +343,8 @@ export const ENEMY_TYPES = {
         type: 'range',       // Ranged attacker
         projectile: 'arrow',  // Arrow projectile type
         tier: 2,
-        hp: 20,
-        maxHp: 20,
+        hp: 30,
+        maxHp: 30,
         damage: 2,            // 2 Damage per projectile
         attackSpeed: 1.2,     // 0.8 attacks per second
         moveSpeed: 1.4,
@@ -356,8 +358,8 @@ export const ENEMY_TYPES = {
         type: 'melee',        // Melee attacker
         projectile: 'slash1',
         tier: 2,
-        hp: 25,                // 4 HP
-        maxHp: 25,
+        hp: 40,                // 4 HP
+        maxHp: 40,
         damage: 2,            // 3 Damage per attack
         attackSpeed: 1.0,     // 1 attack per second
         moveSpeed: 2,       // Move speed
@@ -386,8 +388,8 @@ export const ENEMY_TYPES = {
         type: 'melee',        // Melee attacker
         projectile: 'slash1',
         tier: 2,
-        hp: 25,                // 4 HP
-        maxHp: 25,
+        hp: 40,                // 4 HP
+        maxHp: 40,
         damage: 1,            // 3 Damage per attack
         attackSpeed: 1,     // 1 attack per second
         moveSpeed: 2.5,       // Move speed
@@ -402,8 +404,8 @@ export const ENEMY_TYPES = {
         type: 'melee',        // Melee attacker
         projectile: 'slash1',
         tier: 2,
-        hp: 35,                // 4 HP
-        maxHp: 35,
+        hp: 50,                // 4 HP
+        maxHp: 50,
         damage: 10,            // 3 Damage per attack
         attackSpeed: 1,     // 1 attack per second
         moveSpeed: 2,       // Move speed
@@ -421,8 +423,8 @@ export const ENEMY_TYPES = {
         type: 'melee',        // Melee attacker
         projectile: 'slash1',
         tier: 3,
-        hp: 100,                // 5 HP
-        maxHp: 100,
+        hp: 120,                // 5 HP
+        maxHp: 120,
         damage: 4,
         attackSpeed: 1.5,     // attack per second
         moveSpeed: 3,       // Move speed
@@ -437,8 +439,8 @@ export const ENEMY_TYPES = {
         type: 'melee',        // Melee attacker
         projectile: 'slash1',
         tier: 3,
-        hp: 80,                // 5 HP
-        maxHp: 80,
+        hp: 100,                // 5 HP
+        maxHp: 100,
         damage: 5,            // 4 Damage per attack
         attackSpeed: 1,     // 1 attack per second
         moveSpeed: 3.5,       // Move speed
@@ -453,8 +455,8 @@ export const ENEMY_TYPES = {
         type: 'range',       // Ranged attacker
         projectile: 'arrow',  // Arrow projectile type
         tier: 3,
-        hp: 45,
-        maxHp: 45,
+        hp: 60,
+        maxHp: 60,
         damage: 5,            // 2 Damage per projectile
         attackSpeed: 1.5,     // 0.8 attacks per second
         moveSpeed: 2,
@@ -468,8 +470,8 @@ export const ENEMY_TYPES = {
         type: 'melee',        // Melee attacker
         projectile: 'slash1',
         tier: 3,
-        hp: 500,
-        maxHp: 500,
+        hp: 600,
+        maxHp: 600,
         damage: 0,
         attackSpeed: 0,     // Attacks per second
         moveSpeed: 5,
@@ -483,8 +485,8 @@ export const ENEMY_TYPES = {
         type: 'melee',        // Melee attacker
         projectile: 'slash1',
         tier: 3,
-        hp: 90,                // 5 HP
-        maxHp: 90,
+        hp: 110,                // 5 HP
+        maxHp: 110,
         damage: 10,            // 4 Damage per attack
         attackSpeed: 1,     // 1 attack per second
         moveSpeed: 4,       // Move speed
@@ -502,8 +504,8 @@ export const ENEMY_TYPES = {
         type: 'range',
         projectile: 'fireball',
         tier: 4,
-        hp: 100,
-        maxHp: 100,
+        hp: 200,
+        maxHp: 200,
         damage: 5,
         attackSpeed: 1.2,
         moveSpeed: 4,
@@ -517,8 +519,8 @@ export const ENEMY_TYPES = {
         type: 'range',
         projectile: 'arrow',
         tier: 4,
-        hp: 200,
-        maxHp: 200,
+        hp: 250,
+        maxHp: 250,
         damage: 10,
         attackSpeed: 1.2,
         moveSpeed: 2,
@@ -534,8 +536,8 @@ export const ENEMY_TYPES = {
         type: 'melee',
         projectile: 'slash1',
         tier: 4,
-        hp: 300,
-        maxHp: 300,
+        hp: 350,
+        maxHp: 350,
         damage: 15,
         attackSpeed: 1.4,
         moveSpeed: 7,
@@ -597,8 +599,8 @@ export const ENEMY_TYPES = {
         type: 'support',
         projectile: 'heal1',
         tier: 4,
-        hp: 200,
-        maxHp: 200,
+        hp: 250,
+        maxHp: 250,
         damage: 25,
         attackSpeed: 1.15,
         moveSpeed: 2,
@@ -613,8 +615,8 @@ export const ENEMY_TYPES = {
         type: 'melee',
         projectile: 'slash1',
         tier: 5,
-        hp: 3000,
-        maxHp: 3000,
+        hp: 3500,
+        maxHp: 3500,
         damage: 16,
         attackSpeed: 0.8,
         moveSpeed: 1.2,
@@ -640,8 +642,8 @@ export const ENEMY_TYPES = {
         type: 'melee',
         projectile: 'slash1',
         tier: 5,
-        hp: 5000,
-        maxHp: 5000,
+        hp: 5500,
+        maxHp: 5500,
         damage: 35,
         attackSpeed: 0.85,
         moveSpeed: 3,
@@ -1429,6 +1431,7 @@ export function enterNewGamePlus() {
     resetRunWipeTracking();
     saveStateToLocal();
     updateUI();
+    playVillageMusic();
     isNewGamePlusTransition = false;
 }
 
@@ -1491,6 +1494,7 @@ export function returnToVillage() {
         setGamePaused(false, true);
         saveStateToLocal();
         updateUI();
+        playVillageMusic();
         isNewGamePlusTransition = false;
     }, 1000);
 }
@@ -1502,6 +1506,7 @@ export function startNewGamePlusRun() {
     applyNewGamePlusPresentation();
     saveStateToLocal();
     updateUI();
+    playMainMusic();
     playSlimeRainRespawnAnimation(() => startNextWave());
 }
 /**
@@ -1535,6 +1540,7 @@ function checkWaveCompletion() {
                 if (s.hp > 0 && regeneration > 0) {
                     // Regen only fills real HP up to maxHp; temporary HP is a separate pool.
                     s.hp = Math.min(s.maxHp, s.hp + regeneration);
+                    updateSlimeHpBar(s);
                 }
             });
         }
@@ -1692,8 +1698,8 @@ export function spawnEnemy(typeId = 'beggar', hpMultiplier = 1.0) {
     const baseHp = def.hp || 2;
     // Each completed New Game+ run scales enemy stats multiplicatively (compounding):
     // HP +20%, Damage +10%. Move speed is left unchanged.
-    const newGamePlusHpMultiplier = Math.pow(1.20, Math.max(0, gameState.newGamePlusCompletions || 0));
-    const newGamePlusDmgMultiplier = Math.pow(1.10, Math.max(0, gameState.newGamePlusCompletions || 0));
+    const newGamePlusHpMultiplier = Math.pow(1.3, Math.max(0, gameState.newGamePlusCompletions || 0));
+    const newGamePlusDmgMultiplier = Math.pow(1.2, Math.max(0, gameState.newGamePlusCompletions || 0));
     const scaledHp = Math.max(1, Math.round(baseHp * hpMultiplier * newGamePlusHpMultiplier));
     const scaledDamage = Math.max(0, Math.round((def.damage || 0) * newGamePlusDmgMultiplier));
     const scaledMoveSpeed = (def.moveSpeed || 0) * 25 * (gameState.isFastMode ? 2 : 1);
@@ -1854,6 +1860,7 @@ export function updateEnemies(deltaSeconds) {
         const enemy = activeEnemies[i];
 
         if (enemy.hp <= 0) {
+            playKillSound();
             triggerLootDrop(enemy);
             // Defeated enemy removal with cartoon jump plunge
             if (enemy.el && !enemy.el.classList.contains('cartoon-ko-eject') && !enemy.el.classList.contains('cartoon-ko-eject-left')) {
@@ -2784,6 +2791,38 @@ function resolveTankBlock(slime, damageAmount, dmgType, sourceEnemy) {
 /**
  * Applies damage to a specific slime instance
  */
+/**
+ * Refresh the on-screen HP bars (battlefield unit + roster sidebar) for a
+ * single slime from its current hp/maxHp. Used after any HP change that is not
+ * routed through damageSpecificSlime (e.g. end-of-wave regeneration), so the
+ * heal is visible immediately instead of waiting for the next unit rebuild.
+ */
+export function updateSlimeHpBar(slime) {
+    if (!slime) return;
+    const hpPct = Math.max(0, (slime.hp / slime.maxHp) * 100);
+
+    const armyContainer = document.getElementById('armyContainer');
+    if (armyContainer) {
+        const unit = armyContainer.querySelector(`[data-slime-id="${slime.id}"]`);
+        if (unit) {
+            const hpFill = unit.querySelector('.slime-hp-fill');
+            if (hpFill) hpFill.style.width = `${hpPct}%`;
+        }
+    }
+
+    const rosterItem = document.getElementById(`roster_item_${slime.id}`);
+    const rosterFill = rosterItem ? rosterItem.querySelector('.roster-hp-fill') : null;
+    if (rosterFill) {
+        rosterFill.style.width = `${hpPct}%`;
+        if (hpPct < 35) rosterFill.style.background = '#ef4444';
+        else if (hpPct < 65) rosterFill.style.background = '#f59e0b';
+        else rosterFill.style.background = '#10b981';
+    }
+    if (rosterItem) {
+        rosterItem.title = `${slime.type || 'Slime'}: ${slime.hp}/${slime.maxHp} HP`;
+    }
+}
+
 export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg', sourceEnemy = null, allowBlock = true) {
     if (!slime || slime.hp <= 0) return null;
 
@@ -2911,19 +2950,10 @@ export function damageSpecificSlime(slime, damageAmount, dmgType = 'slime-dmg', 
             return slime;
         }
     }
-    const hpPct = Math.max(0, (slime.hp / slime.maxHp) * 100);
+    updateSlimeHpBar(slime);
+
     const rosterItem = document.getElementById(`roster_item_${slime.id}`);
-    const hpFill = rosterItem ? rosterItem.querySelector('.roster-hp-fill') : null;
-
-    if (hpFill) {
-        hpFill.style.width = `${hpPct}%`;
-        if (hpPct < 35) hpFill.style.background = '#ef4444';
-        else if (hpPct < 65) hpFill.style.background = '#f59e0b';
-        else hpFill.style.background = '#10b981';
-    }
-
     if (rosterItem) {
-        rosterItem.title = `${slime.type || 'Slime'}: ${slime.hp}/${slime.maxHp} HP`;
         rosterItem.classList.add('roster-hit-flash');
         setTimeout(() => rosterItem.classList.remove('roster-hit-flash'), 180);
     }

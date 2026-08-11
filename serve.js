@@ -8,7 +8,8 @@ const port = 8080;
 const types = {
   '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
   '.json': 'application/json', '.png': 'image/png', '.jpg': 'image/jpeg',
-  '.svg': 'image/svg+xml', '.ico': 'image/x-icon'
+  '.svg': 'image/svg+xml', '.ico': 'image/x-icon',
+  '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.ogg': 'audio/ogg'
 };
 
 http.createServer((req, res) => {

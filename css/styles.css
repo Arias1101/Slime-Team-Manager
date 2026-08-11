@@ -4616,13 +4616,22 @@ body.modal-open {
 body.new-game-plus .army-side .side-badge,
 body.new-game-plus .enemy-side .side-badge,
 body.new-game-plus .enemy-wave-count,
-body.new-game-plus .header-stat:has(#waveCount),
-body.new-game-plus .battlefield-toolbar {
+body.new-game-plus .header-stat:has(#waveCount) {
     display: none;
 }
 
+/* In the New Game+ village, only the music mute control is relevant on the toolbar;
+   hide the battle-only controls (pause, fast mode, no-merchant, return home) and the
+   effects mute (reserved for future SFX muting). */
+body.new-game-plus #btnPauseGame,
+body.new-game-plus #btnForwardGame,
+body.new-game-plus #btnMuteGame,
+body.new-game-plus #btnHomeGame,
+body.new-game-plus #btnMuteEffects {
+    display: none !important;
+}
+
 /* New Game+ village buildings */
-body.new-game-plus #tabContentUpgrades,
 body.new-game-plus #tabBtnUpgrades {
     display: none !important;
 }
@@ -4652,13 +4661,30 @@ body.new-game-plus .village-buildings {
     width: 22px;
     height: 26px;
     padding: 0;
+    /* Give each door its own stable compositing layer so hovering one does not
+       force the whole village-buildings layer to re-rasterize (which made the
+       neighbouring icons shiver/blur). */
+    transform: translateZ(0);
+    will-change: transform;
 }
 
 .village-door::before {
     display: block;
     font-size: 16px;
     line-height: 1;
-    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.75));
+    /* Drop-shadow kept off the base state: an always-on filter re-rasterizes the
+       shared layer on every hover repaint and jitters adjacent pixel-art icons.
+       Apply it only on hover/focus where the cost is expected & localized. */
+}
+
+.village-door:hover,
+.village-door:focus-visible {
+    outline: none;
+}
+
+.village-door:hover::before,
+.village-door:focus-visible::before {
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.75)) drop-shadow(0 0 4px rgba(251, 191, 36, 0.7));
 }
 
 .village-door-alchemist::before {

@@ -1,9 +1,13 @@
 Patch Notes (do not edit this I handle it manually):
-v1.0.1
+v1.1
+- Fixed icons blurring on button hover in village.
 - Hidden control buttons while not on NG+
 - Hidden debug buttons.
 - Implemented a safe check preventing softlock on page reload.
 - Prevented bonus waves before NG+.
+- Added songs to game and village.
+- Added mute songs / mute effects buttons.
+- Added sound effects to ennemy death.
 
 v1.0
 - Reworked Common House Toolbar buttons to work like additive filters.
@@ -79,6 +83,9 @@ v0.21
 - Implemented second Poison Fighter Slime talent: Corrosive Poison.
 - Implemented second Stone Fighter Slime talent: Heavy Strike.
 - Fixed small animation issue on IceBarrier movements.
+- Increased base difficulty and NG+ Scaling.
+- Tried a fix for occupied slimes not regaining HP at the end of a wave.
+- Fixed being able to select Subtalents for locked Talents in Common House.
 
 v0.20
 - Tried a new method to handle Roster.

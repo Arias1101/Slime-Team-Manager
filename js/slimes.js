@@ -501,16 +501,16 @@ export function playResurrectionAnimations(resurrectors, revivedSlimes) {
 }
 function executeSlimeJumpAttack(unitEl, typeId, slimeObj = null) {
     if (trySupportGraft(unitEl, slimeObj)) {
-        console.log(`[ATTACK] ${unitEl.dataset.slimeId}: support graft consumed the click (no jump)`);
+        //console.log(`[ATTACK] ${unitEl.dataset.slimeId}: support graft consumed the click (no jump)`);
         return;
     }
     // Never start an attack on a unit that is already mid-attack or eating loot.
     if (isUnitBusy(unitEl)) {
-        console.log(`[ATTACK] ${unitEl.dataset.slimeId}: unit busy (already attacking/eating) -> jump skipped`);
+        //console.log(`[ATTACK] ${unitEl.dataset.slimeId}: unit busy (already attacking/eating) -> jump skipped`);
         return;
     }
     markUnitBusy(unitEl);
-    console.log(`[ATTACK] ${unitEl.dataset.slimeId}: jump attack started`);
+    //console.log(`[ATTACK] ${unitEl.dataset.slimeId}: jump attack started`);
     const slimeConfig = SLIME_TYPES[typeId] || SLIME_TYPES.base;
     const imgEl = unitEl.querySelector('.slime-img');
     const shadowEl = unitEl.querySelector('.slime-shadow-sm');
