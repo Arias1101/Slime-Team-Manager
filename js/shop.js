@@ -4,6 +4,7 @@
 
 import { gameState, saveStateToLocal, updateBestRoster, addScraps, calculateSlimeDamage, getScaledEquipmentEffects, getEquipmentDisplayName, getEquipmentSprite, getEquipmentSellMultiplier, getEquipmentQuality, refreshSlimeMaxHp, getSlimeJumpSprite } from './state.js';
 import { ENEMY_TYPES, calculateLootValue, formatLootEffects, decideNextWaveAfterBoss, triggerInvertedTransition } from './enemies.js';
+import { playGlitchSound } from './audio.js';
 import { SLIME_TYPES } from './state.js';
 import { updateUI, renderSlimeRosterLanes } from './ui.js';
 import { startNextWave } from './enemies.js';
@@ -137,6 +138,8 @@ export function closeShopModal() {
         gameState.currentWave = chosenWave;
         gameState.bonusReturnWave = nextWaveNumber;
         saveStateToLocal();
+        // Glitch sound plays during the inverted-background transition into the bonus wave.
+        playGlitchSound();
         triggerInvertedTransition(() => startNextWave());
     } else {
         gameState.currentWave = nextWaveNumber;

@@ -111,9 +111,20 @@ export function showFloatingHealingNumberFromUnit(unitEl, healingAmount, isCrit 
 /**
  * Display a centered battlefield banner message (e.g. "🎉 WAVE 10 CLEARED!")
  */
+let lastBannerText = '';
+let lastBannerAt = 0;
+
 export function showBattlefieldWaveBanner(text) {
     const cardEl = document.querySelector('.battlefield-card') || document.querySelector('.battlefield-overlay') || document.getElementById('gameScreen');
     if (!cardEl) return;
+
+    // De-duplicate rapid repeat calls (e.g. the car bonus wave's delayed
+    // spawn path or an inverted-transition re-entry firing startNextWave
+    // twice for the same wave) so we never stack two identical banners.
+    const now = Date.now();
+    if (text === lastBannerText && now - lastBannerAt < 1500) return;
+    lastBannerText = text;
+    lastBannerAt = now;
 
     // Remove any existing active banner to prevent overlap
     const existing = cardEl.querySelector('.battlefield-congratulations-banner');

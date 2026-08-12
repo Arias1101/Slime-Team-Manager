@@ -1,6 +1,8 @@
 Patch Notes (do not edit this I handle it manually):
 v1.8
 - Fixed Leech heal amount not being rounded.
+- Added songs to bonus waves.
+- Rebalance pass.
 
 v1.7
 - Implemented new "Inflation" Upgrade.

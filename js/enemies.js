@@ -8,7 +8,7 @@ import { updateUI, updateLootHUD, requestUIRefresh, playSlimeRainRespawnAnimatio
 import { openShopModal } from './shop.js';
 import { isGamePaused, setGamePaused } from './engine.js';
 import { notifyAchievementEvent, checkAchievements, grantAchievement } from './achievements.js';
-import { playMainMusic, playVillageMusic, playKillSound, playDieSound } from './audio.js';
+import { playMainMusic, playVillageMusic, playKillSound, playDieSound, playBonusWaveMusic, playGlitchSound } from './audio.js';
 import { recordRunWipe, resetRunWipeTracking } from './state.js';
 /**
  * Scrap value contributed by one point of each loot attribute.
@@ -80,10 +80,10 @@ export const ENEMY_TYPES = {
         tier: 0,
         controlImmune: true,
         hp: 1000,
-        maxHp: 2000,
+        maxHp: 1000,
         damage: 50,
         attackSpeed: 0.1,
-        moveSpeed: 12,
+        moveSpeed: 10,
         targetX: 100,
         loot_name: 'Shiny Horse Badge',
         loot_effect: [{ stat: 'damage', value: 10 },
@@ -1052,7 +1052,7 @@ function generateWaveComposition(waveNum) {
     if (waveNum === 27) return [0.1, 'guard:8', 'halberdier:4', 'archer:4'];
     if (waveNum === 28) return [0.1, 'guard:10', 'halberdier:10'];
     if (waveNum === 29) return [0.1, 'tank:5', 'archer:10'];
-    if (waveNum === 30) return [0, 'catapult:1', 'tank:6', 'berserker:1', 'archer:4'];
+    if (waveNum === 30) return [0.2, 'catapult:1', 'tank:6', 'berserker:1', 'archer:4'];
 
     // 31-40 Forest Enemies: deliberately light introductory compositions.
     if (waveNum === 31) return [0.1, 'wolf:5'];
@@ -1079,8 +1079,8 @@ function generateWaveComposition(waveNum) {
     if (waveNum === 50) return [0.4, 'lich:1', 'skeleton:25', 'skeletonarcher:5'];
 
     // Wave 900+ = Bonus Waves
-    if (waveNum === 901) return [0, 'car:1'];
-    if (waveNum === 902) return [0, 'missingno:1'];
+    if (waveNum === 901) return [3, 'car:1'];
+    if (waveNum === 902) return [1, 'missingno:1'];
     if (waveNum === 903) return [1, 'char:1', 'military:20'];
 
     // Death
@@ -1099,16 +1099,16 @@ function generateWaveComposition(waveNum) {
  * Overall flat chance (0-1) that a cleared boss wave diverts into a bonus
  * stage. Independent of which bonus stage is then chosen.
  */
-const BONUS_STAGE_CHANCE = 0.06; // 10% flat chance for any bonus stage
+const BONUS_STAGE_CHANCE = 1; // 10% flat chance for any bonus stage
 
 /**
  * Bonus stages and their relative apparition weight when a bonus stage is
  * triggered. Weights are normalized against each other, not against 1.0.
  */
 const BONUS_WAVES = [
-    { wave: 901, chance: 0.40 }, // Car wave: 40%
-    { wave: 902, chance: 0.20 }, // Missingno wave: 20%
-    { wave: 903, chance: 0.40 }   // Battleground wave: 40%
+    { wave: 901, chance: 1 }, // Car wave: 40%
+    { wave: 902, chance: 0 }, // Missingno wave: 20%
+    { wave: 903, chance: 0 }   // Battleground wave: 40%
 ];
 
 /**
@@ -1172,7 +1172,7 @@ export function startNextWave() {
     activeProjectiles = [];
 
     isWaveActive = true;
-    showBattlefieldWaveBanner(`${String.fromCodePoint(0x26A1, 0xFE0F)} WAVE ${gameState.currentWave}`);
+    showBattlefieldWaveBanner(`WAVE ${gameState.currentWave}`);
 
     // A Boss wave (every 10th) starts with the "no attack" flag armed for the
     // "Self Defense" achievement; it is disarmed the moment a Slime damages an enemy.
@@ -1181,6 +1181,9 @@ export function startNextWave() {
     // Apply wave-specific battlefield background (bonus waves use special art).
     const battlefield = document.querySelector('.battlefield-card');
     if (battlefield) battlefield.style.backgroundImage = getWaveBackground(gameState.currentWave);
+
+    // Bonus waves swap the looping music to their dedicated track.
+    if (gameState.currentWave >= 900) playBonusWaveMusic(gameState.currentWave);
 
     const waveData = generateWaveComposition(gameState.currentWave);
 
@@ -1208,14 +1211,16 @@ export function startNextWave() {
     waveSpawnedEnemies = 0;
     updateWaveCountdownUI();
 
-    // Spawn enemies based on configured interval (0 = instant spawn)
+    // Spawn enemies based on configured interval (0 = instant spawn).
+    // The interval also applies before the first enemy, so the wave begins with
+    // one "in-between" gap rather than spawning immediately.
     enemyList.forEach((enemyType, idx) => {
         if (intervalMs === 0) {
             spawnEnemy(enemyType, currentWaveHpMultiplier);
         } else {
             const timerId = setTimeout(() => {
                 spawnEnemy(enemyType, currentWaveHpMultiplier);
-            }, idx * intervalMs);
+            }, (idx + 1) * intervalMs);
             waveSpawnTimers.push(timerId);
         }
     });
@@ -1592,6 +1597,10 @@ function checkWaveCompletion() {
             gameState.villageCoins = (gameState.villageCoins || 0) + 5;
             gameState.currentWave = gameState.bonusReturnWave || (clearedWaveNum + 1);
             gameState.bonusReturnWave = null;
+            // Glitch sound + inverted-background flash, then return to main music.
+            playGlitchSound();
+            triggerInvertedTransition();
+            playMainMusic();
         } else {
             gameState.currentWave += 1;
         }
@@ -1613,7 +1622,7 @@ function checkWaveCompletion() {
                     saveWaveSnapshot(clearedWaveNum, finalUncollectedLootValue);
                     saveStateToLocal();
                     updateUI();
-                    showBattlefieldWaveBanner(`${String.fromCodePoint(0x1F389)} WAVE ${clearedWaveNum} CLEARED!<br><span style="font-size: 0.9rem; color: #cbd5e1; font-weight: 600;">${String.fromCodePoint(0x1F6D2)} Merchant Arriving...</span>`);
+                    showBattlefieldWaveBanner(`WAVE ${clearedWaveNum} CLEARED!<br><span style="font-size: 0.9rem; color: #cbd5e1; font-weight: 600;">Merchant Arriving...</span>`);
 
                     setTimeout(() => {
                         openShopModal(clearedWaveNum);
@@ -1708,8 +1717,8 @@ export function spawnEnemy(typeId = 'beggar', hpMultiplier = 1.0) {
     const baseHp = def.hp || 2;
     // Each completed New Game+ run scales enemy stats multiplicatively (compounding):
     // HP +20%, Damage +10%. Move speed is left unchanged.
-    const newGamePlusHpMultiplier = Math.pow(1.3, Math.max(0, gameState.newGamePlusCompletions || 0));
-    const newGamePlusDmgMultiplier = Math.pow(1.2, Math.max(0, gameState.newGamePlusCompletions || 0));
+    const newGamePlusHpMultiplier = Math.pow(1.25, Math.max(0, gameState.newGamePlusCompletions || 0));
+    const newGamePlusDmgMultiplier = Math.pow(1.15, Math.max(0, gameState.newGamePlusCompletions || 0));
     const scaledHp = Math.max(1, Math.round(baseHp * hpMultiplier * newGamePlusHpMultiplier));
     const scaledDamage = Math.max(0, Math.round((def.damage || 0) * newGamePlusDmgMultiplier));
     // Apply the Fast Mode multiplier to the base moveSpeed, then cap the
@@ -3149,6 +3158,8 @@ export function wipeWaveState() {
     // A wipe consumes the bonus detour; clear the stashed return wave so it
     // cannot leak into a later normal-wave reset.
     gameState.bonusReturnWave = null;
+    // Wiping on a bonus stage stops its looping music and returns to the main track.
+    if (currentWave >= 900) playMainMusic();
     performWaveReset(targetWave);
 }
 

@@ -125,11 +125,79 @@ export function stopMusic() {
 }
 
 export function playMainMusic() {
+    stopGlitchSound();
     playMusic('main');
 }
 
 export function playVillageMusic() {
+    stopGlitchSound();
     playMusic('village');
+}
+
+// Non-pool, one-shot sound files (bonus-wave transition / ambience).
+const EXTRA_BASE_PATH = MUSIC_BASE_PATH; // images/sounds/musics/
+let glitchEl = null; // Tracked so the glitch can be cut the instant the bonus song starts.
+
+/** Play a one-shot sound file that is not part of a named pool (e.g. glitch.mp3). */
+export function playOneShotSound(fileName, volume = 0.5) {
+    const el = new Audio(EXTRA_BASE_PATH + fileName);
+    el.volume = volume;
+    const playPromise = el.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(() => {});
+    }
+    el.addEventListener('ended', () => { el.src = ''; });
+    return el;
+}
+
+/** Play the glitch transition sound (inverted-background bonus-wave transitions). */
+export function playGlitchSound() {
+    if (musicMuted) return;
+    glitchEl = playOneShotSound('glitch.mp3', 0.5);
+    return glitchEl;
+}
+
+/** Stop the glitch transition sound immediately (called when the bonus song begins). */
+export function stopGlitchSound() {
+    if (glitchEl) {
+        glitchEl.pause();
+        glitchEl.src = '';
+        glitchEl = null;
+    }
+}
+
+/** Map a bonus wave number to its dedicated looping music track. */
+const BONUS_WAVE_MUSIC = {
+    901: 'car.mp3',
+    902: 'missingno.mp3',
+    903: 'battleground.mp3'
+};
+
+/**
+ * Play the looping music for a bonus wave on the shared music element. Uses the
+ * same element as the main/village tracks, so calling playMainMusic() / playVillageMusic()
+ * afterwards cleanly returns to the normal soundtrack.
+ */
+export function playBonusWaveMusic(waveNum) {
+    const file = BONUS_WAVE_MUSIC[waveNum];
+    if (!file) return;
+    // The glitch plays only during the image transition; cut it the instant the
+    // bonus stage song takes over.
+    stopGlitchSound();
+    if (musicMuted) return;
+    const src = EXTRA_BASE_PATH + file;
+    const el = ensureAudioElement();
+    if (!el.src.endsWith(src)) {
+        el.src = src;
+        el.currentTime = 0;
+    }
+    el.loop = true;
+    currentMode = null; // Not a pool mode; keeps playMainMusic() a clean switch later.
+    currentSrc = src;
+    const playPromise = el.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(() => {});
+    }
 }
 
 /**
@@ -142,6 +210,8 @@ function applyAudioState() {
     const shouldPlay = !musicMuted && !musicPausedByGame && (currentMode || pendingMode);
     if (!shouldPlay) {
         audioEl.pause();
+        // The glitch transition is a separate one-shot element; silence it too when muted.
+        if (musicMuted) stopGlitchSound();
         return;
     }
     // Already playing the right thing: nothing to do.

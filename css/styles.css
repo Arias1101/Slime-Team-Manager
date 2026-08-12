@@ -2842,9 +2842,9 @@ body.modal-open {
     background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.95));
     border: 2px solid #f59e0b;
     border-radius: 14px;
-    padding: 14px 28px;
+    padding: 12px 24px;
     color: #f59e0b;
-    font-size: 1.25rem;
+    font-size: 0.95rem;
     font-weight: 800;
     text-align: center;
     letter-spacing: 0.5px;
@@ -3261,7 +3261,7 @@ body.modal-open {
     padding: 8px 16px;
     color: #ffffff;
     font-family: var(--font-heading);
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     text-align: center;
     z-index: 500;
     pointer-events: none;
