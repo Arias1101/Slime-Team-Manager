@@ -937,7 +937,7 @@ function dealTargetEnemyDamage(targetEnemy, damageAmount, slimeConfig, isCrit = 
     // direct damage it inflicts (main hit + freeze bonus damage), up to the target's Max HP.
     if (slimeObj && hasLeech(slimeObj)) {
         const leechParams = getLeechParams(slimeObj);
-        const leechAmount = ((damageToApply || 0) + (typeof freezeDmgDealt === 'number' ? freezeDmgDealt : 0)) * leechParams.multiplier;
+        const leechAmount = Math.round(((damageToApply || 0) + (typeof freezeDmgDealt === 'number' ? freezeDmgDealt : 0)) * leechParams.multiplier);
         if (leechAmount > 0) {
             // mindlessSupport: redirect the heal to the lowest-HP living ally
             // (the leeching slime itself excluded) instead of self.
