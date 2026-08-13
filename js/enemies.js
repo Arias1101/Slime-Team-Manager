@@ -1099,16 +1099,16 @@ function generateWaveComposition(waveNum) {
  * Overall flat chance (0-1) that a cleared boss wave diverts into a bonus
  * stage. Independent of which bonus stage is then chosen.
  */
-const BONUS_STAGE_CHANCE = 1; // 10% flat chance for any bonus stage
+const BONUS_STAGE_CHANCE = 0.1; // 10% flat chance for any bonus stage
 
 /**
  * Bonus stages and their relative apparition weight when a bonus stage is
  * triggered. Weights are normalized against each other, not against 1.0.
  */
 const BONUS_WAVES = [
-    { wave: 901, chance: 1 }, // Car wave: 40%
-    { wave: 902, chance: 0 }, // Missingno wave: 20%
-    { wave: 903, chance: 0 }   // Battleground wave: 40%
+    { wave: 901, chance: 0.30 }, // Car wave: 40%
+    { wave: 902, chance: 0.35 }, // Missingno wave: 20%
+    { wave: 903, chance: 0.35 }   // Battleground wave: 40%
 ];
 
 /**
